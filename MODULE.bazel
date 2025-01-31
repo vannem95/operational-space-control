@@ -5,6 +5,9 @@ module(
     name = "operational-space-controller",
 )
 
+# Eigen:
+bazel_dep(name = "eigen", version = "4.0.0-20241125.bcr.1")
+
 # MoJoCo Dependency:
 bazel_dep(name = "mujoco-bazel")
 archive_override(

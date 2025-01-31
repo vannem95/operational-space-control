@@ -1,0 +1,9 @@
+cc_library(
+    name = "operational-space-controller",
+    srcs = ["operational_space_controller.h"],
+    deps = [
+        "@mujoco-bazel//:mujoco",
+        "@eigen//:eigen",
+    ],
+    visibility = ["//visibility:public"],
+)
