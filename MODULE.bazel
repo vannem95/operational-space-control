@@ -1,0 +1,24 @@
+"""
+    Operational Space Controller Module
+"""
+module(
+    name = "operational-space-controller",
+)
+
+# MoJoCo Dependency:
+bazel_dep(name = "mujoco-bazel")
+archive_override(
+    module_name = "mujoco-bazel",
+    strip_prefix = "mujoco-bazel-main",
+    urls = ["https://github.com/jeh15/mujoco-bazel/archive/refs/heads/main.zip"],
+    integrity = "sha256-LbMbuNsh+AXp4TFc2cyEWFQLdIS3XgcBTfQOOyS83yo=",
+)
+
+# GLFW Dependency: (Visualize MuJoCo simulations)
+bazel_dep(name = "glfw-bazel")
+archive_override(
+    module_name = "glfw-bazel",
+    strip_prefix = "glfw-bazel-main",
+    urls = ["https://github.com/jeh15/glfw-bazel/archive/refs/heads/main.zip"],
+    integrity = "sha256-Gk5anHk3IXzREPrUpyYPweB9J0fAdbMt5Hlu5VCYTO0=",
+)

@@ -1,0 +1,12 @@
+package(default_visibility = ["//visibility:public"])
+
+cc_binary(
+    name = "main",
+    srcs = ["main.cc"],
+    data = ["//models/unitree_go2:unitree_go2"],
+    deps = [
+        "@mujoco-bazel//:mujoco",
+        "@glfw-bazel//:glfw",
+    ],
+    visibility = ["//visibility:public"],
+)
