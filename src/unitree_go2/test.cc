@@ -23,6 +23,10 @@ int main(int argc, char** argv) {
     std::filesystem::path xml_path = "models/unitree_go2/scene_mjx.xml";
     osc.initialize(xml_path);
 
+    Eigen::VectorXd q_init =  Eigen::Map<Eigen::VectorXd>(osc.model->key_qpos, osc.model->nq);
+    Eigen::VectorXd qd_init =  Eigen::Map<Eigen::VectorXd>(osc.model->key_qvel, osc.model->nv);
+    Eigen::VectorXd ctrl =  Eigen::Map<Eigen::VectorXd>(osc.model->key_ctrl, osc.model->nu);
+
     // Visualization:
     glfwInit();
     GLFWwindow* window = glfwCreateWindow(800, 600, "Demo", NULL, NULL);
@@ -43,6 +47,11 @@ int main(int argc, char** argv) {
     glfwGetFramebufferSize(window, &viewport.width, &viewport.height);
 
     while(osc.data->time < 5) {
+
+        // PD Control:
+        Eigen::VectorXd qpos = Eigen::Map<Eigen::VectorXd>(osc.data->qpos, osc.model->nq);
+        Eigen::VectorXd qvel = Eigen::Map<Eigen::VectorXd>(osc.data->qvel, osc.model->nv);
+
         mj_step(osc.model, osc.data);
 
         Eigen::MatrixXd points = Eigen::MatrixXd::Zero(5, 3);

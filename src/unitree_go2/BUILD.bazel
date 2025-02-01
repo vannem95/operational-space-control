@@ -17,6 +17,7 @@ cc_binary(
         ":operational-space-controller",
         "@mujoco-bazel//:mujoco",
         "@eigen//:eigen",
+        "@glfw-bazel//:glfw",
     ],
     visibility = ["//visibility:public"],
 )
