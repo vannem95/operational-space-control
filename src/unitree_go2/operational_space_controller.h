@@ -42,6 +42,11 @@ class OperationalSpaceController {
             num_body_ids = body_ids.size();
         }
 
+        void close() {
+            mj_deleteData(data);
+            mj_deleteModel(model);
+        }
+
         OSCData get_data(Eigen::MatrixXd& points) {
             // Mass Matrix:
             Eigen::MatrixXd mass_matrix = MapMatrix(data->qM, model->nv, model->nv);
