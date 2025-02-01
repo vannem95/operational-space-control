@@ -1,4 +1,5 @@
 #include <iostream>
+#include <memory>
 
 #include "mujoco/mujoco.h"
 #include "GLFW/glfw3.h"
@@ -127,8 +128,8 @@ int main(void)
     mjr_freeContext(&con);
 
     // free model and data, deactivate
-    mj_deleteData(d);
-    mj_deleteModel(m);
+    // mj_deleteData(d);
+    // mj_deleteModel(m);
 
     return 0;
 }
