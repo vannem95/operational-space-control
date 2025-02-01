@@ -5,5 +5,18 @@ cc_library(
         "@mujoco-bazel//:mujoco",
         "@eigen//:eigen",
     ],
+    alwayslink = True,
+    visibility = ["//visibility:public"],
+)
+
+cc_binary(
+    name = "test",
+    srcs = ["test.cc"],
+    data = ["//models/unitree_go2:unitree_go2"],
+    deps = [
+        ":operational-space-controller",
+        "@mujoco-bazel//:mujoco",
+        "@eigen//:eigen",
+    ],
     visibility = ["//visibility:public"],
 )

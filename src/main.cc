@@ -56,7 +56,7 @@ int main(void)
 
         if(i == 0) {
             auto mass_matrix = Eigen::Map<Eigen::MatrixXd>(d->qM, m->nv, m->nv);;
-            std::cout << mass_matrix << std::endl;
+            // std::cout << mass_matrix << std::endl;
 
             Eigen::MatrixXd jacp = Eigen::MatrixXd::Zero(3, m->nv);
             Eigen::MatrixXd jacr = Eigen::MatrixXd::Zero(3, m->nv);
@@ -71,8 +71,8 @@ int main(void)
 
             mj_jac(m, d, jacp.data(), jacr.data(), points.row(1).data(), body_id);
 
-            std::cout << jacp << std::endl;
-            std::cout << jacr << std::endl;
+            // std::cout << jacp << std::endl;
+            // std::cout << jacr << std::endl;
 
             // Calculate Taskspace Bias Acceleration:
             Eigen::VectorXd joint_velocity = Eigen::Map<Eigen::VectorXd>(d->qvel, m->nv);
@@ -86,11 +86,23 @@ int main(void)
             jacobian_dot.block<6, 18>(0, 0) = jacobian_dot_translation;
             jacobian_dot.block<6, 18>(6, 0) = jacobian_dot_rotation;
 
-            std::cout << joint_velocity << std::endl;
+            // std::cout << joint_velocity << std::endl;
 
             taskspace_bias = jacobian_dot * joint_velocity;
-            std::cout << taskspace_bias << std::endl;
+            // std::cout << taskspace_bias << std::endl;
 
+            auto contact = d->contact[4];
+            int num_contacts = d->ncon;
+            Eigen::VectorXd contact_mask = Eigen::VectorXd::Zero(num_contacts);
+            for(int i = 0; i < num_contacts; i++) {
+                auto contact = d->contact[i];
+                double distance = contact.dist;
+                std::cout << distance << std::endl;
+                bool res = distance < 1e-3;
+                std::cout << res << std::endl;
+                contact_mask(i) = distance < 1e-3;
+            }
+            std::cout << contact_mask << std::endl;
         }
         i++;
 
@@ -128,8 +140,8 @@ int main(void)
     mjr_freeContext(&con);
 
     // free model and data, deactivate
-    // mj_deleteData(d);
-    // mj_deleteModel(m);
+    mj_deleteData(d);
+    mj_deleteModel(m);
 
     return 0;
 }
