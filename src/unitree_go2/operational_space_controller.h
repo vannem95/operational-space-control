@@ -29,6 +29,9 @@ class OperationalSpaceController {
                 printf("%s\n", error);
                 std::exit(EXIT_FAILURE);
             }
+            // Physics timestep:
+            model->opt.timestep = 0.002;
+            
             data = mj_makeData(model);
 
             for(const std::string& site : sites){
