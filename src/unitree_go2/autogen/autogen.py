@@ -21,7 +21,7 @@ class AutoGen():
         self.u_idx = self.dv_idx + self.u_size
         self.z_idx = self.u_idx + self.z_size
 
-        self.B: MX = casadi.vertcat(
+        self.B: DM = casadi.vertcat(
             DM.zeros((6, self.u_size)), 
             DM.eye(self.u_size),
         )
@@ -57,7 +57,6 @@ class AutoGen():
         # Dynamics:
         equality_constraints = M @ dv + C - self.B @ u - J_contact @ z
 
-
         return equality_constraints
 
     def generate_functions(self):
@@ -86,6 +85,7 @@ class AutoGen():
             [-self.equality_constraints(*equality_constraint_input)],
         )
 
+        # No Wrapper:
         A_eq_function = casadi.Function(
             "A_eq_function",
             equality_constraint_input,
@@ -95,8 +95,15 @@ class AutoGen():
             )],
         )
 
-        out = A_eq_function(*equality_constraint_input)
-        print(out.shape)
+        # Wrapped with densify:
+        # A_eq_function = casadi.Function(
+        #     "A_eq_function",
+        #     equality_constraint_input,
+        #     [casadi.densify(casadi.jacobian(
+        #         self.equality_constraints(*equality_constraint_input),
+        #         design_vector,
+        #     ))],
+        # )
 
         # Generate C++ Code:
         opts = {

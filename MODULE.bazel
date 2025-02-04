@@ -32,6 +32,15 @@ bazel_dep(name = "rules_python", version = "1.0.0")
 # Pybind11:
 bazel_dep(name = "pybind11_bazel", version = "2.13.6")
 
+# Hedron's Compile Commands Extractor for Bazel
+# https://github.com/hedronvision/bazel-compile-commands-extractor
+bazel_dep(name = "hedron_compile_commands", dev_dependency = True)
+git_override(
+    module_name = "hedron_compile_commands",
+    remote = "https://github.com/mikael-s-persson/bazel-compile-commands-extractor",
+    commit = "f5fbd4cee671d8d908f37c83abaf70fba5928fc7"
+)
+
 # Python Toolchain:
 python = use_extension("@rules_python//python/extensions:python.bzl", "python")
 python.toolchain(
@@ -48,12 +57,3 @@ pip.parse(
     requirements_lock = "//:requirements_lock.txt",
 )
 use_repo(pip, "pypi")
-
-# Hedron's Compile Commands Extractor for Bazel
-# https://github.com/hedronvision/bazel-compile-commands-extractor
-bazel_dep(name = "hedron_compile_commands", dev_dependency = True)
-git_override(
-    module_name = "hedron_compile_commands",
-    remote = "https://github.com/mikael-s-persson/bazel-compile-commands-extractor",
-    commit = "f5fbd4cee671d8d908f37c83abaf70fba5928fc7"
-)

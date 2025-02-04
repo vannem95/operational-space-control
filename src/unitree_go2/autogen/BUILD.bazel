@@ -19,6 +19,7 @@ cc_library(
     visibility = ["//visibility:public"],
 )
 
+
 # This is stupid, figure out how to configure multiple outputs
 # genrule(
 #     name = "autogen_rule_cc",
