@@ -1,0 +1,45 @@
+load("@rules_python//python:py_binary.bzl", "py_binary")
+
+py_binary(
+    name = "autogen",
+    srcs = ["autogen.py"],
+    data = ["//models/unitree_go2:unitree_go2"],
+    deps = [
+        "@pypi//mujoco:pkg",
+        "@pypi//casadi:pkg",
+        "@pypi//absl_py:pkg",
+    ],
+)
+
+cc_library(
+    name = "autogen_cc",
+    srcs = ["equality_constraint_function.cc"],
+    hdrs = ["equality_constraint_function.h"],
+    alwayslink = True,
+    visibility = ["//visibility:public"],
+)
+
+# This is stupid, figure out how to configure multiple outputs
+# genrule(
+#     name = "autogen_rule_cc",
+#     srcs = ["//models/unitree_go2:unitree_go2"],
+#     tools = [":autogen"],
+#     outs = ["equality_constraint_function.cc"],
+#     cmd = "$(location :autogen) $@",
+# )
+# genrule(
+#     name = "autogen_rule_h",
+#     srcs = ["//models/unitree_go2:unitree_go2"],
+#     tools = [":autogen"],
+#     outs = ["equality_constraint_function.h"],
+#     cmd = "./$(location :autogen) > \"$@\"",
+# )
+
+# cc_library(
+#     name = "autogen_lib",
+#     srcs = ["equality_constraint_function.cc"],
+#     hdrs = ["equality_constraint_function.h"],
+#     deps = [":autogen_rule_cc", ":autogen_rule_h"],
+#     alwayslink = True,
+#     visibility = ["//visibility:public"],
+# )

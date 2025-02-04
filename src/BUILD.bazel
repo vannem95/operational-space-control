@@ -1,5 +1,14 @@
 package(default_visibility = ["//visibility:public"])
 
+cc_library(
+    name = "utilities",
+    srcs = ["utilities.h"],
+    deps = [
+        "@eigen//:eigen",
+    ],
+    visibility = ["//visibility:public"],
+)
+
 cc_binary(
     name = "main",
     srcs = ["main.cc"],

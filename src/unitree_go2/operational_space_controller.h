@@ -6,12 +6,14 @@
 #include "mujoco/mujoco.h"
 #include "Eigen/Dense"
 
+#include "src/utilities.h"
+
 struct OSCData {
-    Eigen::MatrixXd mass_matrix;    
-    Eigen::MatrixXd coriolis_matrix;
-    Eigen::MatrixXd contact_jacobian;
-    Eigen::MatrixXd taskspace_jacobian;
-    Eigen::MatrixXd taskspace_bias;
+    Matrix mass_matrix;    
+    Eigen::VectorXd coriolis_matrix;
+    Matrix contact_jacobian;
+    Matrix taskspace_jacobian;
+    Matrix taskspace_bias;
     Eigen::VectorXd contact_mask;
     Eigen::VectorXd previous_q;
     Eigen::VectorXd previous_qd;
@@ -50,28 +52,29 @@ class OperationalSpaceController {
             mj_deleteModel(model);
         }
 
-        OSCData get_data(Eigen::MatrixXd& points) {
+        OSCData get_data(Matrix& points) {
             // Mass Matrix:
-            Eigen::MatrixXd mass_matrix = MapMatrix(data->qM, model->nv, model->nv);
+            Matrix mass_matrix = Matrix::Zero(model->nv, model->nv);
+            mj_fullM(model, mass_matrix.data(), data->qM);
 
             // Coriolis Matrix:
-            Eigen::MatrixXd coriolis_matrix = MapMatrix(data->qfrc_bias, model->nv, model->nv);
+            Matrix coriolis_matrix = Eigen::Map<Eigen::VectorXd>(data->qfrc_bias, model->nv);
 
             // Joint Position and Velocity:
             Eigen::VectorXd joint_position = Eigen::Map<Eigen::VectorXd>(data->qpos, model->nq);
             Eigen::VectorXd joint_velocity = Eigen::Map<Eigen::VectorXd>(data->qvel, model->nv);
 
             // Jacobian Calculation:
-            Eigen::MatrixXd jacobian_translation = Eigen::MatrixXd::Zero(num_body_ids * 3, model->nv);
-            Eigen::MatrixXd jacobian_rotation = Eigen::MatrixXd::Zero(num_body_ids * 3, model->nv);
-            Eigen::MatrixXd jacobian_dot_translation = Eigen::MatrixXd::Zero(num_body_ids * 3, model->nv);
-            Eigen::MatrixXd jacobian_dot_rotation = Eigen::MatrixXd::Zero(num_body_ids * 3, model->nv);
+            Matrix jacobian_translation = Matrix::Zero(num_body_ids * 3, model->nv);
+            Matrix jacobian_rotation = Matrix::Zero(num_body_ids * 3, model->nv);
+            Matrix jacobian_dot_translation = Matrix::Zero(num_body_ids * 3, model->nv);
+            Matrix jacobian_dot_rotation = Matrix::Zero(num_body_ids * 3, model->nv);
             for (int i = 0; i < num_body_ids; i++) {
                 // Temporary Jacobian Matrices:
-                Eigen::MatrixXd jacp = Eigen::MatrixXd::Zero(3, model->nv);
-                Eigen::MatrixXd jacr = Eigen::MatrixXd::Zero(3, model->nv);
-                Eigen::MatrixXd jacp_dot = Eigen::MatrixXd::Zero(3, model->nv);
-                Eigen::MatrixXd jacr_dot = Eigen::MatrixXd::Zero(3, model->nv);
+                Matrix jacp = Matrix::Zero(3, model->nv);
+                Matrix jacr = Matrix::Zero(3, model->nv);
+                Matrix jacp_dot = Matrix::Zero(3, model->nv);
+                Matrix jacr_dot = Matrix::Zero(3, model->nv);
 
                 // Calculate Jacobian:
                 mj_jac(model, data, jacp.data(), jacr.data(), points.row(i).data(), body_ids[i]);
@@ -92,8 +95,8 @@ class OperationalSpaceController {
             }
 
             // Stack Jacobian Matrices: Taskspace Jacobian: [jacp; jacr], Jacobian Dot: [jacp_dot; jacr_dot]
-            Eigen::MatrixXd taskspace_jacobian = Eigen::MatrixXd::Zero(num_body_ids * 6, model->nv);
-            Eigen::MatrixXd jacobian_dot = Eigen::MatrixXd::Zero(num_body_ids * 6, model->nv);
+            Matrix taskspace_jacobian = Matrix::Zero(num_body_ids * 6, model->nv);
+            Matrix jacobian_dot = Matrix::Zero(num_body_ids * 6, model->nv);
             int row_offset = num_body_ids * 3;
             for(int row_idx = 0; row_idx < num_body_ids * 3; row_idx++) {
                 for(int col_idx = 0; col_idx < model->nv; col_idx++) {
@@ -105,14 +108,14 @@ class OperationalSpaceController {
             }
 
             // Calculate Taskspace Bias Acceleration:
-            Eigen::MatrixXd bias = Eigen::MatrixXd::Zero(num_body_ids * 6, 1);
+            Matrix bias = Matrix::Zero(num_body_ids * 6, 1);
             bias = jacobian_dot * joint_velocity;
             // Reshape leading axis -> num_body_ids x 6
-            Eigen::MatrixXd taskspace_bias = bias.reshaped<Eigen::RowMajor>(num_body_ids, 6);
+            Matrix taskspace_bias = bias.reshaped<Eigen::RowMajor>(num_body_ids, 6);
 
             // Contact Jacobian: Shape (NV, 3 * num_contacts) 
             // TODO(jeh15): This assumes the contact frames come directly after the body frame...
-            Eigen::MatrixXd contact_jacobian = Eigen::MatrixXd::Zero(model->nv, num_contacts * 3);
+            Matrix contact_jacobian = Matrix::Zero(model->nv, num_contacts * 3);
             contact_jacobian = taskspace_jacobian(Eigen::seqN(3, num_contacts * 3), Eigen::placeholders::all)
                 .transpose();
 
@@ -152,5 +155,5 @@ class OperationalSpaceController {
             std::vector<int> body_ids;
             int num_body_ids;
             const int num_contacts = 4; // num_contacts should match the number of sites intended to be used as contact points and preferably the xml is setup such that data->ncon also equals this value.
-            typedef Eigen::Map<Eigen::Matrix<double, Eigen::Dynamic, Eigen::Dynamic, Eigen::RowMajor>> MapMatrix;
+
 };

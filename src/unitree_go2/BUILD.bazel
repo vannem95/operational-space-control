@@ -2,6 +2,7 @@ cc_library(
     name = "operational-space-controller",
     srcs = ["operational_space_controller.h"],
     deps = [
+        "//src:utilities",
         "@mujoco-bazel//:mujoco",
         "@eigen//:eigen",
     ],
@@ -10,14 +11,41 @@ cc_library(
 )
 
 cc_binary(
-    name = "test",
-    srcs = ["test.cc"],
+    name = "comparison_test",
+    srcs = ["comparison_test.cc"],
     data = ["//models/unitree_go2:unitree_go2"],
     deps = [
+        "//src:utilities",
+        ":operational-space-controller",
+        "@mujoco-bazel//:mujoco",
+        "@eigen//:eigen",
+    ],
+    visibility = ["//visibility:public"],
+)
+
+cc_binary(
+    name = "simulation_test",
+    srcs = ["simulation_test.cc"],
+    data = ["//models/unitree_go2:unitree_go2"],
+    deps = [
+        "//src:utilities",
         ":operational-space-controller",
         "@mujoco-bazel//:mujoco",
         "@eigen//:eigen",
         "@glfw-bazel//:glfw",
     ],
     visibility = ["//visibility:public"],
+)
+
+cc_binary(
+    name = "casadi_test",
+    srcs = ["casadi_test.cc"],
+    data = ["//models/unitree_go2:unitree_go2"],
+    deps = [
+        "//src/unitree_go2/autogen:autogen_cc",
+        "//src:utilities",
+        ":operational-space-controller",
+        "@mujoco-bazel//:mujoco",
+        "@eigen//:eigen",
+    ],
 )
