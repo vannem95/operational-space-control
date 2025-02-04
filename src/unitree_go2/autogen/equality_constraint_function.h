@@ -54,4 +54,4 @@ extern "C" int A_eq_function_work_bytes(casadi_int *sz_arg, casadi_int* sz_res, 
 #define A_eq_function_SZ_ARG 7
 #define A_eq_function_SZ_RES 2
 #define A_eq_function_SZ_IW 43
-#define A_eq_function_SZ_W 2545
+#define A_eq_function_SZ_W 3301

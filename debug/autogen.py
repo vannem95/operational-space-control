@@ -1,14 +1,11 @@
 import os
-import shutil
-import subprocess
 from absl import app
 
+import numpy as np
 import casadi
 import mujoco
 
 from casadi import MX, DM
-
-import pdb
 
 
 class AutoGen():
@@ -95,6 +92,15 @@ class AutoGen():
         #     )],
         # )
 
+        # M = np.loadtxt("debug/mass_matrix.csv", delimiter=",")
+        # C = np.loadtxt("debug/coriolis_matrix.csv", delimiter=",")
+        # Jc = np.loadtxt("debug/contact_jacobian.csv", delimiter=",")
+        # dummy_q = np.zeros(self.dv_size + self.u_size + self.z_size)
+
+        # res = A_eq_function(dummy_q, M, C, Jc)
+
+        # np.savetxt("debug/Apy.csv", res.toarray(), delimiter=",")
+
         # Wrapped with densify:
         A_eq_function = casadi.Function(
             "A_eq_function",
@@ -130,7 +136,14 @@ class AutoGen():
 
 def main(argv=None):
     # Initialize Mujoco Model:
-    mj_model = mujoco.MjModel.from_xml_path("models/unitree_go2/scene_mjx_torque.xml")
+    filename = "models/unitree_go2/scene_mjx_torque.xml"
+    filepath = os.path.join(
+        os.path.dirname(
+            os.path.dirname(__file__),
+        ),
+        filename,
+    )
+    mj_model = mujoco.MjModel.from_xml_path(filepath)
     num_contacts = 4
 
     # Generate Functions:
