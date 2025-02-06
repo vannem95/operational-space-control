@@ -40,7 +40,7 @@ int main(int argc, char** argv){
 
     const int num_contacts = 4;
     int design_vector_size = osc.model->nv + osc.model->nu + 3 * num_contacts;
-    Eigen::VectorXd q = Eigen::VectorXd::Zero(42);
+    Eigen::VectorXd q = Eigen::VectorXd::Zero(design_vector_size);
 
 
     // Allocated input/output buffers and work vectors:

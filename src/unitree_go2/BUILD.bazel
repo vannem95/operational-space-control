@@ -62,3 +62,16 @@ cc_binary(
         "@eigen//:eigen",
     ],
 )
+
+cc_binary(
+    name = "casadi_test",
+    srcs = ["casadi_test.cc"],
+    data = ["//models/unitree_go2:unitree_go2"],
+    deps = [
+        "//src/unitree_go2/autogen:autogen_cc",
+        "//src:utilities",
+        ":operational-space-controller",
+        "@mujoco-bazel//:mujoco",
+        "@eigen//:eigen",
+    ],
+)

@@ -92,15 +92,6 @@ class AutoGen():
         #     )],
         # )
 
-        # M = np.loadtxt("debug/mass_matrix.csv", delimiter=",")
-        # C = np.loadtxt("debug/coriolis_matrix.csv", delimiter=",")
-        # Jc = np.loadtxt("debug/contact_jacobian.csv", delimiter=",")
-        # dummy_q = np.zeros(self.dv_size + self.u_size + self.z_size)
-
-        # res = A_eq_function(dummy_q, M, C, Jc)
-
-        # np.savetxt("debug/Apy.csv", res.toarray(), delimiter=",")
-
         # Wrapped with densify:
         A_eq_function = casadi.Function(
             "A_eq_function",
@@ -110,6 +101,43 @@ class AutoGen():
                 design_vector,
             ))],
         )
+
+        # Actual Values:
+        M = np.loadtxt("debug/M.csv", delimiter=",")
+        C = np.loadtxt("debug/C.csv", delimiter=",")
+        Jc = np.loadtxt("debug/J.csv", delimiter=",")
+        dummy_q = np.zeros(self.dv_size + self.u_size + self.z_size)
+
+        # Zeros:
+        # M = np.zeros((self.dv_size, self.dv_size))
+        # C = np.zeros(self.dv_size)
+        # Jc = np.zeros((self.dv_size, self.z_size))
+        # dummy_q = np.zeros(self.dv_size + self.u_size + self.z_size)
+
+        # Ones:
+        # M = np.eye(self.dv_size, self.dv_size)
+        # C = np.ones(self.dv_size)
+        # Jc = np.eye(self.dv_size, self.z_size)
+        # dummy_q = np.zeros(self.dv_size + self.u_size + self.z_size)
+
+
+        res = A_eq_function(dummy_q, M, C, Jc)
+        Apy = res.toarray()
+
+        # Compare:
+        Adata = np.loadtxt("debug/Adata.csv", delimiter=",")
+        print(np.allclose(Adata, Apy, atol=1e-3))
+
+        # Azero = np.loadtxt("debug/Azero.csv", delimiter=",")
+        # print(np.allclose(Azero, Apy, atol=1e-3))
+        # idx = np.where(Azero != Apy)
+        # print(idx)
+
+        # Aones = np.loadtxt("debug/Aones.csv", delimiter=",")
+        # print(np.allclose(Aones, Apy, atol=1e-3))
+
+        np.savetxt("debug/Apy.csv", Apy, delimiter=",")
+
 
         # Generate C++ Code:
         opts = {
