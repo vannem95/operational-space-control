@@ -8,7 +8,9 @@ module(
 # Eigen:
 bazel_dep(name = "eigen", version = "4.0.0-20241125.bcr.1")
 
-# MoJoCo Dependency:
+bazel_dep(name = "osqp", version = "0.6.3.bcr.2")
+
+# MoJoCo:
 bazel_dep(name = "mujoco-bazel")
 archive_override(
     module_name = "mujoco-bazel",
@@ -17,7 +19,7 @@ archive_override(
     integrity = "sha256-LbMbuNsh+AXp4TFc2cyEWFQLdIS3XgcBTfQOOyS83yo=",
 )
 
-# GLFW Dependency: (Visualize MuJoCo simulations)
+# GLFW: (Visualize MuJoCo simulations)
 bazel_dep(name = "glfw-bazel")
 archive_override(
     module_name = "glfw-bazel",
