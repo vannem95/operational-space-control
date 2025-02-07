@@ -1,0 +1,5 @@
+filegroup(
+    name = "unitree_go2_config",
+    srcs = ['unitree_go2_config.yaml'],
+    visibility = ["//visibility:public"],
+)

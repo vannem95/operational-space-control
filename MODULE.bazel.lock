@@ -34,6 +34,8 @@
     "https://bcr.bazel.build/modules/bazel_skylib/1.7.1/source.json": "f121b43eeefc7c29efbd51b83d08631e2347297c95aac9764a701f2a6a2bb953",
     "https://bcr.bazel.build/modules/buildozer/7.1.2/MODULE.bazel": "2e8dd40ede9c454042645fd8d8d0cd1527966aa5c919de86661e62953cd73d84",
     "https://bcr.bazel.build/modules/buildozer/7.1.2/source.json": "c9028a501d2db85793a6996205c8de120944f50a0d570438fcae0457a5f9d1f8",
+    "https://bcr.bazel.build/modules/cmake_configure_file/0.1.0/MODULE.bazel": "31c6c6c0a95f7348b3023f98df37ef165fdea9f765f836c7999e480a4dac6351",
+    "https://bcr.bazel.build/modules/cmake_configure_file/0.1.0/source.json": "8849bbfd2b081058e7133374574c2d1b646e77920deb9ce28491e2dd04be2f64",
     "https://bcr.bazel.build/modules/eigen/4.0.0-20241125.bcr.1/MODULE.bazel": "1fb30b496d87fe8e17c671c73f00d66b6291f0e058b23cdef2ce2d12110405db",
     "https://bcr.bazel.build/modules/eigen/4.0.0-20241125.bcr.1/source.json": "f968205702f1b75f2ec4e6683e14d681c25fa39ee9d6c8d23f4bd364da49d934",
     "https://bcr.bazel.build/modules/google_benchmark/1.8.2/MODULE.bazel": "a70cf1bba851000ba93b58ae2f6d76490a9feb74192e57ab8e8ff13c34ec50cb",
@@ -44,6 +46,8 @@
     "https://bcr.bazel.build/modules/jsoncpp/1.9.5/MODULE.bazel": "31271aedc59e815656f5736f282bb7509a97c7ecb43e927ac1a37966e0578075",
     "https://bcr.bazel.build/modules/jsoncpp/1.9.5/source.json": "4108ee5085dd2885a341c7fab149429db457b3169b86eb081fa245eadf69169d",
     "https://bcr.bazel.build/modules/libpfm/4.11.0/MODULE.bazel": "45061ff025b301940f1e30d2c16bea596c25b176c8b6b3087e92615adbd52902",
+    "https://bcr.bazel.build/modules/osqp/0.6.3.bcr.2/MODULE.bazel": "fa71b90f2410ae52423d17f2c36cc218c6705762cbeffcf13f8043119807e272",
+    "https://bcr.bazel.build/modules/osqp/0.6.3.bcr.2/source.json": "a2135c9e0269cc0219b0d7ad1023278c3fe87a91361d1b773810439ac26576cc",
     "https://bcr.bazel.build/modules/platforms/0.0.10/MODULE.bazel": "8cb8efaf200bdeb2150d93e162c40f388529a25852b332cec879373771e48ed5",
     "https://bcr.bazel.build/modules/platforms/0.0.10/source.json": "f22828ff4cf021a6b577f1bf6341cb9dcd7965092a439f64fc1bb3b7a5ae4bd5",
     "https://bcr.bazel.build/modules/platforms/0.0.4/MODULE.bazel": "9b328e31ee156f53f3c416a64f8491f7eb731742655a47c9eec4703a71644aee",
@@ -64,6 +68,8 @@
     "https://bcr.bazel.build/modules/pybind11_bazel/2.11.1/MODULE.bazel": "88af1c246226d87e65be78ed49ecd1e6f5e98648558c14ce99176da041dc378e",
     "https://bcr.bazel.build/modules/pybind11_bazel/2.13.6/MODULE.bazel": "2d746fda559464b253b2b2e6073cb51643a2ac79009ca02100ebbc44b4548656",
     "https://bcr.bazel.build/modules/pybind11_bazel/2.13.6/source.json": "6aa0703de8efb20cc897bbdbeb928582ee7beaf278bcd001ac253e1605bddfae",
+    "https://bcr.bazel.build/modules/qdldl/0.1.7.bcr.1/MODULE.bazel": "5ff47aaf72a56b309cf75596660c03333a796978764a761a24e114afe6a35939",
+    "https://bcr.bazel.build/modules/qdldl/0.1.7.bcr.1/source.json": "4de1ae27a615ea27c8a0a479e82d10a2760e4f8932ed00f6bd1a126c97042c8c",
     "https://bcr.bazel.build/modules/re2/2023-09-01/MODULE.bazel": "cb3d511531b16cfc78a225a9e2136007a48cf8a677e4264baeab57fe78a80206",
     "https://bcr.bazel.build/modules/re2/2023-09-01/source.json": "e044ce89c2883cd957a2969a43e79f7752f9656f6b20050b62f90ede21ec6eb4",
     "https://bcr.bazel.build/modules/rules_android/0.1.1/MODULE.bazel": "48809ab0091b07ad0182defb787c4c5328bd3a278938415c00a7b69b50c4d3a8",
@@ -140,6 +146,8 @@
     "https://bcr.bazel.build/modules/stardoc/0.7.1/MODULE.bazel": "3548faea4ee5dda5580f9af150e79d0f6aea934fc60c1cc50f4efdd9420759e7",
     "https://bcr.bazel.build/modules/stardoc/0.7.2/MODULE.bazel": "fc152419aa2ea0f51c29583fab1e8c99ddefd5b3778421845606ee628629e0e5",
     "https://bcr.bazel.build/modules/stardoc/0.7.2/source.json": "58b029e5e901d6802967754adf0a9056747e8176f017cfe3607c0851f4d42216",
+    "https://bcr.bazel.build/modules/suitesparse/7.6.0.bcr.1/MODULE.bazel": "0f3498d7db5dfe981da22d1bb8aa89972643e2120928481169d75f9d966f03da",
+    "https://bcr.bazel.build/modules/suitesparse/7.6.0.bcr.1/source.json": "72e370355227227ec97582110cd664d73e9890a374aa379ddec2858cfe6558bd",
     "https://bcr.bazel.build/modules/upb/0.0.0-20220923-a547704/MODULE.bazel": "7298990c00040a0e2f121f6c32544bab27d4452f80d9ce51349b1a28f3005c43",
     "https://bcr.bazel.build/modules/upb/0.0.0-20230516-61a97ef/MODULE.bazel": "c0df5e35ad55e264160417fd0875932ee3c9dda63d9fccace35ac62f45e1b6f9",
     "https://bcr.bazel.build/modules/zlib/1.2.11/MODULE.bazel": "07b389abc85fdbca459b69e2ec656ae5622873af3f845e1c9d80fe179f3effa0",
@@ -310,7 +318,7 @@
         "bzlTransitiveDigest": "VC8o6iFef/Wg0TqgTBrP3cLaFOdBR0Bir+dXXjOsAPI=",
         "usagesDigest": "U4QmtZqHCEbFeNRJlL/MHQpEKBArmwKfoc01qVIcRKI=",
         "recordedFileInputs": {
-          "@@//requirements_lock.txt": "2f9689277619920509aacc80f67794ff0648a87e0b1f63994f95487947e4eccd",
+          "@@//requirements_lock.txt": "ae7ac2fb9643f6e0d6fd4010713a6e8bcb5b75c661849af14b45929b4cd5f058",
           "@@protobuf+//python/requirements.txt": "983be60d3cec4b319dcab6d48aeb3f5b2f7c3350f26b3a9e97486c37967c73c5",
           "@@rules_fuzzing+//fuzzing/requirements.txt": "ab04664be026b632a0d2a2446c4f65982b7654f5b6851d2f9d399a19b7242a5b",
           "@@rules_python+//tools/publish/requirements_darwin.txt": "2994136eab7e57b083c3de76faf46f70fad130bc8e7360a7fed2b288b69e79dc",
@@ -591,6 +599,26 @@
               "python_interpreter_target": "@@rules_python++python+python_3_12_host//:python",
               "repo": "pypi_312",
               "requirement": "PyOpenGL==3.1.9"
+            }
+          },
+          "pypi_312_pyyaml": {
+            "repoRuleId": "@@rules_python+//python/private/pypi:whl_library.bzl%whl_library",
+            "attributes": {
+              "dep_template": "@pypi//{name}:{target}",
+              "download_only": true,
+              "experimental_target_platforms": [
+                "cp312_linux_aarch64",
+                "cp312_linux_arm",
+                "cp312_linux_ppc",
+                "cp312_linux_s390x",
+                "cp312_linux_x86_64",
+                "cp312_osx_aarch64",
+                "cp312_osx_x86_64",
+                "cp312_windows_x86_64"
+              ],
+              "python_interpreter_target": "@@rules_python++python+python_3_12_host//:python",
+              "repo": "pypi_312",
+              "requirement": "PyYAML==6.0.2"
             }
           },
           "pypi_312_typing_extensions": {
@@ -3062,6 +3090,7 @@
                 "mujoco": "{\"pypi_312_mujoco\":[{\"version\":\"3.12\"}]}",
                 "numpy": "{\"pypi_312_numpy\":[{\"version\":\"3.12\"}]}",
                 "pyopengl": "{\"pypi_312_pyopengl\":[{\"version\":\"3.12\"}]}",
+                "pyyaml": "{\"pypi_312_pyyaml\":[{\"version\":\"3.12\"}]}",
                 "typing_extensions": "{\"pypi_312_typing_extensions\":[{\"version\":\"3.12\"}]}",
                 "zipp": "{\"pypi_312_zipp\":[{\"version\":\"3.12\"}]}"
               },
@@ -3075,6 +3104,7 @@
                 "mujoco",
                 "numpy",
                 "pyopengl",
+                "pyyaml",
                 "typing_extensions",
                 "zipp"
               ],

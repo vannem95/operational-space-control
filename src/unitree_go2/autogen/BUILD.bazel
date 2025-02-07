@@ -8,39 +8,32 @@ py_binary(
         "@pypi//mujoco:pkg",
         "@pypi//casadi:pkg",
         "@pypi//absl_py:pkg",
+        "@pypi//pyyaml:pkg",
     ],
 )
 
+genrule(
+    name = "autogen_rule",
+    srcs = [
+        "//models/unitree_go2:unitree_go2",
+        "//config/unitree_go2:unitree_go2_config",
+    ],
+    tools = [":autogen"],
+    outs = ["autogen_functions.cc", "autogen_functions.h", "autogen_defines.h"],
+    cmd = "$(location :autogen) --filepath=$(RULEDIR)",
+)
+
 cc_library(
-    name = "autogen_cc",
-    srcs = ["equality_constraint_function.cc"],
-    hdrs = ["equality_constraint_function.h"],
-    alwayslink = True,
+    name = "autogen_functions_cc",
+    srcs = ["autogen_functions.cc"],
+    hdrs = ["autogen_functions.h"],
+    deps = [":autogen_rule"],
     visibility = ["//visibility:public"],
 )
 
-
-# This is stupid, figure out how to configure multiple outputs
-# genrule(
-#     name = "autogen_rule_cc",
-#     srcs = ["//models/unitree_go2:unitree_go2"],
-#     tools = [":autogen"],
-#     outs = ["equality_constraint_function.cc"],
-#     cmd = "$(location :autogen) $@",
-# )
-# genrule(
-#     name = "autogen_rule_h",
-#     srcs = ["//models/unitree_go2:unitree_go2"],
-#     tools = [":autogen"],
-#     outs = ["equality_constraint_function.h"],
-#     cmd = "./$(location :autogen) > \"$@\"",
-# )
-
-# cc_library(
-#     name = "autogen_lib",
-#     srcs = ["equality_constraint_function.cc"],
-#     hdrs = ["equality_constraint_function.h"],
-#     deps = [":autogen_rule_cc", ":autogen_rule_h"],
-#     alwayslink = True,
-#     visibility = ["//visibility:public"],
-# )
+cc_library(
+    name = "autogen_defines_cc",
+    srcs = ["autogen_defines.h"],
+    deps = [":autogen_rule"],
+    visibility = ["//visibility:public"],
+)

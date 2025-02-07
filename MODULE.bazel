@@ -34,6 +34,8 @@ bazel_dep(name = "rules_python", version = "1.0.0")
 # Pybind11:
 bazel_dep(name = "pybind11_bazel", version = "2.13.6")
 
+bazel_dep(name = "bazel_skylib", version = "1.7.1")
+
 # Hedron's Compile Commands Extractor for Bazel
 # https://github.com/hedronvision/bazel-compile-commands-extractor
 bazel_dep(name = "hedron_compile_commands", dev_dependency = True)

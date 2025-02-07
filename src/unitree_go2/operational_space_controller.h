@@ -55,10 +55,7 @@ class OperationalSpaceController {
         OSCData get_data(Matrix& points) {
             // Mass Matrix:
             Matrix mass_matrix = Matrix::Zero(model->nv, model->nv);
-            // double *mass_matrix_data = mass_matrix.data();
             mj_fullM(model, mass_matrix.data(), data->qM);
-            // mj_fullM(model, mass_matrix_data, data->qM);
-            // mass_matrix = MapMatrix(mass_matrix_data, model->nv, model->nv);
 
             // Coriolis Matrix:
             Matrix coriolis_matrix = Eigen::Map<Eigen::VectorXd>(data->qfrc_bias, model->nv);
@@ -79,24 +76,11 @@ class OperationalSpaceController {
                 Matrix jacp_dot = Matrix::Zero(3, model->nv);
                 Matrix jacr_dot = Matrix::Zero(3, model->nv);
 
-                // Points Data:
-                // double* point_data = points.row(i).data();
-
                 // Calculate Jacobian:
-                // double *jacp_data = jacp.data();
-                // double *jacr_data = jacr.data();
                 mj_jac(model, data, jacp.data(), jacr.data(), points.row(i).data(), body_ids[i]);
-                // mj_jac(model, data, jacp_data, jacr_data, point_data, body_ids[i]);
-                // jacp = MapMatrix(jacp_data, 3, model->nv);
-                // jacr = MapMatrix(jacr_data, 3, model->nv);
 
                 // Calculate Jacobian Dot:
-                // double *jacp_dot_data = jacp_dot.data();
-                // double *jacr_dot_data = jacr_dot.data();
                 mj_jacDot(model, data, jacp_dot.data(), jacr_dot.data(), points.row(i).data(), body_ids[i]);
-                // mj_jacDot(model, data, jacp_dot_data, jacr_dot_data, point_data, body_ids[i]);
-                // jacp_dot = MapMatrix(jacp_dot_data, 3, model->nv);
-                // jacr_dot = MapMatrix(jacr_dot_data, 3, model->nv);
 
                 // Append to Jacobian Matrices:
                 int row_offset = i * 3;
