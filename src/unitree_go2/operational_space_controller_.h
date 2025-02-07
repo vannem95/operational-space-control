@@ -19,6 +19,9 @@ namespace {
     constexpr int p_size = 3 * model::body_ids_size;
     // r_size : Size of rotation component to a spatial vector:
     constexpr int r_size = 3 * model::body_ids_size;
+
+    template <int Rows_, int Cols_>
+    using Matrix = Eigen::Matrix<double, Rows_, Cols_, Eigen::RowMajor>;
 }
 
 struct OSCData {
@@ -82,14 +85,14 @@ class OperationalSpaceController {
                 Eigen::Map<Eigen::Vector<double, model::nv_size>>(mj_data->qvel);
 
             // Jacobian Calculation:
-            Eigen::Matrix<double, p_size, model::nv_size> jacobian_translation = 
-                Eigen::Matrix<double, p_size, model::nv_size>::Zero();
-            Eigen::Matrix<double, r_size, model::nv_size> jacobian_rotation = 
-                Eigen::Matrix<double, r_size, model::nv_size>::Zero();
-            Eigen::Matrix<double, p_size, model::nv_size> jacobian_dot_translation = 
-                Eigen::Matrix<double, p_size, model::nv_size>::Zero();
-            Eigen::Matrix<double, r_size, model::nv_size> jacobian_dot_rotation = 
-                Eigen::Matrix<double, r_size, model::nv_size>::Zero();
+            Eigen::Matrix<double, p_size, model::nv_size, Eigen::RowMajor> jacobian_translation = 
+                Eigen::Matrix<double, p_size, model::nv_size, Eigen::RowMajor>::Zero();
+            Eigen::Matrix<double, r_size, model::nv_size, Eigen::RowMajor> jacobian_rotation = 
+                Eigen::Matrix<double, r_size, model::nv_size, Eigen::RowMajor>::Zero();
+            Eigen::Matrix<double, p_size, model::nv_size, Eigen::RowMajor> jacobian_dot_translation = 
+                Eigen::Matrix<double, p_size, model::nv_size, Eigen::RowMajor>::Zero();
+            Eigen::Matrix<double, r_size, model::nv_size, Eigen::RowMajor> jacobian_dot_rotation = 
+                Eigen::Matrix<double, r_size, model::nv_size, Eigen::RowMajor>::Zero();
             for (int i = 0; i < model::body_ids_size; i++) {
                 // Temporary Jacobian Matrices:
                 Eigen::Matrix<double, 3, model::nv_size> jacp = Eigen::Matrix<double, 3, model::nv_size>::Zero();
@@ -116,7 +119,7 @@ class OperationalSpaceController {
             }
 
             // Stack Jacobian Matrices: Taskspace Jacobian: [jacp; jacr], Jacobian Dot: [jacp_dot; jacr_dot]
-            Matrix taskspace_jacobian = Matrix::Zero(num_body_ids * 6, mj_model->nv);
+            Eigen::Matrix<double, > taskspace_jacobian = Matrix::Zero(num_body_ids * 6, mj_model->nv);
             Matrix jacobian_dot = Matrix::Zero(num_body_ids * 6, mj_model->nv);
             int row_offset = num_body_ids * 3;
             for(int row_idx = 0; row_idx < num_body_ids * 3; row_idx++) {
