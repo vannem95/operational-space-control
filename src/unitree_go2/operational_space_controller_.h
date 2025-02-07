@@ -22,17 +22,20 @@ namespace {
 
     template <int Rows_, int Cols_>
     using Matrix = Eigen::Matrix<double, Rows_, Cols_, Eigen::RowMajor>;
+
+    template <int Rows_>
+    using Vector = Eigen::Matrix<double, Rows_, 1>;
 }
 
 struct OSCData {
-    Eigen::Matrix<double, model::nv_size, model::nv_size, Eigen::RowMajor> mass_matrix;    
-    Eigen::Vector<double, model::nv_size> coriolis_matrix;
-    Eigen::Matrix<double, model::nv_size, optimization::z_size, Eigen::RowMajor> contact_jacobian;
-    Eigen::Matrix<double, s_size, s_size, Eigen::RowMajor> taskspace_jacobian;
-    Eigen::Matrix<double, model::body_ids_size, 6, Eigen::RowMajor> taskspace_bias;
-    Eigen::Vector<double, model::contact_site_ids_size> contact_mask;
-    Eigen::Vector<double, model::nq_size> previous_q;
-    Eigen::Vector<double, model::nv_size> previous_qd;
+    Matrix<model::nv_size, model::nv_size> mass_matrix;    
+    Vector<model::nv_size> coriolis_matrix;
+    Matrix<model::nv_size, optimization::z_size> contact_jacobian;
+    Matrix<s_size, s_size> taskspace_jacobian;
+    Matrix<model::body_ids_size, 6> taskspace_bias;
+    Vector<model::contact_site_ids_size> contact_mask;
+    Vector<model::nq_size> previous_q;
+    Vector<model::nv_size> previous_qd;
 };
 
 class OperationalSpaceController {
@@ -68,37 +71,37 @@ class OperationalSpaceController {
             mj_deleteModel(mj_model);
         }
 
-        OSCData get_data(Eigen::Matrix<double, model::body_ids_size, 3>& points) {
+        OSCData get_data(Eigen::Matrix<double, model::body_ids_size, 3, Eigen::RowMajor>& points) {
             // Mass Matrix:
-            Eigen::Matrix<double, model::nv_size, model::nv_size, Eigen::RowMajor> mass_matrix = 
-                Eigen::Matrix<double, model::nv_size, model::nv_size, Eigen::RowMajor>::Zero();
+            Matrix<model::nv_size, model::nv_size> mass_matrix = 
+                Matrix<model::nv_size, model::nv_size>::Zero();
             mj_fullM(mj_model, mass_matrix.data(), mj_data->qM);
 
             // Coriolis Matrix:
-            Eigen::Vector<double, model::nv_size> coriolis_matrix = 
-                Eigen::Map<Eigen::Vector<double, model::nv_size>>(mj_data->qfrc_bias);
+            Vector<model::nv_size> coriolis_matrix = 
+                Eigen::Map<Vector<model::nv_size>>(mj_data->qfrc_bias);
 
             // Generalized Positions and Velocities:
-            Eigen::Vector<double, model::nq_size> generalized_positions = 
-                Eigen::Map<Eigen::Vector<double, model::nq_size> >(mj_data->qpos);
-            Eigen::Vector<double, model::nv_size> generalized_velocities = 
-                Eigen::Map<Eigen::Vector<double, model::nv_size>>(mj_data->qvel);
+            Vector<model::nq_size> generalized_positions = 
+                Eigen::Map<Vector<model::nq_size> >(mj_data->qpos);
+            Vector<model::nv_size> generalized_velocities = 
+                Eigen::Map<Vector<model::nv_size>>(mj_data->qvel);
 
             // Jacobian Calculation:
-            Eigen::Matrix<double, p_size, model::nv_size, Eigen::RowMajor> jacobian_translation = 
-                Eigen::Matrix<double, p_size, model::nv_size, Eigen::RowMajor>::Zero();
-            Eigen::Matrix<double, r_size, model::nv_size, Eigen::RowMajor> jacobian_rotation = 
-                Eigen::Matrix<double, r_size, model::nv_size, Eigen::RowMajor>::Zero();
-            Eigen::Matrix<double, p_size, model::nv_size, Eigen::RowMajor> jacobian_dot_translation = 
-                Eigen::Matrix<double, p_size, model::nv_size, Eigen::RowMajor>::Zero();
-            Eigen::Matrix<double, r_size, model::nv_size, Eigen::RowMajor> jacobian_dot_rotation = 
-                Eigen::Matrix<double, r_size, model::nv_size, Eigen::RowMajor>::Zero();
+            Matrix<p_size, model::nv_size> jacobian_translation = 
+                Matrix<p_size, model::nv_size>::Zero();
+            Matrix<r_size, model::nv_size> jacobian_rotation = 
+                Matrix<r_size, model::nv_size>::Zero();
+            Matrix<p_size, model::nv_size> jacobian_dot_translation = 
+                Matrix<p_size, model::nv_size>::Zero();
+            Matrix<r_size, model::nv_size> jacobian_dot_rotation = 
+                Matrix<r_size, model::nv_size>::Zero();
             for (int i = 0; i < model::body_ids_size; i++) {
                 // Temporary Jacobian Matrices:
-                Eigen::Matrix<double, 3, model::nv_size> jacp = Eigen::Matrix<double, 3, model::nv_size>::Zero();
-                Eigen::Matrix<double, 3, model::nv_size> jacr = Eigen::Matrix<double, 3, model::nv_size>::Zero();
-                Eigen::Matrix<double, 3, model::nv_size> jacp_dot = Eigen::Matrix<double, 3, model::nv_size>::Zero();
-                Eigen::Matrix<double, 3, model::nv_size> jacr_dot = Eigen::Matrix<double, 3, model::nv_size>::Zero();
+                Matrix<3, model::nv_size> jacp = Matrix<3, model::nv_size>::Zero();
+                Matrix<3, model::nv_size> jacr = Matrix<3, model::nv_size>::Zero();
+                Matrix<3, model::nv_size> jacp_dot = Matrix<3, model::nv_size>::Zero();
+                Matrix<3, model::nv_size> jacr_dot = Matrix<3, model::nv_size>::Zero();
 
                 // Calculate Jacobian:
                 mj_jac(mj_model, mj_data, jacp.data(), jacr.data(), points.row(i).data(), body_ids[i]);
@@ -109,7 +112,7 @@ class OperationalSpaceController {
                 // Append to Jacobian Matrices:
                 int row_offset = i * 3;
                 for(int row_idx = 0; row_idx < 3; row_idx++) {
-                    for(int col_idx = 0; col_idx < mj_model->nv; col_idx++) {
+                    for(int col_idx = 0; col_idx < model::nv_size; col_idx++) {
                         jacobian_translation(row_idx + row_offset, col_idx) = jacp(row_idx, col_idx);
                         jacobian_rotation(row_idx + row_offset, col_idx) = jacr(row_idx, col_idx);
                         jacobian_dot_translation(row_idx + row_offset, col_idx) = jacp_dot(row_idx, col_idx);
@@ -119,11 +122,11 @@ class OperationalSpaceController {
             }
 
             // Stack Jacobian Matrices: Taskspace Jacobian: [jacp; jacr], Jacobian Dot: [jacp_dot; jacr_dot]
-            Eigen::Matrix<double, > taskspace_jacobian = Matrix::Zero(num_body_ids * 6, mj_model->nv);
-            Matrix jacobian_dot = Matrix::Zero(num_body_ids * 6, mj_model->nv);
-            int row_offset = num_body_ids * 3;
-            for(int row_idx = 0; row_idx < num_body_ids * 3; row_idx++) {
-                for(int col_idx = 0; col_idx < mj_model->nv; col_idx++) {
+            Matrix<s_size, model::nv_size> taskspace_jacobian = Matrix<s_size, model::nv_size>::Zero();
+            Matrix<s_size, model::nv_size> jacobian_dot = Matrix<s_size, model::nv_size>::Zero();
+            int row_offset = model::body_ids_size * 3;
+            for(int row_idx = 0; row_idx < model::body_ids_size * 3; row_idx++) {
+                for(int col_idx = 0; col_idx < model::nv_size; col_idx++) {
                     taskspace_jacobian(row_idx, col_idx) = jacobian_translation(row_idx, col_idx);
                     taskspace_jacobian(row_idx + row_offset, col_idx) = jacobian_rotation(row_idx, col_idx);
                     jacobian_dot(row_idx, col_idx) = jacobian_dot_translation(row_idx, col_idx);
@@ -132,21 +135,25 @@ class OperationalSpaceController {
             }
 
             // Calculate Taskspace Bias Acceleration:
-            Matrix bias = Matrix::Zero(num_body_ids * 6, 1);
+            Vector<s_size> bias = Vector<s_size>::Zero();
             bias = jacobian_dot * generalized_velocities;
             // Reshape leading axis -> num_body_ids x 6
-            Matrix taskspace_bias = bias.reshaped<Eigen::RowMajor>(num_body_ids, 6);
+            Matrix<model::body_ids_size, 6> taskspace_bias = bias.reshaped<Eigen::RowMajor>(model::body_ids_size, 6);
 
             // Contact Jacobian: Shape (NV, 3 * num_contacts) 
-            // TODO(jeh15): This assumes the contact frames come directly after the body frame...
-            Matrix contact_jacobian = Matrix::Zero(mj_model->nv, num_contacts * 3);
-            contact_jacobian = taskspace_jacobian(Eigen::seqN(3, num_contacts * 3), Eigen::placeholders::all)
-                .transpose();
+            // This assumes contact frames are the last rows of the taskspace_jacobian.
+            // contact_jacobian = taskspace_jacobian[end-contact_site_ids_size:end, :].T
+            Matrix<model::nv_size, optimization::z_size> contact_jacobian = 
+                Matrix<model::nv_size, optimization::z_size>::Zero();
+            contact_jacobian = taskspace_jacobian(
+                Eigen::seq(Eigen::placeholders::last - Eigen::fix<model::contact_site_ids_size>, Eigen::placeholders::last),
+                Eigen::placeholders::all
+            ).transpose();
 
             // Contact Mask: Shape (num_contacts, 1)
-            Eigen::VectorXd contact_mask = Eigen::VectorXd::Zero(num_contacts);
+            Vector<model::contact_site_ids_size> contact_mask = Vector<model::contact_site_ids_size>::Zero();
             double contact_threshold = 1e-3;
-            for(int i = 0; i < num_contacts; i++) {
+            for(int i = 0; i < model::contact_site_ids_size; i++) {
                 auto contact = mj_data->contact[i];
                 contact_mask(i) = contact.dist < contact_threshold;
             }
@@ -169,15 +176,9 @@ class OperationalSpaceController {
         public:
             mjModel* mj_model;
             mjData* mj_data;
-            std::vector<std::string> sites = {
-                "imu", "front_left_foot", "front_right_foot", "hind_left_foot", "hind_right_foot"
-            };
-            std::vector<std::string> bodies = {
-                "base_link", "front_left_calf", "front_right_calf", "hind_left_calf", "hind_right_calf"
-            };
+            std::vector<std::string> sites;
+            std::vector<std::string> bodies;
             std::vector<int> site_ids;
             std::vector<int> body_ids;
-            int num_body_ids;
-            const int num_contacts = 4; // num_contacts should match the number of sites intended to be used as contact points and preferably the xml is setup such that mj_data->ncon also equals this value.
 
 };

@@ -11,7 +11,7 @@ int main(int argc, char** argv) {
     // Test Template Alias:
     Matrix<3, 3> A = Matrix<3, 3>::Zero();
 
-    std::cout < A << std::endl;
+    std::cout << A << std::endl;
 
     return 0;
 }

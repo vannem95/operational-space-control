@@ -20,3 +20,12 @@ cc_binary(
     ],
     visibility = ["//visibility:public"],
 )
+
+cc_binary(
+    name = "eigen_test",
+    srcs = ["eigen_test.cc"],
+    deps = [
+        "@eigen//:eigen",
+    ],
+    visibility = ["//visibility:public"],
+)
