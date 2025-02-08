@@ -31,7 +31,7 @@ struct OSCData {
     Vector<model::nv_size> coriolis_matrix;
     Matrix<model::nv_size, optimization::z_size> contact_jacobian;
     Matrix<s_size, model::nv_size> taskspace_jacobian;
-    Matrix<model::body_ids_size, 6> taskspace_bias;
+    Vector<s_size> taskspace_bias;
     Vector<model::contact_site_ids_size> contact_mask;
     Vector<model::nq_size> previous_q;
     Vector<model::nv_size> previous_qd;
@@ -155,10 +155,8 @@ class OperationalSpaceController {
             }
 
             // Calculate Taskspace Bias Acceleration:
-            Vector<s_size> bias = Vector<s_size>::Zero();
-            bias = jacobian_dot * generalized_velocities;
-            // Reshape leading axis -> num_body_ids x 6
-            Matrix<model::body_ids_size, 6> taskspace_bias = bias.reshaped<Eigen::RowMajor>(model::body_ids_size, 6);
+            Vector<s_size> taskspace_bias = Vector<s_size>::Zero();
+            taskspace_bias = jacobian_dot * generalized_velocities;
 
             // Contact Jacobian: Shape (NV, 3 * num_contacts) 
             // This assumes contact frames are the last rows of the translation component of the taskspace_jacobian (jacobian_translation).
