@@ -7,8 +7,7 @@
 #include "mujoco/mujoco.h"
 #include "Eigen/Dense"
 
-#include "src/unitree_go2/operational_space_controller.h"
-#include "src/utilities.h"
+#include "src/unitree_go2/operational_space_controller_.h"
 
 #include "src/unitree_go2/autogen/autogen_functions.h"
 #include "src/unitree_go2/autogen/autogen_defines.h"
@@ -20,24 +19,27 @@ int main(int argc, char** argv){
     std::filesystem::path xml_path = "models/unitree_go2/scene_mjx_torque.xml";
     osc.initialize(xml_path);
 
-    Eigen::VectorXd q_init =  Eigen::Map<Eigen::VectorXd>(osc.model->key_qpos, constants::model::nq_size);
-    Eigen::VectorXd qd_init =  Eigen::Map<Eigen::VectorXd>(osc.model->key_qvel, constants::model::nv_size);
-    Eigen::VectorXd ctrl =  Eigen::Map<Eigen::VectorXd>(osc.model->key_ctrl, constants::model::nu_size);
+    Eigen::VectorXd q_init =  Eigen::Map<Eigen::VectorXd>(osc.mj_model->key_qpos, constants::model::nq_size);
+    Eigen::VectorXd qd_init =  Eigen::Map<Eigen::VectorXd>(osc.mj_model->key_qvel, constants::model::nv_size);
+    Eigen::VectorXd ctrl =  Eigen::Map<Eigen::VectorXd>(osc.mj_model->key_ctrl, constants::model::nu_size);
 
     // Set initial state:
-    osc.data->qpos = q_init.data();
-    osc.data->qvel = qd_init.data();
-    osc.data->ctrl = ctrl.data();
+    osc.mj_data->qpos = q_init.data();
+    osc.mj_data->qvel = qd_init.data();
+    osc.mj_data->ctrl = ctrl.data();
 
     // Desired Motor States:
-    Eigen::VectorXd q_desired(osc.model->nu);
+    Eigen::VectorXd q_desired(osc.mj_model->nu);
     q_desired << 0, 0.9, -1.8, 0, 0.9, -1.8, 0, 0.9, -1.8, 0, 0.9, -1.8;
     Eigen::VectorXd qd_desired = Eigen::VectorXd::Zero(q_desired.size());
 
-    mj_forward(osc.model, osc.data);
+    mj_forward(osc.mj_model, osc.mj_data);
 
-    Matrix points = Matrix::Zero(constants::model::site_ids_size, 3);
-    points = MapMatrix(osc.data->site_xpos, constants::model::site_ids_size, 3);
+    Eigen::Matrix<double, constants::model::site_ids_size, 3, Eigen::RowMajor> points = 
+        Eigen::Matrix<double, constants::model::site_ids_size, 3, Eigen::RowMajor>::Zero();
+    points = Eigen::Map<Eigen::Matrix<double, constants::model::site_ids_size, 3, Eigen::RowMajor>>(
+        osc.mj_data->site_xpos
+    );
     OSCData osc_data = osc.get_data(points);
 
     Eigen::VectorXd design_vector = Eigen::VectorXd::Zero(constants::optimization::design_vector_size);

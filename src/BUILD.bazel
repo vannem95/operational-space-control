@@ -1,14 +1,5 @@
 package(default_visibility = ["//visibility:public"])
 
-cc_library(
-    name = "utilities",
-    srcs = ["utilities.h"],
-    deps = [
-        "@eigen//:eigen",
-    ],
-    visibility = ["//visibility:public"],
-)
-
 cc_binary(
     name = "main",
     srcs = ["main.cc"],
@@ -25,6 +16,7 @@ cc_binary(
     name = "eigen_test",
     srcs = ["eigen_test.cc"],
     deps = [
+        "//src/unitree_go2/autogen:autogen_defines_cc",
         "@eigen//:eigen",
     ],
     visibility = ["//visibility:public"],

@@ -1,8 +1,7 @@
 cc_library(
     name = "operational-space-controller",
-    srcs = ["operational_space_controller.h"],
+    srcs = ["operational_space_controller_.h"],
     deps = [
-        "//src:utilities",
         "@mujoco-bazel//:mujoco",
         "@eigen//:eigen",
     ],
@@ -44,7 +43,6 @@ cc_binary(
     deps = [
         "//src/unitree_go2/autogen:autogen_functions_cc",
         "//src/unitree_go2/autogen:autogen_defines_cc",
-        "//src:utilities",
         ":operational-space-controller",
         "@mujoco-bazel//:mujoco",
         "@eigen//:eigen",

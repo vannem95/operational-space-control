@@ -6,7 +6,6 @@
 #include "mujoco/mujoco.h"
 #include "Eigen/Dense"
 
-#include "src/utilities.h"
 #include "src/unitree_go2/autogen/autogen_defines.h"
 
 using namespace constants;
@@ -31,7 +30,7 @@ struct OSCData {
     Matrix<model::nv_size, model::nv_size> mass_matrix;    
     Vector<model::nv_size> coriolis_matrix;
     Matrix<model::nv_size, optimization::z_size> contact_jacobian;
-    Matrix<s_size, s_size> taskspace_jacobian;
+    Matrix<s_size, model::nv_size> taskspace_jacobian;
     Matrix<model::body_ids_size, 6> taskspace_bias;
     Vector<model::contact_site_ids_size> contact_mask;
     Vector<model::nq_size> previous_q;
@@ -55,15 +54,36 @@ class OperationalSpaceController {
             
             mj_data = mj_makeData(mj_model);
 
-            for(const std::string& site : sites){
-                site_ids.push_back(mj_name2id(mj_model, mjOBJ_SITE, site.c_str()));
+            for(const std::string_view& site : model::site_list) {
+                std::string site_str = std::string(site);
+                int id = mj_name2id(mj_model, mjOBJ_SITE, site_str.data());
+                assert(id != -1 && "Site not found in model.");
+                sites.push_back(site_str);
+                site_ids.push_back(id);
             }
-            for(const std::string& body : bodies){
-                body_ids.push_back(mj_name2id(mj_model, mjOBJ_BODY, body.c_str()));
+            for(const std::string_view& site : model::noncontact_site_list) {
+                std::string site_str = std::string(site);
+                int id = mj_name2id(mj_model, mjOBJ_SITE, site_str.data());
+                assert(id != -1 && "Site not found in model.");
+                noncontact_sites.push_back(site_str);
+                noncontact_site_ids.push_back(id);
+            }
+            for(const std::string_view& site : model::contact_site_list) {
+                std::string site_str = std::string(site);
+                int id = mj_name2id(mj_model, mjOBJ_SITE, site_str.data());
+                assert(id != -1 && "Site not found in model.");
+                contact_sites.push_back(site_str);
+                contact_site_ids.push_back(id);
+            }
+            for(const std::string_view& body : model::body_list) {
+                std::string body_str = std::string(body);
+                int id = mj_name2id(mj_model, mjOBJ_BODY, body_str.data());
+                assert(id != -1 && "Body not found in model.");
+                bodies.push_back(body_str);
+                body_ids.push_back(id);
             }
             // Assert Number of Sites and Bodies are equal:
             assert(site_ids.size() == body_ids.size() && "Number of Sites and Bodies must be equal.");
-            num_body_ids = body_ids.size();
         }
 
         void close() {
@@ -141,12 +161,13 @@ class OperationalSpaceController {
             Matrix<model::body_ids_size, 6> taskspace_bias = bias.reshaped<Eigen::RowMajor>(model::body_ids_size, 6);
 
             // Contact Jacobian: Shape (NV, 3 * num_contacts) 
-            // This assumes contact frames are the last rows of the taskspace_jacobian.
-            // contact_jacobian = taskspace_jacobian[end-contact_site_ids_size:end, :].T
+            // This assumes contact frames are the last rows of the translation component of the taskspace_jacobian (jacobian_translation).
+            // contact_jacobian = jacobian_translation[end-(3 * contact_site_ids_size):end, :].T
             Matrix<model::nv_size, optimization::z_size> contact_jacobian = 
                 Matrix<model::nv_size, optimization::z_size>::Zero();
-            contact_jacobian = taskspace_jacobian(
-                Eigen::seq(Eigen::placeholders::last - Eigen::fix<model::contact_site_ids_size>, Eigen::placeholders::last),
+
+            contact_jacobian = jacobian_translation(
+                Eigen::seq(Eigen::placeholders::end - Eigen::fix<optimization::z_size>, Eigen::placeholders::last),
                 Eigen::placeholders::all
             ).transpose();
 
@@ -178,7 +199,11 @@ class OperationalSpaceController {
             mjData* mj_data;
             std::vector<std::string> sites;
             std::vector<std::string> bodies;
+            std::vector<std::string> noncontact_sites;
+            std::vector<std::string> contact_sites;
             std::vector<int> site_ids;
+            std::vector<int> noncontact_site_ids;
+            std::vector<int> contact_site_ids;
             std::vector<int> body_ids;
 
 };
