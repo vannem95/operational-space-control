@@ -6,17 +6,35 @@
 #include "mujoco/mujoco.h"
 #include "Eigen/Dense"
 
-#include "src/utilities.h"
+#include "src/unitree_go2/autogen/autogen_defines.h"
+
+using namespace constants;
+
+// Anonymous Namespace for shorthand constants:
+namespace {
+    // s_size : Size of fully spatial vector representation for all bodies
+    constexpr int s_size = 6 * model::body_ids_size;
+    // p_size : Size of translation component to a spatial vector:
+    constexpr int p_size = 3 * model::body_ids_size;
+    // r_size : Size of rotation component to a spatial vector:
+    constexpr int r_size = 3 * model::body_ids_size;
+
+    template <int Rows_, int Cols_>
+    using Matrix = Eigen::Matrix<double, Rows_, Cols_, Eigen::RowMajor>;
+
+    template <int Rows_>
+    using Vector = Eigen::Matrix<double, Rows_, 1>;
+}
 
 struct OSCData {
-    Matrix mass_matrix;    
-    Eigen::VectorXd coriolis_matrix;
-    Matrix contact_jacobian;
-    Matrix taskspace_jacobian;
-    Matrix taskspace_bias;
-    Eigen::VectorXd contact_mask;
-    Eigen::VectorXd previous_q;
-    Eigen::VectorXd previous_qd;
+    Matrix<model::nv_size, model::nv_size> mass_matrix;    
+    Vector<model::nv_size> coriolis_matrix;
+    Matrix<model::nv_size, optimization::z_size> contact_jacobian;
+    Matrix<s_size, model::nv_size> taskspace_jacobian;
+    Matrix<model::body_ids_size, 6> taskspace_bias;
+    Vector<model::contact_site_ids_size> contact_mask;
+    Vector<model::nq_size> previous_q;
+    Vector<model::nv_size> previous_qd;
 };
 
 class OperationalSpaceController {
@@ -26,66 +44,95 @@ class OperationalSpaceController {
 
         void initialize(std::filesystem::path xml_path) {
             char error[1000];
-            model = mj_loadXML(xml_path.c_str(), nullptr, error, 1000);
-            if( !model ) {
+            mj_model = mj_loadXML(xml_path.c_str(), nullptr, error, 1000);
+            if( !mj_model ) {
                 printf("%s\n", error);
                 std::exit(EXIT_FAILURE);
             }
             // Physics timestep:
-            model->opt.timestep = 0.002;
+            mj_model->opt.timestep = 0.002;
             
-            data = mj_makeData(model);
+            mj_data = mj_makeData(mj_model);
 
-            for(const std::string& site : sites){
-                site_ids.push_back(mj_name2id(model, mjOBJ_SITE, site.c_str()));
+            for(const std::string_view& site : model::site_list) {
+                std::string site_str = std::string(site);
+                int id = mj_name2id(mj_model, mjOBJ_SITE, site_str.data());
+                assert(id != -1 && "Site not found in model.");
+                sites.push_back(site_str);
+                site_ids.push_back(id);
             }
-            for(const std::string& body : bodies){
-                body_ids.push_back(mj_name2id(model, mjOBJ_BODY, body.c_str()));
+            for(const std::string_view& site : model::noncontact_site_list) {
+                std::string site_str = std::string(site);
+                int id = mj_name2id(mj_model, mjOBJ_SITE, site_str.data());
+                assert(id != -1 && "Site not found in model.");
+                noncontact_sites.push_back(site_str);
+                noncontact_site_ids.push_back(id);
+            }
+            for(const std::string_view& site : model::contact_site_list) {
+                std::string site_str = std::string(site);
+                int id = mj_name2id(mj_model, mjOBJ_SITE, site_str.data());
+                assert(id != -1 && "Site not found in model.");
+                contact_sites.push_back(site_str);
+                contact_site_ids.push_back(id);
+            }
+            for(const std::string_view& body : model::body_list) {
+                std::string body_str = std::string(body);
+                int id = mj_name2id(mj_model, mjOBJ_BODY, body_str.data());
+                assert(id != -1 && "Body not found in model.");
+                bodies.push_back(body_str);
+                body_ids.push_back(id);
             }
             // Assert Number of Sites and Bodies are equal:
             assert(site_ids.size() == body_ids.size() && "Number of Sites and Bodies must be equal.");
-            num_body_ids = body_ids.size();
         }
 
         void close() {
-            mj_deleteData(data);
-            mj_deleteModel(model);
+            mj_deleteData(mj_data);
+            mj_deleteModel(mj_model);
         }
 
-        OSCData get_data(Matrix& points) {
+        OSCData get_data(Eigen::Matrix<double, model::body_ids_size, 3, Eigen::RowMajor>& points) {
             // Mass Matrix:
-            Matrix mass_matrix = Matrix::Zero(model->nv, model->nv);
-            mj_fullM(model, mass_matrix.data(), data->qM);
+            Matrix<model::nv_size, model::nv_size> mass_matrix = 
+                Matrix<model::nv_size, model::nv_size>::Zero();
+            mj_fullM(mj_model, mass_matrix.data(), mj_data->qM);
 
             // Coriolis Matrix:
-            Matrix coriolis_matrix = Eigen::Map<Eigen::VectorXd>(data->qfrc_bias, model->nv);
+            Vector<model::nv_size> coriolis_matrix = 
+                Eigen::Map<Vector<model::nv_size>>(mj_data->qfrc_bias);
 
-            // Joint Position and Velocity:
-            Eigen::VectorXd joint_position = Eigen::Map<Eigen::VectorXd>(data->qpos, model->nq);
-            Eigen::VectorXd joint_velocity = Eigen::Map<Eigen::VectorXd>(data->qvel, model->nv);
+            // Generalized Positions and Velocities:
+            Vector<model::nq_size> generalized_positions = 
+                Eigen::Map<Vector<model::nq_size> >(mj_data->qpos);
+            Vector<model::nv_size> generalized_velocities = 
+                Eigen::Map<Vector<model::nv_size>>(mj_data->qvel);
 
             // Jacobian Calculation:
-            Matrix jacobian_translation = Matrix::Zero(num_body_ids * 3, model->nv);
-            Matrix jacobian_rotation = Matrix::Zero(num_body_ids * 3, model->nv);
-            Matrix jacobian_dot_translation = Matrix::Zero(num_body_ids * 3, model->nv);
-            Matrix jacobian_dot_rotation = Matrix::Zero(num_body_ids * 3, model->nv);
-            for (int i = 0; i < num_body_ids; i++) {
+            Matrix<p_size, model::nv_size> jacobian_translation = 
+                Matrix<p_size, model::nv_size>::Zero();
+            Matrix<r_size, model::nv_size> jacobian_rotation = 
+                Matrix<r_size, model::nv_size>::Zero();
+            Matrix<p_size, model::nv_size> jacobian_dot_translation = 
+                Matrix<p_size, model::nv_size>::Zero();
+            Matrix<r_size, model::nv_size> jacobian_dot_rotation = 
+                Matrix<r_size, model::nv_size>::Zero();
+            for (int i = 0; i < model::body_ids_size; i++) {
                 // Temporary Jacobian Matrices:
-                Matrix jacp = Matrix::Zero(3, model->nv);
-                Matrix jacr = Matrix::Zero(3, model->nv);
-                Matrix jacp_dot = Matrix::Zero(3, model->nv);
-                Matrix jacr_dot = Matrix::Zero(3, model->nv);
+                Matrix<3, model::nv_size> jacp = Matrix<3, model::nv_size>::Zero();
+                Matrix<3, model::nv_size> jacr = Matrix<3, model::nv_size>::Zero();
+                Matrix<3, model::nv_size> jacp_dot = Matrix<3, model::nv_size>::Zero();
+                Matrix<3, model::nv_size> jacr_dot = Matrix<3, model::nv_size>::Zero();
 
                 // Calculate Jacobian:
-                mj_jac(model, data, jacp.data(), jacr.data(), points.row(i).data(), body_ids[i]);
+                mj_jac(mj_model, mj_data, jacp.data(), jacr.data(), points.row(i).data(), body_ids[i]);
 
                 // Calculate Jacobian Dot:
-                mj_jacDot(model, data, jacp_dot.data(), jacr_dot.data(), points.row(i).data(), body_ids[i]);
+                mj_jacDot(mj_model, mj_data, jacp_dot.data(), jacr_dot.data(), points.row(i).data(), body_ids[i]);
 
                 // Append to Jacobian Matrices:
                 int row_offset = i * 3;
                 for(int row_idx = 0; row_idx < 3; row_idx++) {
-                    for(int col_idx = 0; col_idx < model->nv; col_idx++) {
+                    for(int col_idx = 0; col_idx < model::nv_size; col_idx++) {
                         jacobian_translation(row_idx + row_offset, col_idx) = jacp(row_idx, col_idx);
                         jacobian_rotation(row_idx + row_offset, col_idx) = jacr(row_idx, col_idx);
                         jacobian_dot_translation(row_idx + row_offset, col_idx) = jacp_dot(row_idx, col_idx);
@@ -95,11 +142,11 @@ class OperationalSpaceController {
             }
 
             // Stack Jacobian Matrices: Taskspace Jacobian: [jacp; jacr], Jacobian Dot: [jacp_dot; jacr_dot]
-            Matrix taskspace_jacobian = Matrix::Zero(num_body_ids * 6, model->nv);
-            Matrix jacobian_dot = Matrix::Zero(num_body_ids * 6, model->nv);
-            int row_offset = num_body_ids * 3;
-            for(int row_idx = 0; row_idx < num_body_ids * 3; row_idx++) {
-                for(int col_idx = 0; col_idx < model->nv; col_idx++) {
+            Matrix<s_size, model::nv_size> taskspace_jacobian = Matrix<s_size, model::nv_size>::Zero();
+            Matrix<s_size, model::nv_size> jacobian_dot = Matrix<s_size, model::nv_size>::Zero();
+            int row_offset = model::body_ids_size * 3;
+            for(int row_idx = 0; row_idx < model::body_ids_size * 3; row_idx++) {
+                for(int col_idx = 0; col_idx < model::nv_size; col_idx++) {
                     taskspace_jacobian(row_idx, col_idx) = jacobian_translation(row_idx, col_idx);
                     taskspace_jacobian(row_idx + row_offset, col_idx) = jacobian_rotation(row_idx, col_idx);
                     jacobian_dot(row_idx, col_idx) = jacobian_dot_translation(row_idx, col_idx);
@@ -108,22 +155,27 @@ class OperationalSpaceController {
             }
 
             // Calculate Taskspace Bias Acceleration:
-            Matrix bias = Matrix::Zero(num_body_ids * 6, 1);
-            bias = jacobian_dot * joint_velocity;
+            Vector<s_size> bias = Vector<s_size>::Zero();
+            bias = jacobian_dot * generalized_velocities;
             // Reshape leading axis -> num_body_ids x 6
-            Matrix taskspace_bias = bias.reshaped<Eigen::RowMajor>(num_body_ids, 6);
+            Matrix<model::body_ids_size, 6> taskspace_bias = bias.reshaped<Eigen::RowMajor>(model::body_ids_size, 6);
 
             // Contact Jacobian: Shape (NV, 3 * num_contacts) 
-            // TODO(jeh15): This assumes the contact frames come directly after the body frame...
-            Matrix contact_jacobian = Matrix::Zero(model->nv, num_contacts * 3);
-            contact_jacobian = taskspace_jacobian(Eigen::seqN(3, num_contacts * 3), Eigen::placeholders::all)
-                .transpose();
+            // This assumes contact frames are the last rows of the translation component of the taskspace_jacobian (jacobian_translation).
+            // contact_jacobian = jacobian_translation[end-(3 * contact_site_ids_size):end, :].T
+            Matrix<model::nv_size, optimization::z_size> contact_jacobian = 
+                Matrix<model::nv_size, optimization::z_size>::Zero();
+
+            contact_jacobian = jacobian_translation(
+                Eigen::seq(Eigen::placeholders::end - Eigen::fix<optimization::z_size>, Eigen::placeholders::last),
+                Eigen::placeholders::all
+            ).transpose();
 
             // Contact Mask: Shape (num_contacts, 1)
-            Eigen::VectorXd contact_mask = Eigen::VectorXd::Zero(num_contacts);
+            Vector<model::contact_site_ids_size> contact_mask = Vector<model::contact_site_ids_size>::Zero();
             double contact_threshold = 1e-3;
-            for(int i = 0; i < num_contacts; i++) {
-                auto contact = data->contact[i];
+            for(int i = 0; i < model::contact_site_ids_size; i++) {
+                auto contact = mj_data->contact[i];
                 contact_mask(i) = contact.dist < contact_threshold;
             }
 
@@ -134,8 +186,8 @@ class OperationalSpaceController {
                 .taskspace_jacobian = taskspace_jacobian,
                 .taskspace_bias = taskspace_bias,
                 .contact_mask = contact_mask,
-                .previous_q = joint_position,
-                .previous_qd = joint_velocity  
+                .previous_q = generalized_positions,
+                .previous_qd = generalized_velocities  
             };
 
             return osc_data;
@@ -143,17 +195,15 @@ class OperationalSpaceController {
 
         // Chnage this to private after testing:
         public:
-            mjModel* model;
-            mjData* data;
-            std::vector<std::string> sites = {
-                "imu", "front_left_foot", "front_right_foot", "hind_left_foot", "hind_right_foot"
-            };
-            std::vector<std::string> bodies = {
-                "base_link", "front_left_calf", "front_right_calf", "hind_left_calf", "hind_right_calf"
-            };
+            mjModel* mj_model;
+            mjData* mj_data;
+            std::vector<std::string> sites;
+            std::vector<std::string> bodies;
+            std::vector<std::string> noncontact_sites;
+            std::vector<std::string> contact_sites;
             std::vector<int> site_ids;
+            std::vector<int> noncontact_site_ids;
+            std::vector<int> contact_site_ids;
             std::vector<int> body_ids;
-            int num_body_ids;
-            const int num_contacts = 4; // num_contacts should match the number of sites intended to be used as contact points and preferably the xml is setup such that data->ncon also equals this value.
 
 };

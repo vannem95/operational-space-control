@@ -82,16 +82,6 @@ class AutoGen():
             [-self.equality_constraints(*equality_constraint_input)],
         )
 
-        # No Wrapper:
-        # A_eq_function = casadi.Function(
-        #     "A_eq_function",
-        #     equality_constraint_input,
-        #     [casadi.jacobian(
-        #         self.equality_constraints(*equality_constraint_input),
-        #         design_vector,
-        #     )],
-        # )
-
         # Wrapped with densify:
         A_eq_function = casadi.Function(
             "A_eq_function",

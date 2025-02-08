@@ -7,7 +7,7 @@
 #include "mujoco/mujoco.h"
 #include "Eigen/Dense"
 
-#include "src/unitree_go2/operational_space_controller_.h"
+#include "src/unitree_go2/operational_space_controller.h"
 
 #include "src/unitree_go2/autogen/autogen_functions.h"
 #include "src/unitree_go2/autogen/autogen_defines.h"
