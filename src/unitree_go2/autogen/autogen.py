@@ -98,7 +98,7 @@ class AutoGen():
 
             Friction Cone Constraints:
             |f_x| + |f_y| <= mu * f_z
-        
+
         """
         # Unpack Design Variables:
         dv = q[:self.dv_idx] 
@@ -111,7 +111,7 @@ class AutoGen():
             constraint_3 = x[0] - x[1] - self.mu * x[2]
             constraint_4 = -x[0] - x[1] - self.mu * x[2]
             return casadi.vertcat(constraint_1, constraint_2, constraint_3, constraint_4)
-        
+
         contact_forces = casadi.reshape(z, self.num_contact_site_ids, 3)
 
         inequality_constraints = []
@@ -119,12 +119,12 @@ class AutoGen():
             contact_force = contact_forces[i, :]
             friction_constraints = translational_friction(contact_force)
             inequality_constraints.append(friction_constraints)
-        
+
         inequality_constraints = casadi.vertcat(*inequality_constraints)
 
         return inequality_constraints
 
-        def objective(
+    def objective(
         self,
         q: MX,
         desired_task_ddx: MX,
@@ -321,7 +321,7 @@ class AutoGen():
             "autogen_functions",
         ]
         casadi_functions = [
-            [b_eq_function, A_eq_function, bineq, Aineq, H, f],
+            [beq, Aeq, bineq, Aineq, H, f],
         ]
         loop_iterables = zip(
             filenames,

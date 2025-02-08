@@ -3,7 +3,10 @@ load("@rules_python//python:py_binary.bzl", "py_binary")
 py_binary(
     name = "autogen",
     srcs = ["autogen.py"],
-    data = ["//models/unitree_go2:unitree_go2"],
+    data = [
+        "//models/unitree_go2:unitree_go2",
+        "//config/unitree_go2:unitree_go2_config",
+    ],
     deps = [
         "@pypi//mujoco:pkg",
         "@pypi//casadi:pkg",
