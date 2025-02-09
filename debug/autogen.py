@@ -152,11 +152,13 @@ class AutoGen():
 
         # Split into Translational and Rotational components:
         ddx_task_p, ddx_task_r = casadi.vertsplit_n(ddx_task, 2)
+        ddx_task_p = casadi.reshape(ddx_task_p, self.num_site_ids, 3)
+        ddx_task_r = casadi.reshape(ddx_task_r, self.num_site_ids, 3)
         ddx_base_p, ddx_fl_p, ddx_fr_p, ddx_hl_p, ddx_hr_p = casadi.vertsplit_n(ddx_task_p, self.num_site_ids)
         ddx_base_r, ddx_fl_r, ddx_fr_r, ddx_hl_r, ddx_hr_r = casadi.vertsplit_n(ddx_task_r, self.num_site_ids)
 
         # Split Desired Task Acceleration:
-        desired_task_p, desired_task_r = casadi.vertsplit_n(desired_task_ddx, 2)
+        desired_task_p, desired_task_r = casadi.horzsplit_n(desired_task_ddx, 2)
         desired_base_p, desired_fl_p, desired_fr_p, desired_hl_p, desired_hr_p = casadi.vertsplit_n(desired_task_p, self.num_site_ids)
         desired_base_r, desired_fl_r, desired_fr_r, desired_hl_r, desired_hr_r = casadi.vertsplit_n(desired_task_r, self.num_site_ids)
 
@@ -241,7 +243,7 @@ class AutoGen():
         M = casadi.MX.sym("M", self.dv_size, self.dv_size)
         C = casadi.MX.sym("C", self.dv_size)
         J_contact = casadi.MX.sym("J_contact", self.dv_size, self.z_size)
-        desired_task_ddx = casadi.MX.sym("desired_task_ddx", self.num_site_ids * 6)
+        desired_task_ddx = casadi.MX.sym("desired_task_ddx", self.num_site_ids, 6)
         J_task = casadi.MX.sym("J_task", self.num_site_ids * 6, self.dv_size)
         task_bias = casadi.MX.sym("task_bias", self.num_site_ids * 6)
 
@@ -311,20 +313,56 @@ class AutoGen():
             [casadi.densify(gradient)],
         )
 
-        # Actual Values:
+        beq_size = beq.size_out(0)
+        self.beq_sz = beq_size[0] * beq_size[1]
+        Aeq_size = Aeq.size_out(0)
+        self.Aeq_sz = Aeq_size[0] * Aeq_size[1]
+        self.Aeq_rows = Aeq_size[0]
+        self.Aeq_cols = Aeq_size[1]
+        bineq_size = bineq.size_out(0)
+        self.bineq_sz = bineq_size[0] * bineq_size[1]
+        Aineq_size = Aineq.size_out(0)
+        self.Aineq_sz = Aineq_size[0] * Aineq_size[1]
+        self.Aineq_rows = Aineq_size[0]
+        self.Aineq_cols = Aineq_size[1]
+        H_size = H.size_out(0)
+        self.H_sz = H_size[0] * H_size[1]
+        self.H_rows = H_size[0]
+        self.H_cols = H_size[1]
+        f_size = f.size_out(0)
+        self.f_sz = f_size[0] * f_size[1]
+
+        # Load Test Values:
+        dummy_q = np.zeros(self.dv_size + self.u_size + self.z_size)
         M = np.loadtxt("debug/M.csv", delimiter=",")
         C = np.loadtxt("debug/C.csv", delimiter=",")
-        Jc = np.loadtxt("debug/J.csv", delimiter=",")
-        dummy_q = np.zeros(self.dv_size + self.u_size + self.z_size)
+        Jc = np.loadtxt("debug/Jc.csv", delimiter=",")
+        J = np.loadtxt("debug/J.csv", delimiter=",")
+        b = np.loadtxt("debug/b.csv", delimiter=",")
+        ddx_desired = np.loadtxt("debug/ddx_desired.csv", delimiter=",")
 
-        res = Aeq(dummy_q, M, C, Jc)
-        Apy = res.toarray()
+        # Evaluate Functions:
+        Aeqpy = Aeq(dummy_q, M, C, Jc).toarray()
+        beqpy = beq(dummy_q, M, C, Jc).toarray().flatten()
+        Aineqpy = Aineq(dummy_q).toarray()
+        bineqpy = bineq(dummy_q).toarray().flatten()
+        Hpy = H(dummy_q, ddx_desired, J, b).toarray()
+        fpy = f(dummy_q, ddx_desired, J, b).toarray().flatten()
 
         # Compare:
-        A = np.loadtxt("debug/A.csv", delimiter=",")
-        print(np.allclose(A, Apy, atol=1e-3))
-
-        np.savetxt("debug/Apy.csv", Apy, delimiter=",")
+        Aeq = np.loadtxt("debug/Aeq.csv", delimiter=",")
+        print(f"Aeq == Aeqpy: {np.allclose(Aeq, Aeqpy, atol=1e-3)}")
+        beq = np.loadtxt("debug/beq.csv", delimiter=",")
+        print(f"beq == beqpy: {np.allclose(beq, beqpy, atol=1e-3)}")
+        Aineq = np.loadtxt("debug/Aineq.csv", delimiter=",")
+        print(f"Aineq == Aineqpy: {np.allclose(Aineq, Aineqpy, atol=1e-3)}")
+        bineq = np.loadtxt("debug/bineq.csv", delimiter=",")
+        print(f"bineq == bineqpy: {np.allclose(bineq, bineqpy, atol=1e-3)}")
+        H = np.loadtxt("debug/H.csv", delimiter=",")
+        print(f"H == Hpy: {np.allclose(H, Hpy, atol=1e-3)}")
+        f = np.loadtxt("debug/f.csv", delimiter=",")
+        print(f"f == fpy: {np.allclose(f, fpy, atol=1e-3)}")
+        pass
 
 
 def main(argv=None):

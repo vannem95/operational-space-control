@@ -153,11 +153,13 @@ class AutoGen():
 
         # Split into Translational and Rotational components:
         ddx_task_p, ddx_task_r = casadi.vertsplit_n(ddx_task, 2)
+        ddx_task_p = casadi.reshape(ddx_task_p, self.num_site_ids, 3)
+        ddx_task_r = casadi.reshape(ddx_task_r, self.num_site_ids, 3)
         ddx_base_p, ddx_fl_p, ddx_fr_p, ddx_hl_p, ddx_hr_p = casadi.vertsplit_n(ddx_task_p, self.num_site_ids)
         ddx_base_r, ddx_fl_r, ddx_fr_r, ddx_hl_r, ddx_hr_r = casadi.vertsplit_n(ddx_task_r, self.num_site_ids)
 
         # Split Desired Task Acceleration:
-        desired_task_p, desired_task_r = casadi.vertsplit_n(desired_task_ddx, 2)
+        desired_task_p, desired_task_r = casadi.horzsplit_n(desired_task_ddx, 2)
         desired_base_p, desired_fl_p, desired_fr_p, desired_hl_p, desired_hr_p = casadi.vertsplit_n(desired_task_p, self.num_site_ids)
         desired_base_r, desired_fl_r, desired_fr_r, desired_hl_r, desired_hr_r = casadi.vertsplit_n(desired_task_r, self.num_site_ids)
 
@@ -242,7 +244,7 @@ class AutoGen():
         M = casadi.MX.sym("M", self.dv_size, self.dv_size)
         C = casadi.MX.sym("C", self.dv_size)
         J_contact = casadi.MX.sym("J_contact", self.dv_size, self.z_size)
-        desired_task_ddx = casadi.MX.sym("desired_task_ddx", self.num_site_ids * 6)
+        desired_task_ddx = casadi.MX.sym("desired_task_ddx", self.num_site_ids, 6)
         J_task = casadi.MX.sym("J_task", self.num_site_ids * 6, self.dv_size)
         task_bias = casadi.MX.sym("task_bias", self.num_site_ids * 6)
 
@@ -312,6 +314,25 @@ class AutoGen():
             [casadi.densify(gradient)],
         )
 
+        beq_size = beq.size_out(0)
+        self.beq_sz = beq_size[0] * beq_size[1]
+        Aeq_size = Aeq.size_out(0)
+        self.Aeq_sz = Aeq_size[0] * Aeq_size[1]
+        self.Aeq_rows = Aeq_size[0]
+        self.Aeq_cols = Aeq_size[1]
+        bineq_size = bineq.size_out(0)
+        self.bineq_sz = bineq_size[0] * bineq_size[1]
+        Aineq_size = Aineq.size_out(0)
+        self.Aineq_sz = Aineq_size[0] * Aineq_size[1]
+        self.Aineq_rows = Aineq_size[0]
+        self.Aineq_cols = Aineq_size[1]
+        H_size = H.size_out(0)
+        self.H_sz = H_size[0] * H_size[1]
+        self.H_rows = H_size[0]
+        self.H_cols = H_size[1]
+        f_size = f.size_out(0)
+        self.f_sz = f_size[0] * f_size[1]
+
         # Generate C++ Code:
         opts = {
             "cpp": True,
@@ -364,6 +385,18 @@ namespace constants {{
         constexpr int dv_idx = {self.dv_idx};
         constexpr int u_idx = {self.u_idx};
         constexpr int z_idx = {self.z_idx};
+        constexpr int beq_sz = {self.beq_sz};
+        constexpr int Aeq_sz = {self.Aeq_sz};
+        constexpr int Aeq_rows = {self.Aeq_rows};
+        constexpr int Aeq_cols = {self.Aeq_cols};
+        constexpr int bineq_sz = {self.bineq_sz};
+        constexpr int Aineq_sz = {self.Aineq_sz};
+        constexpr int Aineq_rows = {self.Aineq_rows};
+        constexpr int Aineq_cols = {self.Aineq_cols};
+        constexpr int H_sz = {self.H_sz};
+        constexpr int H_rows = {self.H_rows};
+        constexpr int H_cols = {self.H_cols};
+        constexpr int f_sz = {self.f_sz};
     }}
 }}
         """
