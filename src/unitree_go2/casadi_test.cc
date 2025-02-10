@@ -42,20 +42,20 @@ int main(int argc, char** argv){
     );
     OSCData osc_data = osc.get_data(points);
 
+    // This is for Casadi to change from Row Major to Column Major:
     Eigen::VectorXd design_vector = Eigen::VectorXd::Zero(constants::optimization::design_vector_size);
     Eigen::MatrixXd M = Eigen::Map<Eigen::MatrixXd>(osc_data.mass_matrix.data(), constants::model::nv_size, constants::model::nv_size);
     Eigen::VectorXd C = osc_data.coriolis_matrix;
     Eigen::MatrixXd Jc = Eigen::Map<Eigen::MatrixXd>(osc_data.contact_jacobian.data(), constants::model::nv_size, constants::optimization::z_size);
     Eigen::MatrixXd J = Eigen::Map<Eigen::MatrixXd>(osc_data.taskspace_jacobian.data(), 6 * constants::model::body_ids_size, constants::model::nv_size);
     Eigen::VectorXd b = osc_data.taskspace_bias;
-
     Eigen::MatrixXd ddx_desired = Eigen::MatrixXd::Zero(constants::model::site_ids_size, 6);
 
     // Save matrix to CSV:
     {
         std::ofstream file("M.csv");
         if (file.is_open()) {
-            file << M.format(Eigen::IOFormat(Eigen::FullPrecision, Eigen::DontAlignCols, ", ", "\n"));
+            file << osc_data.mass_matrix.format(Eigen::IOFormat(Eigen::FullPrecision, Eigen::DontAlignCols, ", ", "\n"));
             file.close();
         }
     }
@@ -64,7 +64,7 @@ int main(int argc, char** argv){
     {
         std::ofstream file("C.csv");
         if (file.is_open()) {
-            file << C.format(Eigen::IOFormat(Eigen::FullPrecision, Eigen::DontAlignCols, ", ", "\n"));
+            file << osc_data.coriolis_matrix.format(Eigen::IOFormat(Eigen::FullPrecision, Eigen::DontAlignCols, ", ", "\n"));
             file.close();
         }
     }
@@ -73,7 +73,7 @@ int main(int argc, char** argv){
     {
         std::ofstream file("Jc.csv");
         if (file.is_open()) {
-            file << Jc.format(Eigen::IOFormat(Eigen::FullPrecision, Eigen::DontAlignCols, ", ", "\n"));
+            file << osc_data.contact_jacobian.format(Eigen::IOFormat(Eigen::FullPrecision, Eigen::DontAlignCols, ", ", "\n"));
             file.close();
         }
     }
@@ -82,7 +82,7 @@ int main(int argc, char** argv){
     {
         std::ofstream file("J.csv");
         if (file.is_open()) {
-            file << J.format(Eigen::IOFormat(Eigen::FullPrecision, Eigen::DontAlignCols, ", ", "\n"));
+            file << osc_data.taskspace_jacobian.format(Eigen::IOFormat(Eigen::FullPrecision, Eigen::DontAlignCols, ", ", "\n"));
             file.close();
         }
     }
@@ -91,7 +91,7 @@ int main(int argc, char** argv){
     {
         std::ofstream file("b.csv");
         if (file.is_open()) {
-            file << b.format(Eigen::IOFormat(Eigen::FullPrecision, Eigen::DontAlignCols, ", ", "\n"));
+            file << osc_data.taskspace_bias.format(Eigen::IOFormat(Eigen::FullPrecision, Eigen::DontAlignCols, ", ", "\n"));
             file.close();
         }
     }

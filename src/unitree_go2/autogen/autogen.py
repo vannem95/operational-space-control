@@ -75,7 +75,7 @@ class AutoGen():
             M @ dv + C - B @ u - J_contact.T @ z = 0
         """
         # Unpack Design Variables:
-        dv = q[:self.dv_idx] 
+        dv = q[:self.dv_idx]
         u = q[self.dv_idx:self.u_idx]
         z = q[self.u_idx:self.z_idx]
 
