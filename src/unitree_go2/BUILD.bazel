@@ -2,9 +2,21 @@ cc_library(
     name = "operational-space-controller",
     srcs = ["operational_space_controller.h"],
     deps = [
+        ":utilities",
+        "//src:utilities",
+        "//src/unitree_go2/autogen:autogen_functions_cc",
+        "//src/unitree_go2/autogen:autogen_defines_cc",
         "@mujoco-bazel//:mujoco",
         "@eigen//:eigen",
-        "@osqp//:osqp",
+    ],
+    visibility = ["//visibility:public"],
+)
+
+cc_library(
+    name = "utilities",
+    srcs = ["utilities.h"],
+    deps = [
+        "@eigen//:eigen",
     ],
     visibility = ["//visibility:public"],
 )

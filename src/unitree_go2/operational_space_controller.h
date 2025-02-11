@@ -5,9 +5,11 @@
 
 #include "mujoco/mujoco.h"
 #include "Eigen/Dense"
-#include "osqp.h"
 
+#include "src/unitree_go2/autogen/autogen_functions.h"
 #include "src/unitree_go2/autogen/autogen_defines.h"
+#include "src/unitree_go2/utilities.h"
+#include "src/utilities.h"
 
 using namespace constants;
 
@@ -29,6 +31,68 @@ namespace {
     template <int Rows_, int Cols_>
     using MatrixColMajor = Eigen::Matrix<double, Rows_, Cols_, Eigen::ColMajor>;
 
+    // Map Casadi Functions to FunctionOperations Struct:
+    FunctionOperations Aeq_ops = {
+        Aeq_incref,
+        Aeq_checkout,
+        Aeq,
+        Aeq_release,
+        Aeq_decref
+    };
+
+    FunctionOperations beq_ops{
+        .func_incref = &beq_incref,
+        .func_checkout = &beq_checkout,
+        .eval_func = &beq,
+        .func_release = &beq_release,
+        .func_decref = &beq_decref
+    };
+
+    FunctionOperations Aineq_ops{
+        .func_incref = &Aineq_incref,
+        .func_checkout = &Aineq_checkout,
+        .eval_func = &Aineq,
+        .func_release = &Aineq_release,
+        .func_decref = &Aineq_decref
+    };
+
+    FunctionOperations bineq_ops{
+        .func_incref = &bineq_incref,
+        .func_checkout = &bineq_checkout,
+        .eval_func = &bineq,
+        .func_release = &bineq_release,
+        .func_decref = &bineq_decref
+    };
+
+    FunctionOperations H_ops{
+        .func_incref = &H_incref,
+        .func_checkout = &H_checkout,
+        .eval_func = &H,
+        .func_release = &H_release,
+        .func_decref = &H_decref
+    };
+
+    FunctionOperations f_ops{
+        .func_incref = &f_incref,
+        .func_checkout = &f_checkout,
+        .eval_func = &f,
+        .func_release = &f_release,
+        .func_decref = &f_decref
+    };
+
+    // Casadi Functions
+    using AeqParams = 
+        FunctionParams<Aeq_SZ_ARG, Aeq_SZ_RES, Aeq_SZ_IW, Aeq_SZ_W, optimization::Aeq_rows, optimization::Aeq_cols, optimization::Aeq_sz, 4>;
+    using beqParams =
+        FunctionParams<beq_SZ_ARG, beq_SZ_RES, beq_SZ_IW, beq_SZ_W, optimization::beq_sz, 1, optimization::beq_sz, 4>;
+    using AineqParams =
+        FunctionParams<Aineq_SZ_ARG, Aineq_SZ_RES, Aineq_SZ_IW, Aineq_SZ_W, optimization::Aineq_rows, optimization::Aineq_cols, optimization::Aineq_sz, 1>;
+    using bineqParams =
+        FunctionParams<bineq_SZ_ARG, bineq_SZ_RES, bineq_SZ_IW, bineq_SZ_W, optimization::bineq_sz, 1, optimization::bineq_sz, 1>;
+    using HParams =
+        FunctionParams<H_SZ_ARG, H_SZ_RES, H_SZ_IW, H_SZ_W, optimization::H_rows, optimization::H_cols, optimization::H_sz, 4>;
+    using fParams =
+        FunctionParams<f_SZ_ARG, f_SZ_RES, f_SZ_IW, f_SZ_W, optimization::f_sz, 1, optimization::f_sz, 4>;
 }
 
 struct OSCData {
@@ -40,6 +104,15 @@ struct OSCData {
     Vector<model::contact_site_ids_size> contact_mask;
     Vector<model::nq_size> previous_q;
     Vector<model::nv_size> previous_qd;
+};
+
+struct OptimizationData {
+    MatrixColMajor<optimization::H_rows, optimization::H_cols> H;
+    Vector<optimization::f_sz> f;
+    MatrixColMajor<optimization::Aeq_rows, optimization::Aeq_cols> Aeq;
+    Vector<optimization::beq_sz> beq;
+    Matrix<optimization::Aineq_rows, optimization::Aineq_cols> Aineq;
+    Vector<optimization::bineq_sz> bineq;
 };
 
 class OperationalSpaceController {
@@ -189,257 +262,35 @@ class OperationalSpaceController {
             return osc_data;
         }
 
-        // // Evaluate the Aeq Function:
-        // MatrixColMaj<optimization::Aeq_rows, optimization::Aeq_cols> Aeq_function(OSCData& osc_data) {
-        //     // Map osc data to Column Major for Casadi:
-        //     MatrixColMajor<model::nv_size, model::nv_size> mass_matrix = 
-        //         Eigen::Map<MatrixColMajor<model::nv_size, model::nv_size>>(osc_data.mass_matrix.data());
-        //     MatrixColMajor<model::nv_size, optimization::z_size> contact_jacobian = 
-        //         Eigen::Map<MatrixColMajor<model::nv_size, optimization::z_size>>(osc_data.contact_jacobian.data());
+        OptimizationData get_optimization_data(OSCData& osc_data, Matrix<model::site_ids_size, 6>& desired_taskspace_accelerations) {
+            // Convert OSCData to Column Major for Casadi Functions:
+            auto mass_matrix = matrix_utils::transformMatrix<model::nv_size, model::nv_size, matrix_utils::ColumnMajor>(osc_data.mass_matrix.data());
+            auto coriolis_matrix = matrix_utils::transformMatrix<model::nv_size, 1, matrix_utils::ColumnMajor>(osc_data.coriolis_matrix.data());
+            auto contact_jacobian = matrix_utils::transformMatrix<model::nv_size, optimization::z_size, matrix_utils::ColumnMajor>(osc_data.contact_jacobian.data());
+            auto taskspace_jacobian = matrix_utils::transformMatrix<s_size, model::nv_size, matrix_utils::ColumnMajor>(osc_data.taskspace_jacobian.data());
+            auto taskspace_bias = matrix_utils::transformMatrix<s_size, 1, matrix_utils::ColumnMajor>(osc_data.taskspace_bias.data());
+            auto desired_taskspace_ddx = matrix_utils::transformMatrix<model::site_ids_size, 6, matrix_utils::ColumnMajor>(desired_taskspace_accelerations.data());
             
-        //     // Allocate Result Object:
-        //     double res0[optimization::Aeq_sz];
+            // Evaluate Casadi Functions:
+            auto Aeq_matrix = evaluate_function<AeqParams>(Aeq_ops, {design_vector, mass_matrix, coriolis_matrix, contact_jacobian});
+            auto beq_matrix = evaluate_function<beqParams>(beq_ops, {design_vector, mass_matrix, coriolis_matrix, contact_jacobian});
+            auto Aineq_matrix = evaluate_function<AineqParams>(Aineq_ops, {design_vector});
+            auto bineq_matrix = evaluate_function<bineqParams>(bineq_ops, {design_vector});
+            auto H_matrix = evaluate_function<HParams>(H_ops, {design_vector, desired_taskspace_ddx, taskspace_jacobian, taskspace_bias});
+            auto f_matrix = evaluate_function<fParams>(f_ops, {design_vector, desired_taskspace_ddx, taskspace_jacobian, taskspace_bias});
 
-        //     // Allocate Casadi Work Vector:
-        //     const double *args[Aeq_SZ_ARG];
-        //     double *res[Aeq_SZ_RES];
-        //     casadi_int iw[Aeq_SZ_IW];
-        //     double w[Aeq_SZ_W];
+            OptimizationData opt_data{
+                .H = H_matrix,
+                .f = f_matrix,
+                .Aeq = Aeq_matrix,
+                .beq = beq_matrix,
+                .Aineq = Aineq_matrix,
+                .bineq = bineq_matrix
+            };
 
-        //     res[0] = res0;
+            return opt_data;
+        }
 
-        //     Aeq_incref();
-
-        //     // Copy the C Arrays:
-        //     args[0] = design_vector.data();
-        //     args[1] = mass_matrix.data();
-        //     args[2] = osc_data.coriolis_matrix.data();
-        //     args[3] = contact_jacobian.data();
-
-        //     // Initialize Memory:
-        //     int mem = Aeq_alloc_mem();
-        //     Aeq_init_mem(mem);
-
-        //     // Evaluate the Function:
-        //     Aeq(args, res, iw, w, mem);
-
-        //     // Map the Result to Eigen Matrix:
-        //     MatrixColMaj<optimization::Aeq_rows, optimization::Aeq_cols> Aeq = 
-        //         Eigen::Map<MatrixColMaj<optimization::Aeq_rows, optimization::Aeq_cols>>(res0);
-
-        //     // Free Memory:
-        //     Aeq_free_mem(mem);
-        //     Aeq_decref();
-
-        //     return Aeq;
-        // }
-
-        // // Evaluate the beq Function:
-        // Vector<optimization::beq_sz> beq_function(OSCData& osc_data) {
-        //     // Map osc data to Column Major for Casadi:
-        //     MatrixColMajor<model::nv_size, model::nv_size> mass_matrix = 
-        //         Eigen::Map<MatrixColMajor<model::nv_size, model::nv_size>>(osc_data.mass_matrix.data());
-        //     MatrixColMajor<model::nv_size, optimization::z_size> contact_jacobian = 
-        //         Eigen::Map<MatrixColMajor<model::nv_size, optimization::z_size>>(osc_data.contact_jacobian.data());
-
-        //     // Allocate Result Object:
-        //     double res0[optimization::beq_sz];
-
-        //     // Allocate Casadi Work Vector:
-        //     const double *args[beq_SZ_ARG];
-        //     double *res[beq_SZ_RES];
-        //     casadi_int iw[beq_SZ_IW];
-        //     double w[beq_SZ_W];
-
-        //     res[0] = res0;
-
-        //     beq_incref();
-
-        //     // Copy the C Arrays:
-        //     args[0] = design_vector.data();
-        //     args[1] = mass_matrix.data
-        //     args[2] = osc_data.coriolis_matrix.data();
-        //     args[3] = contact_jacobian.data();
-
-        //     // Initialize Memory:
-        //     int mem = beq_alloc_mem();
-        //     beq_init_mem(mem);
-
-        //     // Evaluate the Function:
-        //     beq(args, res, iw, w, mem);
-
-        //     // Map the Result to Eigen Matrix:
-        //     Vector<optimization::beq_sz> beq = 
-        //         Eigen::Map<Vector<optimization::beq_sz>>(res0);
-
-        //     // Free Memory:
-        //     beq_free_mem(mem);
-        //     beq_decref();
-
-        //     return beq;
-        // }
-
-        // // Evaluate the Aineq Function:
-        // MatrixColMaj<optimization::Aineq_rows, optimization::Aineq_cols> Aineq_function(void) {
-        //     // Allocate Result Object:
-        //     double res0[optimization::Aineq_sz];
-
-        //     // Allocate Casadi Work Vector:
-        //     const double *args[Aineq_SZ_ARG];
-        //     double *res[Aineq_SZ_RES];
-        //     casadi_int iw[Aineq_SZ_IW];
-        //     double w[Aineq_SZ_W];
-
-        //     res[0] = res0;
-
-        //     Aineq_incref();
-
-        //     // Copy the C Arrays:
-        //     args[0] = design_vector.data();
-
-        //     // Initialize Memory:
-        //     int mem = Aineq_alloc_mem();
-        //     Aineq_init_mem(mem);
-
-        //     // Evaluate the Function:
-        //     Aineq(args, res, iw, w, mem);
-
-        //     // Map the Result to Eigen Matrix:
-        //     MatrixColMaj<optimization::Aineq_rows, optimization::Aineq_cols> Aineq = 
-        //         Eigen::Map<MatrixColMaj<optimization::Aineq_rows, optimization::Aineq_cols>>(res0);
-
-        //     // Free Memory:
-        //     Aineq_free_mem(mem);
-        //     Aineq_decref();
-
-        //     return Aineq;
-        // }
-
-        // // Evaluate the bineq Function:
-        // Vector<optimization::bineq_sz> bineq_function(void) {
-        //     // Allocate Result Object:
-        //     double res0[optimization::bineq_sz];
-
-        //     // Allocate Casadi Work Vector:
-        //     const double *args[bineq_SZ_ARG];
-        //     double *res[bineq_SZ_RES];
-        //     casadi_int iw[bineq_SZ_IW];
-        //     double w[bineq_SZ_W];
-
-        //     res[0] = res0;
-
-        //     bineq_incref();
-
-        //     // Copy the C Arrays:
-        //     args[0] = design_vector.data();
-
-        //     // Initialize Memory:
-        //     int mem = bineq_alloc_mem();
-        //     bineq_init_mem(mem);
-
-        //     // Evaluate the Function:
-        //     bineq(args, res, iw, w, mem);
-
-        //     // Map the Result to Eigen Matrix:
-        //     Vector<optimization::bineq_sz> bineq = 
-        //         Eigen::Map<Vector<optimization::bineq_sz>>(res0);
-
-        //     // Free Memory:
-        //     bineq_free_mem(mem);
-        //     bineq_decref();
-
-        //     return bineq;
-        // }
-
-        // // Evaluate the H function:
-        // MatrixColMaj<optimization::H_rows, optimization::H_cols> H_function(OSCData& osc_data, Matrix<model::site_ids_size, 6>& ddx_desired) {
-        //     // Map osc data to Column Major for Casadi:
-        //     MatrixColMajor<model::site_ids_size, 6> ddx_target = 
-        //         Eigen::Map<MatrixColMajor<model::site_ids_size, 6>>(ddx_desired.data());
-        //     MatrixColMajor<s_size, model::nv_size> taskspace_jacobian =
-        //         Eigen::Map<MatrixColMajor<s_size, model::nv_size>>(osc_data.taskspace_jacobian.data());
-
-        //     // Allocate Result Object:
-        //     double res0[optimization::H_sz];
-
-        //     // Allocate Casadi Work Vector:
-        //     const double *args[H_SZ_ARG];
-        //     double *res[H_SZ_RES];
-        //     casadi_int iw[H_SZ_IW];
-        //     double w[H_SZ_W];
-
-        //     res[0] = res0;
-
-        //     H_incref();
-
-        //     // Copy the C Arrays:
-        //     args[0] = design_vector.data();
-        //     args[1] = ddx_target.data();
-        //     args[2] = taskspace_jacobian.data();
-        //     args[3] = osc_data.taskspace_bias.data();
-
-        //     // Initialize Memory:
-        //     int mem = H_alloc_mem();
-        //     H_init_mem(mem);
-
-        //     // Evaluate the Function:
-        //     H(args, res, iw, w, mem);
-
-        //     // Map the Result to Eigen Matrix:
-        //     MatrixColMaj<optimization::H_rows, optimization::H_cols> H = 
-        //         Eigen::Map<MatrixColMaj<optimization::H_rows, optimization::H_cols>>(res0);
-
-        //     // Free Memory:
-        //     H_free_mem(mem);
-        //     H_decref();
-
-        //     return H;
-        // }
-
-        // // Evaluate the f function:
-        // Vector<optimization::f_sz> f_function(OSCData& osc_data, Matrix<model::site_ids_size, 6>& ddx_desired) {
-        //     // Map osc data to Column Major for Casadi:
-        //     MatrixColMajor<model::site_ids_size, 6> ddx_target = 
-        //         Eigen::Map<MatrixColMajor<model::site_ids_size, 6>>(ddx_desired.data());
-        //     MatrixColMajor<s_size, model::nv_size> taskspace_jacobian =
-        //         Eigen::Map<MatrixColMajor<s_size, model::nv_size>>(osc_data.taskspace_jacobian.data());
-
-        //     // Allocate Result Object:
-        //     double res0[optimization::f_sz];
-
-        //     // Allocate Casadi Work Vector:
-        //     const double *args[f_SZ_ARG];
-        //     double *res[f_SZ_RES];
-        //     casadi_int iw[f_SZ_IW];
-        //     double w[f_SZ_W];
-
-        //     res[0] = res0;
-
-        //     f_incref();
-
-        //     // Copy the C Arrays:
-        //     args[0] = design_vector.data();
-        //     args[1] = ddx_target.data();
-        //     args[2] = taskspace_jacobian.data();
-        //     args[3] = osc_data.taskspace_bias.data();
-
-        //     // Initialize Memory:
-        //     int mem = f_alloc_mem();
-        //     f_init_mem(mem);
-
-        //     // Evaluate the Function:
-        //     f(args, res, iw, w, mem);
-
-        //     // Map the Result to Eigen Matrix:
-        //     Vector<optimization::f_sz> f = 
-        //         Eigen::Map<Vector<optimization::f_sz>>(res0);
-
-        //     // Free Memory:
-        //     f_free_mem(mem);
-        //     f_decref();
-
-        //     return f;
-        // }
 
         // void initialize_optimization(void) {
         //     // Initialize OSQP Settings:
