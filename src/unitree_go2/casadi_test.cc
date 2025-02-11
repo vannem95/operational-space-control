@@ -15,7 +15,7 @@
 #include "src/utilities.h"
 
 
-using namespace utilities::Matrix;
+using namespace utilities::matrix;
 
 
 int main(int argc, char** argv){

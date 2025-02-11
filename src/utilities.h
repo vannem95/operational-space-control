@@ -7,7 +7,7 @@
 
 namespace utilities {
 
-    namespace Matrix {
+    namespace matrix {
         constexpr bool RowMajor = true;
         constexpr bool ColumnMajor = false; 
 
