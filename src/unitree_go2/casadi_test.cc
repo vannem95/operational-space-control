@@ -12,6 +12,11 @@
 #include "src/unitree_go2/autogen/autogen_functions.h"
 #include "src/unitree_go2/autogen/autogen_defines.h"
 
+#include "src/utilities.h"
+
+
+using namespace utilities::Matrix;
+
 
 int main(int argc, char** argv){
     // Real Data:
@@ -37,18 +42,15 @@ int main(int argc, char** argv){
 
     Eigen::Matrix<double, constants::model::site_ids_size, 3, Eigen::RowMajor> points = 
         Eigen::Matrix<double, constants::model::site_ids_size, 3, Eigen::RowMajor>::Zero();
+
     points = Eigen::Map<Eigen::Matrix<double, constants::model::site_ids_size, 3, Eigen::RowMajor>>(
         osc.mj_data->site_xpos
     );
     OSCData osc_data = osc.get_data(points);
 
     // This is for Casadi to change from Row Major to Column Major:
-    Eigen::VectorXd design_vector = Eigen::VectorXd::Zero(constants::optimization::design_vector_size);
-    Eigen::MatrixXd M = Eigen::Map<Eigen::MatrixXd>(osc_data.mass_matrix.data(), constants::model::nv_size, constants::model::nv_size);
-    Eigen::VectorXd C = osc_data.coriolis_matrix;
-    Eigen::MatrixXd Jc = Eigen::Map<Eigen::MatrixXd>(osc_data.contact_jacobian.data(), constants::model::nv_size, constants::optimization::z_size);
-    Eigen::MatrixXd J = Eigen::Map<Eigen::MatrixXd>(osc_data.taskspace_jacobian.data(), 6 * constants::model::body_ids_size, constants::model::nv_size);
-    Eigen::VectorXd b = osc_data.taskspace_bias;
+    Eigen::Matrix<double, constants::optimization::design_vector_size, 1> design_vector = 
+        Eigen::Matrix<double, constants::optimization::design_vector_size, 1>::Zero(constants::optimization::design_vector_size);
     Eigen::MatrixXd ddx_desired = Eigen::MatrixXd::Zero(constants::model::site_ids_size, 6);
 
     // Save matrix to CSV:
@@ -120,21 +122,27 @@ int main(int argc, char** argv){
 
         Aeq_incref();
 
-        // Copy the C Arrays:
+        // Transform to Column Major and Copy the C Arrays:
+        auto m = transformMatrix<double, constants::model::nv_size, constants::model::nv_size, ColumnMajor>(osc_data.mass_matrix.data());
+        auto c = transformMatrix<double, constants::model::nv_size, 1, ColumnMajor>(osc_data.coriolis_matrix.data());
+        auto j = transformMatrix<double, constants::model::nv_size, constants::optimization::z_size, ColumnMajor>(osc_data.contact_jacobian.data());
+
         args[0] = design_vector.data();
-        args[1] = M.data();
-        args[2] = C.data();
-        args[3] = Jc.data();
+        args[1] = m.data();
+        args[2] = c.data();
+        args[3] = j.data();
 
         // Initialize Memory:
-        int mem = Aeq_alloc_mem();
-        Aeq_init_mem(mem);
+        int mem = Aeq_checkout();
 
         // Evaluate the Function:
-        Aeq(args, res, iw, w, mem);
-        
+        if (Aeq(args, res, iw, w, mem)) return 1;
+
+        Aeq_release(mem);
+
         // Map the Result to Eigen Matrix:
-        Eigen::MatrixXd Aeq = Eigen::Map<Eigen::MatrixXd>(res0, constants::optimization::Aeq_rows, constants::optimization::Aeq_cols);
+        Eigen::Matrix<double, constants::optimization::Aeq_rows, constants::optimization::Aeq_cols> Aeq = 
+            Eigen::Map<Eigen::Matrix<double, constants::optimization::Aeq_rows, constants::optimization::Aeq_cols>>(res0);
 
         {
             std::ofstream file("Aeq.csv");
@@ -145,7 +153,6 @@ int main(int argc, char** argv){
         }
 
         // Free Memory:
-        Aeq_free_mem(mem);
         Aeq_decref();
     }
 
@@ -164,11 +171,15 @@ int main(int argc, char** argv){
 
         beq_incref();
         
-        // Copy the C Arrays:
+        // Transform to Column Major and Copy the C Arrays:
+        auto m = transformMatrix<double, constants::model::nv_size, constants::model::nv_size, ColumnMajor>(osc_data.mass_matrix.data());
+        auto c = transformMatrix<double, constants::model::nv_size, 1, ColumnMajor>(osc_data.coriolis_matrix.data());
+        auto j = transformMatrix<double, constants::model::nv_size, constants::optimization::z_size, ColumnMajor>(osc_data.contact_jacobian.data());
+
         args[0] = design_vector.data();
-        args[1] = M.data();
-        args[2] = C.data();
-        args[3] = Jc.data();
+        args[1] = m.data();
+        args[2] = c.data();
+        args[3] = j.data();
 
         // Initialize Memory:
         int mem = beq_alloc_mem();
@@ -289,11 +300,15 @@ int main(int argc, char** argv){
         res[0] = res0;
 
         H_incref();
-        
-        // Copy the C Arrays:
+
+        // Transform to Column Major and Copy the C Arrays:
+        auto target = transformMatrix<double, constants::model::site_ids_size, 6, ColumnMajor>(ddx_desired.data());
+        auto j = transformMatrix<double, 6 * constants::model::body_ids_size, constants::model::nv_size, ColumnMajor>(osc_data.taskspace_jacobian.data());
+        auto b = transformMatrix<double, constants::model::nv_size, 1, ColumnMajor>(osc_data.taskspace_bias.data());
+
         args[0] = design_vector.data();
-        args[1] = ddx_desired.data();
-        args[2] = J.data();
+        args[1] = target.data();
+        args[2] = j.data();
         args[3] = b.data();
         
         // Initialize Memory:
@@ -334,10 +349,14 @@ int main(int argc, char** argv){
 
         f_incref();
         
-        // Copy the C Arrays:
+        // Transform to Column Major and Copy the C Arrays:
+        auto target = transformMatrix<double, constants::model::site_ids_size, 6, ColumnMajor>(ddx_desired.data());
+        auto j = transformMatrix<double, 6 * constants::model::body_ids_size, constants::model::nv_size, ColumnMajor>(osc_data.taskspace_jacobian.data());
+        auto b = transformMatrix<double, constants::model::nv_size, 1, ColumnMajor>(osc_data.taskspace_bias.data());
+
         args[0] = design_vector.data();
-        args[1] = ddx_desired.data();
-        args[2] = J.data();
+        args[1] = target.data();
+        args[2] = j.data();
         args[3] = b.data();
         
         // Initialize Memory:

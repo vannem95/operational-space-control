@@ -4,6 +4,7 @@ cc_library(
     deps = [
         "@mujoco-bazel//:mujoco",
         "@eigen//:eigen",
+        "@osqp//:osqp",
     ],
     visibility = ["//visibility:public"],
 )
@@ -40,6 +41,7 @@ cc_binary(
     srcs = ["casadi_test.cc"],
     data = ["//models/unitree_go2:unitree_go2"],
     deps = [
+        "//src:utilities",
         "//src/unitree_go2/autogen:autogen_functions_cc",
         "//src/unitree_go2/autogen:autogen_defines_cc",
         ":operational-space-controller",

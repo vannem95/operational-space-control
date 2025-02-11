@@ -111,11 +111,11 @@ class AutoGen():
                 constraint_1, constraint_2, constraint_3, constraint_4
             )
 
-        contact_forces = casadi.reshape(z, self.num_contact_site_ids, 3)
+        contact_forces = casadi.vertsplit_n(z, self.num_contact_site_ids)
 
         inequality_constraints = []
         for i in range(self.num_contact_site_ids):
-            contact_force = contact_forces[i, :]
+            contact_force = contact_forces[i]
             friction_constraints = translational_friction(contact_force)
             inequality_constraints.append(friction_constraints)
 
@@ -152,15 +152,15 @@ class AutoGen():
 
         # Split into Translational and Rotational components:
         ddx_task_p, ddx_task_r = casadi.vertsplit_n(ddx_task, 2)
-        ddx_task_p = casadi.reshape(ddx_task_p, self.num_site_ids, 3)
-        ddx_task_r = casadi.reshape(ddx_task_r, self.num_site_ids, 3)
         ddx_base_p, ddx_fl_p, ddx_fr_p, ddx_hl_p, ddx_hr_p = casadi.vertsplit_n(ddx_task_p, self.num_site_ids)
         ddx_base_r, ddx_fl_r, ddx_fr_r, ddx_hl_r, ddx_hr_r = casadi.vertsplit_n(ddx_task_r, self.num_site_ids)
 
         # Split Desired Task Acceleration:
         desired_task_p, desired_task_r = casadi.horzsplit_n(desired_task_ddx, 2)
-        desired_base_p, desired_fl_p, desired_fr_p, desired_hl_p, desired_hr_p = casadi.vertsplit_n(desired_task_p, self.num_site_ids)
-        desired_base_r, desired_fl_r, desired_fr_r, desired_hl_r, desired_hr_r = casadi.vertsplit_n(desired_task_r, self.num_site_ids)
+        desired_task_p = casadi.vertsplit_n(desired_task_p, self.num_site_ids)
+        desired_task_r = casadi.vertsplit_n(desired_task_r, self.num_site_ids)
+        desired_base_p, desired_fl_p, desired_fr_p, desired_hl_p, desired_hr_p = map(lambda x: x.T, desired_task_p)
+        desired_base_r, desired_fl_r, desired_fr_r, desired_hl_r, desired_hr_r = map(lambda x: x.T, desired_task_r)
 
         # I could make this more general at the cost of readability...
         # ddx_task_p = casadi.vertsplit_n(ddx_task_p, self.num_site_ids)
@@ -234,18 +234,18 @@ class AutoGen():
 
     def generate_functions(self):
         # Define symbolic variables:
-        dv = casadi.MX.sym("dv", self.dv_size)
-        u = casadi.MX.sym("u", self.u_size)
-        z = casadi.MX.sym("z", self.z_size)
+        dv = casadi.SX.sym("dv", self.dv_size)
+        u = casadi.SX.sym("u", self.u_size)
+        z = casadi.SX.sym("z", self.z_size)
 
         design_vector = casadi.vertcat(dv, u, z)
 
-        M = casadi.MX.sym("M", self.dv_size, self.dv_size)
-        C = casadi.MX.sym("C", self.dv_size)
-        J_contact = casadi.MX.sym("J_contact", self.dv_size, self.z_size)
-        desired_task_ddx = casadi.MX.sym("desired_task_ddx", self.num_site_ids, 6)
-        J_task = casadi.MX.sym("J_task", self.num_site_ids * 6, self.dv_size)
-        task_bias = casadi.MX.sym("task_bias", self.num_site_ids * 6)
+        M = casadi.SX.sym("M", self.dv_size, self.dv_size)
+        C = casadi.SX.sym("C", self.dv_size)
+        J_contact = casadi.SX.sym("J_contact", self.dv_size, self.z_size)
+        desired_task_ddx = casadi.SX.sym("desired_task_ddx", self.num_site_ids, 6)
+        J_task = casadi.SX.sym("J_task", self.num_site_ids * 6, self.dv_size)
+        task_bias = casadi.SX.sym("task_bias", self.num_site_ids * 6)
 
         equality_constraint_input = [
             design_vector,
@@ -304,13 +304,13 @@ class AutoGen():
         H = casadi.Function(
             "H",
             objective_input,
-            [casadi.densify(hessian)],
+            [hessian],
         )
 
         f = casadi.Function(
             "f",
             objective_input,
-            [casadi.densify(gradient)],
+            [gradient],
         )
 
         beq_size = beq.size_out(0)
@@ -362,6 +362,7 @@ class AutoGen():
         print(f"H == Hpy: {np.allclose(H, Hpy, atol=1e-3)}")
         f = np.loadtxt("debug/f.csv", delimiter=",")
         print(f"f == fpy: {np.allclose(f, fpy, atol=1e-3)}")
+        np.savetxt("debug/Aeqpy.csv", Aeqpy, fmt='%.1e', delimiter=",")
         pass
 
 

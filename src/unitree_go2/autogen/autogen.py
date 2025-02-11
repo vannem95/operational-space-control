@@ -112,11 +112,12 @@ class AutoGen():
             constraint_4 = -x[0] - x[1] - self.mu * x[2]
             return casadi.vertcat(constraint_1, constraint_2, constraint_3, constraint_4)
 
-        contact_forces = casadi.reshape(z, self.num_contact_site_ids, 3)
+        # contact_forces = casadi.reshape(z, self.num_contact_site_ids, 3)
+        contact_forces = casadi.vertsplit_n(z, self.num_contact_site_ids)
 
         inequality_constraints = []
         for i in range(self.num_contact_site_ids):
-            contact_force = contact_forces[i, :]
+            contact_force = contact_forces[i]
             friction_constraints = translational_friction(contact_force)
             inequality_constraints.append(friction_constraints)
 
@@ -149,19 +150,24 @@ class AutoGen():
         z = q[self.u_idx:self.z_idx]
 
         # Compute Task Space Tracking Objective:
+        # J_task_p, J_task_r = casadi.vertsplit_n(J_task, 2)
+        # J_task_p = casadi.vertsplit_n(J_task_p, self.num_site_ids)
+        # J_task_r = casadi.vertsplit_n(J_task_r, self.num_site_ids)
+        # J_task = map(lambda x, y: casadi.vertcat(x, y), J_task_p, J_task_r)
+        # J_task = casadi.vertcat(*J_task)
         ddx_task = J_task @ dv + task_bias
 
         # Split into Translational and Rotational components:
         ddx_task_p, ddx_task_r = casadi.vertsplit_n(ddx_task, 2)
-        ddx_task_p = casadi.reshape(ddx_task_p, self.num_site_ids, 3)
-        ddx_task_r = casadi.reshape(ddx_task_r, self.num_site_ids, 3)
         ddx_base_p, ddx_fl_p, ddx_fr_p, ddx_hl_p, ddx_hr_p = casadi.vertsplit_n(ddx_task_p, self.num_site_ids)
         ddx_base_r, ddx_fl_r, ddx_fr_r, ddx_hl_r, ddx_hr_r = casadi.vertsplit_n(ddx_task_r, self.num_site_ids)
 
         # Split Desired Task Acceleration:
         desired_task_p, desired_task_r = casadi.horzsplit_n(desired_task_ddx, 2)
-        desired_base_p, desired_fl_p, desired_fr_p, desired_hl_p, desired_hr_p = casadi.vertsplit_n(desired_task_p, self.num_site_ids)
-        desired_base_r, desired_fl_r, desired_fr_r, desired_hl_r, desired_hr_r = casadi.vertsplit_n(desired_task_r, self.num_site_ids)
+        desired_task_p = casadi.vertsplit_n(desired_task_p, self.num_site_ids)
+        desired_task_r = casadi.vertsplit_n(desired_task_r, self.num_site_ids)
+        desired_base_p, desired_fl_p, desired_fr_p, desired_hl_p, desired_hr_p = map(lambda x: x.T, desired_task_p)
+        desired_base_r, desired_fl_r, desired_fr_r, desired_hl_r, desired_hr_r = map(lambda x: x.T, desired_task_r)
 
         # I could make this more general at the cost of readability...
         # ddx_task_p = casadi.vertsplit_n(ddx_task_p, self.num_site_ids)
