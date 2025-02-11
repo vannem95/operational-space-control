@@ -1,6 +1,24 @@
+#pragma once
+
 #include <Eigen/Dense>
 #include <array>
 #include <algorithm>
+
+namespace {
+    typedef void (*func_incref)();
+    typedef int (*func_checkout)();
+    typedef int (*eval_func)(const double** args, double** res, casadi_int* iw, double* w, int mem);
+    typedef void (*func_release)(int mem);
+    typedef void (*func_decref)();
+}
+
+struct FunctionOperations {
+    func_incref incref;
+    func_checkout checkout;
+    eval_func eval;
+    func_release release;
+    func_decref decref;
+};
 
 template<size_t sz_args, size_t sz_res, size_t sz_iw, size_t sz_w, int rows, int cols, size_t output_size, size_t N>
 struct FunctionParams {
@@ -12,14 +30,6 @@ struct FunctionParams {
     static constexpr int matrix_cols = cols;
     static constexpr size_t out_size = output_size;
     static constexpr size_t num_args = N;
-};
-
-struct FunctionOperations {
-    void (func_incref)();
-    int (func_checkout)();
-    int (eval_func)(const double** args, double** res, casadi_int* iw, double* w, int mem);
-    void (func_release)(int mem);
-    void (func_decref)();
 };
 
 // Alias template for the return type
@@ -42,22 +52,22 @@ ReturnType<Params> evaluate_function(
     res[0] = result;
 
     // Increase the reference count:
-    ops.func_incref();
+    ops.incref();
 
     // Copy arguments into args array:
     std::copy(arguments.begin(), arguments.end(), args);
 
     // Initialize Memory:
-    int mem = ops.func_checkout();
+    int mem = ops.checkout();
 
     // Evaluate the Function:
-    ops.eval_func(args, res, iw, w, mem);
+    ops.eval(args, res, iw, w, mem);
 
     // Release Memory:
-    ops.func_release(mem);
+    ops.release(mem);
 
     // Decrease the reference count:
-    ops.func_decref();
+    ops.decref();
 
     return Eigen::Map<ReturnType<Params>>(result);
 }

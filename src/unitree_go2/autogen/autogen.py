@@ -358,6 +358,7 @@ class AutoGen():
 
     def generate_defines(self):
         cc_code = f"""#pragma once
+#include <array>
 #include <string_view>
 
 using namespace std::string_view_literals;

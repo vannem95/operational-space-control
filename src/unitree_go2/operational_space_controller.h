@@ -272,14 +272,14 @@ class OperationalSpaceController {
             auto desired_taskspace_ddx = matrix_utils::transformMatrix<model::site_ids_size, 6, matrix_utils::ColumnMajor>(desired_taskspace_accelerations.data());
             
             // Evaluate Casadi Functions:
-            auto Aeq_matrix = evaluate_function<AeqParams>(Aeq_ops, {design_vector, mass_matrix, coriolis_matrix, contact_jacobian});
-            auto beq_matrix = evaluate_function<beqParams>(beq_ops, {design_vector, mass_matrix, coriolis_matrix, contact_jacobian});
-            auto Aineq_matrix = evaluate_function<AineqParams>(Aineq_ops, {design_vector});
-            auto bineq_matrix = evaluate_function<bineqParams>(bineq_ops, {design_vector});
-            auto H_matrix = evaluate_function<HParams>(H_ops, {design_vector, desired_taskspace_ddx, taskspace_jacobian, taskspace_bias});
-            auto f_matrix = evaluate_function<fParams>(f_ops, {design_vector, desired_taskspace_ddx, taskspace_jacobian, taskspace_bias});
+            auto Aeq_matrix = evaluate_function<AeqParams>(Aeq_ops, {design_vector.data(), mass_matrix.data(), coriolis_matrix.data(), contact_jacobian.data()});
+            auto beq_matrix = evaluate_function<beqParams>(beq_ops, {design_vector.data(), mass_matrix.data(), coriolis_matrix.data(), contact_jacobian.data()});
+            auto Aineq_matrix = evaluate_function<AineqParams>(Aineq_ops, {design_vector.data()});
+            auto bineq_matrix = evaluate_function<bineqParams>(bineq_ops, {design_vector.data()});
+            auto H_matrix = evaluate_function<HParams>(H_ops, {design_vector.data(), desired_taskspace_ddx.data(), taskspace_jacobian.data(), taskspace_bias.data()});
+            auto f_matrix = evaluate_function<fParams>(f_ops, {design_vector.data(), desired_taskspace_ddx.data(), taskspace_jacobian.data(), taskspace_bias.data()});
 
-            OptimizationData opt_data{
+            OptimizationData opt_data {
                 .H = H_matrix,
                 .f = f_matrix,
                 .Aeq = Aeq_matrix,
