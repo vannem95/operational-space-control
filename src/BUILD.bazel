@@ -5,35 +5,3 @@ cc_library(
     srcs = ["utilities.h"],
     visibility = ["//visibility:public"],
 )
-
-cc_binary(
-    name = "main",
-    srcs = ["main.cc"],
-    data = ["//models/unitree_go2:unitree_go2"],
-    deps = [
-        "@mujoco-bazel//:mujoco",
-        "@glfw-bazel//:glfw",
-        "@eigen//:eigen",
-    ],
-    visibility = ["//visibility:public"],
-)
-
-cc_binary(
-    name = "eigen_test",
-    srcs = ["eigen_test.cc"],
-    deps = [
-        "//src/unitree_go2/autogen:autogen_defines_cc",
-        "@eigen//:eigen",
-    ],
-    visibility = ["//visibility:public"],
-)
-
-cc_binary(
-    name = "sparse_test",
-    srcs = ["sparse_test.cc"],
-    deps = [
-        "@eigen//:eigen",
-        "@osqp//:osqp",
-    ],
-    visibility = ["//visibility:public"],
-)

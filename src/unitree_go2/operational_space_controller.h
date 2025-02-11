@@ -5,6 +5,8 @@
 
 #include "mujoco/mujoco.h"
 #include "Eigen/Dense"
+#include "Eigen/SparseCore"
+#include "osqp-cpp/osqp++.h"
 
 #include "src/unitree_go2/autogen/autogen_functions.h"
 #include "src/unitree_go2/autogen/autogen_defines.h"
@@ -22,6 +24,11 @@ namespace {
     // r_size : Size of rotation component to a spatial vector:
     constexpr int r_size = 3 * model::body_ids_size;
 
+    // Constraint Matrix Size:
+    constexpr int constraint_matrix_rows = optimization::Aeq_rows + optimization::Aineq_rows + optimization::design_vector_size;
+    constexpr int constraint_matrix_cols = optimization::design_vector_size;
+    constexpr int bounds_size = optimization::beq_sz + optimization::bineq_sz + optimization::design_vector_size;
+
     template <int Rows_, int Cols_>
     using Matrix = Eigen::Matrix<double, Rows_, Cols_, Eigen::RowMajor>;
     
@@ -32,52 +39,52 @@ namespace {
     using MatrixColMajor = Eigen::Matrix<double, Rows_, Cols_, Eigen::ColMajor>;
 
     // Map Casadi Functions to FunctionOperations Struct:
-    FunctionOperations Aeq_ops = {
-        Aeq_incref,
-        Aeq_checkout,
-        Aeq,
-        Aeq_release,
-        Aeq_decref
+    FunctionOperations Aeq_ops{
+        .incref=Aeq_incref,
+        .checkout=Aeq_checkout,
+        .eval=Aeq,
+        .release=Aeq_release,
+        .decref=Aeq_decref
     };
 
     FunctionOperations beq_ops{
-        .func_incref = &beq_incref,
-        .func_checkout = &beq_checkout,
-        .eval_func = &beq,
-        .func_release = &beq_release,
-        .func_decref = &beq_decref
+        .incref=beq_incref,
+        .checkout=beq_checkout,
+        .eval=beq,
+        .release=beq_release,
+        .decref=beq_decref
     };
 
     FunctionOperations Aineq_ops{
-        .func_incref = &Aineq_incref,
-        .func_checkout = &Aineq_checkout,
-        .eval_func = &Aineq,
-        .func_release = &Aineq_release,
-        .func_decref = &Aineq_decref
+        .incref=Aineq_incref,
+        .checkout=Aineq_checkout,
+        .eval=Aineq,
+        .release=Aineq_release,
+        .decref=Aineq_decref
     };
 
     FunctionOperations bineq_ops{
-        .func_incref = &bineq_incref,
-        .func_checkout = &bineq_checkout,
-        .eval_func = &bineq,
-        .func_release = &bineq_release,
-        .func_decref = &bineq_decref
+        .incref=bineq_incref,
+        .checkout=bineq_checkout,
+        .eval=bineq,
+        .release=bineq_release,
+        .decref=bineq_decref
     };
 
     FunctionOperations H_ops{
-        .func_incref = &H_incref,
-        .func_checkout = &H_checkout,
-        .eval_func = &H,
-        .func_release = &H_release,
-        .func_decref = &H_decref
+        .incref=H_incref,
+        .checkout=H_checkout,
+        .eval=H,
+        .release=H_release,
+        .decref=H_decref
     };
 
     FunctionOperations f_ops{
-        .func_incref = &f_incref,
-        .func_checkout = &f_checkout,
-        .eval_func = &f,
-        .func_release = &f_release,
-        .func_decref = &f_decref
+        .incref=f_incref,
+        .checkout=f_checkout,
+        .eval=f,
+        .release=f_release,
+        .decref=f_decref
     };
 
     // Casadi Functions
@@ -169,7 +176,7 @@ class OperationalSpaceController {
             mj_deleteModel(mj_model);
         }
 
-        OSCData get_data(Eigen::Matrix<double, model::body_ids_size, 3, Eigen::RowMajor>& points) {
+        OSCData get_osc_data(Eigen::Matrix<double, model::body_ids_size, 3, Eigen::RowMajor>& points) {
             // Mass Matrix:
             Matrix<model::nv_size, model::nv_size> mass_matrix = 
                 Matrix<model::nv_size, model::nv_size>::Zero();
@@ -291,45 +298,67 @@ class OperationalSpaceController {
             return opt_data;
         }
 
+        void initialize_optimization(void) {
+            // Initialize the Optimization: (Everything should be Column Major for OSQP)
+            // Create Dummy Matrices to initialize size:
+            MatrixColMajor<constraint_matrix_rows, constraint_matrix_cols> constraint_matrix = MatrixColMajor<constraint_matrix_rows, constraint_matrix_cols>::Zero();
+            Vector<bounds_size> bounds = Vector<bounds_size>::Zero();
+            MatrixColMajor<optimization::H_rows, optimization::H_cols> H = MatrixColMajor<optimization::H_rows, optimization::H_cols>::Zero();
+            Vector<optimization::f_sz> f = Vector<optimization::f_sz>::Zero();
 
-        // void initialize_optimization(void) {
-        //     // Initialize OSQP Settings:
-        //     settings = (OSQPSettings *)c_malloc(sizeof(OSQPSettings));
-        //     if (settings) {
-        //         osqp_set_default_settings(settings);
-        //     }
+            // Setup Internal OSQP workspace:
+            instance.objective_matrix = H.sparseView();
+            instance.objective_vector = f;
+            instance.constraint_matrix = constraint_matrix.sparseView();
+            instance.lower_bounds = bounds;
+            instance.upper_bounds = bounds;
+            
+            // Return type is absl::Status
+            auto status = solver.Init(instance, settings);
+            assert(status.ok() && "OSQP Solver failed to initialize.");
+        }
 
-        //     // Initialize Optimization Matrices:
-        //     // Design variable bounds:
-        //     Matrix<optimization::design_vector_size, optimization::design_vector_size> Abox = 
-        //         Matrix<optimization::design_vector_size, optimization::design_vector_size>::Identity();
-        //     // Joint Acceleration Bounds:
-        //     Vector<optimization::dv_size> dv_lb = Vector<optimization::dv_size>::Constant(-OSQP_INFTY)
-        //     Vector<optimization::dv_size> dv_ub = Vector<optimization::dv_size>::Constant(OSQP_INFTY)
-        //     // Control Input Bounds: TODO(jeh15) Make this match model
-        //     Vector<optimization::u_size> u_lb = Vector<optimization::u_size>::Constant(PLACEHOLDER)
-        //     Vector<optimization::u_size> u_lb = Vector<optimization::u_size>::Constant(PLACEHOLDER)
-        //     // Reaction Force Bounds: z_ub remains uninitialized, it depends on the contact mask.
-        //     Vector<optimization::z_size> z_lb = Vector<optimization::z_size>::Zero();
-        //     Vector<optimization::z_size> z_ub = Vector<optimization::z_size>::Zero();
-        //     z_lb << -OSQP_INFTY, -OSQP_INFTY, 0.0,
-        //             -OSQP_INFTY, -OSQP_INFTY, 0.0,
-        //             -OSQP_INFTY, -OSQP_INFTY, 0.0,
-        //             -OSQP_INFTY, -OSQP_INFTY, 0.0;
-        //     // Create lb and ub for Box constraints:
-        //     Vector<optimization::design_vector_size> lb_box = Vector<optimization::design_vector_size>::Zero();
-        //     Vector<optimization::design_vector_size> ub_box = Vector<optimization::design_vector_size>::Zero();
-        //     lb_box << dv_lb, u_lb, z_lb;
-        //     ub_box << dv_ub, u_ub, z_ub;
+        void update_optimization(OptimizationData& opt_data, Vector<model::contact_site_ids_size>& contact_mask) {
+            /* Update Optimization Data: */
+            // Concatenate Constraint Matrix:
+            MatrixColMajor<constraint_matrix_rows, constraint_matrix_cols> A;
+            A << opt_data.Aeq, opt_data.Aineq, Abox;
+            // Concatenate Lower Bounds:
+            Vector<bounds_size> lb;
+            lb << opt_data.beq, opt_data.bineq_lb, dv_lb, u_lb, z_lb;
+            // Concatenate Upper Bounds:
+            Vector<bounds_size> ub;
+            Vector<optimization::z_size> z_ub_masked = z_ub;
+            // Mask z_ub with contact_mask:
+            int idx = 2;
+            for(double& mask : contact_mask) {
+                z_ub_masked(idx) *= mask; 
+                idx += 3;
+            }
+            ub << opt_data.beq, opt_data.bineq, dv_ub, u_ub, z_ub_masked;
 
-        //     // Inequality Constraints are constants:
-        //     Matrix<optimization::Aineq_rows, optimization::Aineq_cols> Aineq = Aineq_function();
-        //     Vector<optimization::bineq_sz> bineq_ub = bineq_function();
-        //     Vector<optimization::bineq_sz> bineq_lb = Vector<optimization::bineq_sz>::Constant(-OSQP_INFTY);
-        // }
+            // Update Solver:
+            solver.UpdateObjectiveMatrix(opt_data.H.sparseView());
+            solver.SetObjectiveVector(opt_data.f);
+            solver.UpdateConstraintMatrix(A.sparseView());
+            solver.SetBounds(lb, ub);
+        }
 
-        // Chnage this to private after testing:
-        public:
+        void solve_optimization(void) {
+            // Solve the Optimization:
+            exit_code = solver.Solve();
+            solution = solver.primal_solution();
+        }
+
+        void reset_optimization(void) {
+            // Set Warm Start to Zero:
+            Vector<constraint_matrix_cols> primal_vector = Vector<constraint_matrix_cols>::Zero();
+            Vector<constraint_matrix_rows> dual_vector = Vector<constraint_matrix_rows>::Zero();
+            solver.SetWarmStart(primal_vector, dual_vector);
+        }
+
+        private:
+            /* Mujoco Variables */
             mjModel* mj_model;
             mjData* mj_data;
             std::vector<std::string> sites;
@@ -340,12 +369,43 @@ class OperationalSpaceController {
             std::vector<int> noncontact_site_ids;
             std::vector<int> contact_site_ids;
             std::vector<int> body_ids;
+            /* OSQP Solver, settings, and matrices */
+            OsqpInstance instance;
+            OsqpSolver solver;
+            OsqpSettings settings;
+            OsqpExitCode exit_code;
+            Vector<optimization::design_vector_size> solution = Vector<optimization::design_vector_size>::Zero();
             Vector<optimization::design_vector_size> design_vector = Vector<optimization::design_vector_size>::Zero();
-
-        private:
-            // /* OSQP Solver, settings, and matrices */
-            // OSQPSolver*   solver   = NULL;
-            // OSQPSettings* settings = NULL;
-            // OSQPCscMatrix* P = malloc(sizeof(OSQPCscMatrix));
-            // OSQPCscMatrix* A = malloc(sizeof(OSQPCscMatrix));
+            infinity = std::numeric_limits<double>::infinity();
+            constexpr float big_number = 1e4;
+            // Constraints:
+            MatrixColMajor<optimization::design_vector_size, optimization::design_vector_size> Abox = 
+                MatrixColMajor<optimization::design_vector_size, optimization::design_vector_size>::Identity();
+            Vector<optimization::dv_size> dv_lb = Vector<optimization::dv_size>::Constant(-infinity)
+            Vector<optimization::dv_size> dv_ub = Vector<optimization::dv_size>::Constant(infinity)
+            Vector<model::nu_size> u_lb = {
+                -23.7, -23.7, -45.3,
+                -23.7, -23.7, -45.3,
+                -23.7, -23.7, -45.3,
+                -23.7, -23.7, -45.3
+            };
+            Vector<model::nu_size> u_ub = {
+                23.7, 23.7, 45.3,
+                23.7, 23.7, 45.3,
+                23.7, 23.7, 45.3,
+                23.7, 23.7, 45.3
+            };
+            Vector<optimization::z_size> z_lb = {
+                -infinity, -infinity, 0.0,
+                -infinity, -infinity, 0.0,
+                -infinity, -infinity, 0.0,
+                -infinity, -infinity, 0.0
+            };
+            Vector<optimization::z_size> z_ub = {
+                infinity, infinity, big_number,
+                infinity, infinity, big_number,
+                infinity, infinity, big_number,
+                infinity, infinity, big_number
+            }
+            Vector<optimization::bineq_sz> binq_lb = Vector<optimization::bineq_sz>::Constant(-infinity);
 };

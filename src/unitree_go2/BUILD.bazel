@@ -1,5 +1,5 @@
 cc_library(
-    name = "operational-space-controller",
+    name = "operational_space_controller",
     srcs = ["operational_space_controller.h"],
     deps = [
         ":utilities",
@@ -8,6 +8,7 @@ cc_library(
         "//src/unitree_go2/autogen:autogen_defines_cc",
         "@mujoco-bazel//:mujoco",
         "@eigen//:eigen",
+        "@osqp-cpp//:osqp++",
     ],
     visibility = ["//visibility:public"],
 )
@@ -19,45 +20,4 @@ cc_library(
         "@eigen//:eigen",
     ],
     visibility = ["//visibility:public"],
-)
-
-cc_binary(
-    name = "comparison_test",
-    srcs = ["comparison_test.cc"],
-    data = ["//models/unitree_go2:unitree_go2"],
-    deps = [
-        "//src:utilities",
-        ":operational-space-controller",
-        "@mujoco-bazel//:mujoco",
-        "@eigen//:eigen",
-    ],
-    visibility = ["//visibility:public"],
-)
-
-cc_binary(
-    name = "simulation_test",
-    srcs = ["simulation_test.cc"],
-    data = ["//models/unitree_go2:unitree_go2"],
-    deps = [
-        "//src:utilities",
-        ":operational-space-controller",
-        "@mujoco-bazel//:mujoco",
-        "@eigen//:eigen",
-        "@glfw-bazel//:glfw",
-    ],
-    visibility = ["//visibility:public"],
-)
-
-cc_binary(
-    name = "casadi_test",
-    srcs = ["casadi_test.cc"],
-    data = ["//models/unitree_go2:unitree_go2"],
-    deps = [
-        "//src:utilities",
-        "//src/unitree_go2/autogen:autogen_functions_cc",
-        "//src/unitree_go2/autogen:autogen_defines_cc",
-        ":operational-space-controller",
-        "@mujoco-bazel//:mujoco",
-        "@eigen//:eigen",
-    ],
 )
