@@ -150,11 +150,6 @@ class AutoGen():
         z = q[self.u_idx:self.z_idx]
 
         # Compute Task Space Tracking Objective:
-        # J_task_p, J_task_r = casadi.vertsplit_n(J_task, 2)
-        # J_task_p = casadi.vertsplit_n(J_task_p, self.num_site_ids)
-        # J_task_r = casadi.vertsplit_n(J_task_r, self.num_site_ids)
-        # J_task = map(lambda x, y: casadi.vertcat(x, y), J_task_p, J_task_r)
-        # J_task = casadi.vertcat(*J_task)
         ddx_task = J_task @ dv + task_bias
 
         # Split into Translational and Rotational components:
