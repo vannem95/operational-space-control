@@ -5,6 +5,10 @@
 #include <algorithm>
 #include <type_traits>
 
+#include <Eigen/Core>
+#include <Eigen/SparseCore>
+
+
 namespace matrix_utils {
 
     constexpr bool RowMajor = true;

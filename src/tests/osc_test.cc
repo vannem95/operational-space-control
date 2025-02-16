@@ -178,9 +178,6 @@ int main(int argc, char** argv) {
             contact_mask(i) = contact.dist < contact_threshold;
         }
 
-        // Print Base Position:
-        // std::cout << "Base Position: " << qpos(Eigen::seqN(0, 3)).transpose() << std::endl;
-
         // Create state struct:
         State next_state;
         next_state.motor_position = joint_pos;

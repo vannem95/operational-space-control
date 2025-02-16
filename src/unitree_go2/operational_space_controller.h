@@ -464,7 +464,7 @@ class OperationalSpaceController {
                 sparse_H.makeCompressed();
                 sparse_A.makeCompressed();
 
-                // Setup Internal OSQP workspace:
+                // Initalize OSQP workspace:
                 instance.objective_matrix = sparse_H;
                 instance.objective_vector = opt_data.f;
                 instance.constraint_matrix = sparse_A;
@@ -500,19 +500,28 @@ class OperationalSpaceController {
                 sparse_H.makeCompressed();
                 sparse_A.makeCompressed();
 
-                // Setup Internal OSQP workspace: (Must remake workspace in sparsity pattern changes)
-                instance.objective_matrix = sparse_H;
-                instance.objective_vector = opt_data.f;
-                instance.constraint_matrix = sparse_A;
-                instance.lower_bounds = lb;
-                instance.upper_bounds = ub;
-                
-                // Return type is absl::Status
-                auto status = solver.Init(instance, settings);
-                assert(status.ok() && "OSQP Solver failed to initialize.");
-
-                // Setwarmstart:
-                auto warmstart_status = solver.SetWarmStart(solution, dual_solution);
+                // Check if sparisty changed:
+                auto sparsity_check = solver.UpdateObjectiveAndConstraintMatrices(sparse_H, sparse_A);
+                if(sparsity_check.ok()) {
+                    // Update Internal OSQP workspace:
+                    std::ignore = solver.SetObjectiveVector(opt_data.f);
+                    std::ignore = solver.SetBounds(lb, ub);
+                }
+                else {
+                    // Reinitalize OSQP workspace:
+                    instance.objective_matrix = sparse_H;
+                    instance.objective_vector = opt_data.f;
+                    instance.constraint_matrix = sparse_A;
+                    instance.lower_bounds = lb;
+                    instance.upper_bounds = ub;
+                    
+                    // Return type is absl::Status
+                    auto status = solver.Init(instance, settings);
+                    assert(status.ok() && "OSQP Solver failed to initialize.");
+                    
+                    // Setwarmstart:
+                    auto warmstart_status = solver.SetWarmStart(solution, dual_solution);
+                }
             }
     
             void solve_optimization() {
@@ -596,10 +605,10 @@ class OperationalSpaceController {
                     } 
                     else {
                         // Log overrun
-                        // auto overrun = std::chrono::duration_cast<std::chrono::microseconds>(now - next_execution_time);
-                        // std::cout << "Operational Space Control Loop Execution Time Exceeded Control Rate: " 
-                        //         << overrun.count() << "us" << std::endl;
-                        // // Reset next execution time to prevent cascading delays
+                        auto overrun = std::chrono::duration_cast<std::chrono::microseconds>(now - next_execution_time);
+                        std::cout << "Operational Space Control Loop Execution Time Exceeded Control Rate: " 
+                                << overrun.count() << "us" << std::endl;
+                        // Reset next execution time to prevent cascading delays
                         next_execution_time = now;
                     }
                 }
