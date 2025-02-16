@@ -3,6 +3,7 @@
 
 #include "mujoco/mujoco.h"
 #include "Eigen/Dense"
+#include "osqp++.h"
 #include "GLFW/glfw3.h"
 
 #include "src/unitree_go2/operational_space_controller.h"
@@ -124,15 +125,21 @@ int main(int argc, char** argv) {
     initial_state.body_velocity = body_velocity;
     initial_state.body_acceleration = Eigen::VectorXd::Zero(3);
     initial_state.contact_mask = contact_mask;
-    int control_rate = 2;
     
+    int control_rate = 2000;
+    
+    OsqpSettings osqp_settings;
+    osqp_settings.verbose = false;
+    osqp_settings.polish = true;
+    osqp_settings.polish_refine_iter = 3;
+    osqp_settings.eps_abs = 1e-3;
+
+    OperationalSpaceController osc(initial_state, control_rate, osqp_settings);
+
     // Get model path:
     std::filesystem::path model_path = "models/unitree_go2/go2_mjx_torque.xml";
-
-    // Initialize OSC:
-    OperationalSpaceController osc(initial_state, control_rate);
     osc.initialize(model_path);
-
+    
     // Update Taskspace Targets:
     Eigen::Matrix<double, model::site_ids_size, 6, Eigen::RowMajor> taskspace_targets = Eigen::Matrix<double, model::site_ids_size, 6, Eigen::RowMajor>::Zero();
     taskspace_targets << 0.0, 0.0, 0.0, 0.0, 0.0, 0.0,
@@ -171,6 +178,9 @@ int main(int argc, char** argv) {
             contact_mask(i) = contact.dist < contact_threshold;
         }
 
+        // Print Base Position:
+        // std::cout << "Base Position: " << qpos(Eigen::seqN(0, 3)).transpose() << std::endl;
+
         // Create state struct:
         State next_state;
         next_state.motor_position = joint_pos;
@@ -184,6 +194,11 @@ int main(int argc, char** argv) {
 
         // Update OSC state:
         osc.update_state(next_state);
+
+        // Get torque command:
+        Eigen::VectorXd torque_command = osc.get_torque_command();
+        // std::cout << "Torque Command: " << torque_command.transpose() << std::endl;
+        mj_data->ctrl = torque_command.data();
 
         if(visualize_iter % 10 == 0) {
             mjv_updateScene(mj_model, mj_data, &opt, &pert, &cam, mjCAT_ALL, &scn);

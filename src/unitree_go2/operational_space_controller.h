@@ -18,6 +18,7 @@
 #include "src/unitree_go2/utilities.h"
 #include "src/utilities.h"
 
+
 using namespace constants;
 using namespace osqp;
 
@@ -140,7 +141,8 @@ struct State {
 
 class OperationalSpaceController {
     public:
-        OperationalSpaceController(State initial_state,  int control_rate) : state(initial_state), control_rate_ms(control_rate) {}
+        OperationalSpaceController(State initial_state,  int control_rate = 2000, OsqpSettings osqp_settings = OsqpSettings()) : 
+            state(initial_state), control_rate_us(control_rate), settings(osqp_settings) {}
         ~OperationalSpaceController() {}
 
         void initialize(std::filesystem::path xml_path) {
@@ -230,10 +232,10 @@ class OperationalSpaceController {
         private:
             // Shared Variables: (Inputs: state and taskspace_targets) (Outputs: torque_command)
             State state;
-            Matrix<model::site_ids_size, 6> taskspace_targets = Matrix<model::site_ids_size, 6>::Constant(1e-6);
+            Matrix<model::site_ids_size, 6> taskspace_targets = Matrix<model::site_ids_size, 6>::Zero();
             Vector<model::nu_size> torque_command = Vector<model::nu_size>::Zero();
             // Control Thread:
-            int control_rate_ms;
+            int control_rate_us;
             std::atomic<bool> running{true};
             std::mutex mutex;
             std::thread thread;
@@ -256,12 +258,11 @@ class OperationalSpaceController {
             OsqpSettings settings;
             OsqpExitCode exit_code;
             Vector<optimization::design_vector_size> solution = Vector<optimization::design_vector_size>::Zero();
+            Vector<constraint_matrix_rows> dual_solution = Vector<constraint_matrix_rows>::Zero();
             Vector<optimization::design_vector_size> design_vector = Vector<optimization::design_vector_size>::Zero();
             const double infinity = std::numeric_limits<double>::infinity();
             OSCData osc_data;
             OptimizationData opt_data;
-            Eigen::SparseMatrix<double> sparse_H;
-            Eigen::SparseMatrix<double> sparse_A;
             const float big_number = 1e4;
             // Constraints:
             MatrixColMajor<optimization::design_vector_size, optimization::design_vector_size> Abox = 
@@ -311,19 +312,20 @@ class OperationalSpaceController {
                 mj_data->qpos = qpos.data();
                 mj_data->qvel = qvel.data();
 
-                // Minimal steps needed to update mujoco data:
-                mj_kinematics(mj_model, mj_data);
-                mj_comPos(mj_model, mj_data);
-                mj_comVel(mj_model, mj_data);
+                /* Minimal Pipeline Steps Needed: 2-18 */
+                // Runs steps 1-18:
+                // mj_step1(mj_model, mj_data);
+
+                // Runs steps 2-22:
+                // mj_forward(mj_model, mj_data);
+
+                // Runs steps: 2-12, 12-18:
+                mj_fwdPosition(mj_model, mj_data);
+                mj_fwdVelocity(mj_model, mj_data);
+                 
 
                 // Update Points:
                 points = Eigen::Map<Matrix<model::site_ids_size, 3>>(mj_data->site_xpos);
-
-                // If sites != the site_id mappings
-                // Matrix<model::site_ids_size, 3> site_xpos = Eigen::Map<Matrix<model::site_ids_size, 3>>(mj_data->site_xpos);
-                // int iter = 0;
-                // for(const int& site_id : site_ids)
-                //     points.row(iter) = Eigen::Map<Matrix<1, 3>>(mj_data->site_xpos[site_id]);
             }
 
             void update_osc_data() {
@@ -397,23 +399,6 @@ class OperationalSpaceController {
                     Eigen::placeholders::all
                 ).transpose();
     
-                // (NOTE:) CONTACT IS NOW HANDLED BY STATE STRUCT:
-                // Contact Mask: Shape (num_contacts, 1)
-                // Vector<model::contact_site_ids_size> contact_mask = Vector<model::contact_site_ids_size>::Zero();
-                // double contact_threshold = 1e-3;
-                // for(int i = 0; i < model::contact_site_ids_size; i++) {
-                //     auto contact = mj_data->contact[i];
-                //     contact_mask(i) = contact.dist < contact_threshold;
-                // }
-    
-                // Hardware:
-                // Vector<model::contact_site_ids_size> contact_mask = Vector<model::contact_site_ids_size>::Zero();
-                // double contact_threshold = 24.0;
-                // for(int i = 0; i < model::contact_site_ids_size; i++) {
-                //     double contact = state.contacts[i];
-                //     contact_mask(i) = contact < contact_threshold;
-                // }
-    
                 // Assign to OSCData:
                 osc_data.mass_matrix = mass_matrix;
                 osc_data.coriolis_matrix = coriolis_matrix;
@@ -452,8 +437,7 @@ class OperationalSpaceController {
     
             void initialize_optimization() {
                 // Initialize the Optimization: (Everything should be Column Major for OSQP)
-
-                // Get initial data from initial state: (Required to generate the correct sparsity pattern)
+                // Get initial data from initial state:
                 update_osc_data();
                 update_optimization_data();
 
@@ -475,8 +459,8 @@ class OperationalSpaceController {
                 ub << opt_data.beq, opt_data.bineq, dv_ub, u_ub, z_ub_masked;
                 
                 // Initialize Sparse Matrix:
-                sparse_H = opt_data.H.sparseView();
-                sparse_A = A.sparseView();
+                Eigen::SparseMatrix<double> sparse_H = opt_data.H.sparseView();
+                Eigen::SparseMatrix<double> sparse_A = A.sparseView();
                 sparse_H.makeCompressed();
                 sparse_A.makeCompressed();
 
@@ -511,12 +495,12 @@ class OperationalSpaceController {
                 ub << opt_data.beq, opt_data.bineq, dv_ub, u_ub, z_ub_masked;
                 
                 // Initialize Sparse Matrix:
-                sparse_H = opt_data.H.sparseView();
-                sparse_A = A.sparseView();
+                Eigen::SparseMatrix<double> sparse_H = opt_data.H.sparseView();
+                Eigen::SparseMatrix<double> sparse_A = A.sparseView();
                 sparse_H.makeCompressed();
                 sparse_A.makeCompressed();
 
-                // Setup Internal OSQP workspace:
+                // Setup Internal OSQP workspace: (Must remake workspace in sparsity pattern changes)
                 instance.objective_matrix = sparse_H;
                 instance.objective_vector = opt_data.f;
                 instance.constraint_matrix = sparse_A;
@@ -527,65 +511,15 @@ class OperationalSpaceController {
                 auto status = solver.Init(instance, settings);
                 assert(status.ok() && "OSQP Solver failed to initialize.");
 
+                // Setwarmstart:
+                auto warmstart_status = solver.SetWarmStart(solution, dual_solution);
             }
-
-            // void update_optimization() {
-            //     /* Update Optimization Data: */
-            //     // Concatenate Constraint Matrix:
-            //     MatrixColMajor<constraint_matrix_rows, constraint_matrix_cols> A;
-            //     A << opt_data.Aeq, opt_data.Aineq, Abox;
-            //     // Concatenate Lower Bounds:
-            //     Vector<bounds_size> lb;
-            //     lb << opt_data.beq, bineq_lb, dv_lb, u_lb, z_lb;
-            //     // Concatenate Upper Bounds:
-            //     Vector<bounds_size> ub;
-            //     Vector<optimization::z_size> z_ub_masked = z_ub;
-            //     // Mask z_ub with contact_mask:
-            //     int idx = 2;
-            //     for(double& mask : state.contact_mask) {
-            //         z_ub_masked(idx) *= mask; 
-            //         idx += 3;
-            //     }
-            //     ub << opt_data.beq, opt_data.bineq, dv_ub, u_ub, z_ub_masked;
-                
-            //     // Debug:
-            //     // std::cout << "A: " << A << std::endl;
-            //     // std::cout << "lb: " << lb << std::endl;
-            //     // std::cout << "ub: " << ub << std::endl;
-            //     // std::cout << "H: " << opt_data.H << std::endl;
-            //     // std::cout << "f: " << opt_data.f << std::endl;
-
-            //     sparse_H = opt_data.H.sparseView();
-            //     sparse_A = A.sparseView();
-            //     sparse_H.makeCompressed();
-            //     sparse_A.makeCompressed();
-
-            //     // Update Solver:
-            //     auto objective_status = solver.UpdateObjectiveMatrix(sparse_H);
-            //     auto objectivevector_status = solver.SetObjectiveVector(opt_data.f);
-            //     auto constraint_status = solver.UpdateConstraintMatrix(sparse_A);
-            //     auto bounds_status = solver.SetBounds(lb, ub);
-
-            //     // Debug:
-            //     std::cout << "Objective Status: " << objective_status << std::endl;
-            //     std::cout << "Objective Vector Status: " << objectivevector_status << std::endl;
-            //     std::cout << "Constraint Status: " << constraint_status << std::endl;
-            //     std::cout << "Bounds Status: " << bounds_status << std::endl;
-
-            //     // Debug Instance:
-            //     // std::cout << "Objective Matrix: " << instance.objective_matrix << std::endl;
-            //     // std::cout << "Objective Vector: " << instance.objective_vector << std::endl;
-            //     // std::cout << "Constraint Matrix: " << instance.constraint_matrix << std::endl;
-            //     // std::cout << "Lower Bounds: " << instance.lower_bounds << std::endl;
-            //     // std::cout << "Upper Bounds: " << instance.upper_bounds << std::endl;
-            // }
     
             void solve_optimization() {
                 // Solve the Optimization:
                 exit_code = solver.Solve();
                 solution = solver.primal_solution();
-                // Debug:
-                // std::cout << "Solution: " << solution << std::endl;
+                dual_solution = solver.dual_solution();
             }
     
             void reset_optimization() {
@@ -595,9 +529,45 @@ class OperationalSpaceController {
                 std::ignore = solver.SetWarmStart(primal_vector, dual_vector);
             }
 
+            /* Consistent Sleep Time: */
+            // void control_loop() {
+            //     // Thread Loop:
+            //     while(running) {
+            //         /* Lock Guard Scope */
+            //         {   
+            //             std::lock_guard<std::mutex> lock(mutex);
+            //             // Update Mujoco Data:
+            //             update_mj_data();
+
+            //             // Get OSC Data:
+            //             update_osc_data();
+
+            //             // Get Optimization Data:
+            //             update_optimization_data();
+
+            //             // Update Optimization:
+            //             update_optimization();
+
+            //             // Solve Optimization:
+            //             solve_optimization();
+                        
+            //             // Get torques from QP solution:
+            //             torque_command = solution(Eigen::seqN(optimization::dv_idx, optimization::u_size));
+            //         }
+            //         // Control Rate:
+            //         std::this_thread::sleep_for(std::chrono::microseconds(control_rate_us));
+            //     }
+            // }
+
+            /* Consistent Execution Time: */
             void control_loop() {
+                using Clock = std::chrono::steady_clock;
+                auto next_execution_time = Clock::now();
                 // Thread Loop:
                 while(running) {
+                    // Calculate next execution time first
+                    next_execution_time += std::chrono::microseconds(control_rate_us);
+
                     /* Lock Guard Scope */
                     {   
                         std::lock_guard<std::mutex> lock(mutex);
@@ -619,8 +589,19 @@ class OperationalSpaceController {
                         // Get torques from QP solution:
                         torque_command = solution(Eigen::seqN(optimization::dv_idx, optimization::u_size));
                     }
-                    // Control Rate:
-                    std::this_thread::sleep_for(std::chrono::milliseconds(control_rate_ms));
+                    // Check for overrun and sleep until next execution time
+                    auto now = Clock::now();
+                    if (now < next_execution_time) {
+                        std::this_thread::sleep_until(next_execution_time);
+                    } 
+                    else {
+                        // Log overrun
+                        // auto overrun = std::chrono::duration_cast<std::chrono::microseconds>(now - next_execution_time);
+                        // std::cout << "Operational Space Control Loop Execution Time Exceeded Control Rate: " 
+                        //         << overrun.count() << "us" << std::endl;
+                        // // Reset next execution time to prevent cascading delays
+                        next_execution_time = now;
+                    }
                 }
             }
 };
