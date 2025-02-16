@@ -18,6 +18,7 @@ cc_binary(
     data = ["//models/unitree_go2:unitree_go2"],
     deps = [
         "//src/unitree_go2:operational_space_controller",
+        "//src/unitree_go2/autogen:autogen_defines_cc",
         "@mujoco-bazel//:mujoco",
         "@eigen//:eigen",
         "@glfw-bazel//:glfw",

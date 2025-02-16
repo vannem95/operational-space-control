@@ -140,7 +140,7 @@ struct State {
 
 class OperationalSpaceController {
     public:
-        OperationalSpaceController(State initial_state, int control_rate) : state(initial_state), control_rate_ms(control_rate) {}
+        OperationalSpaceController(State initial_state,  int control_rate) : state(initial_state), control_rate_ms(control_rate) {}
         ~OperationalSpaceController() {}
 
         void initialize(std::filesystem::path xml_path) {
@@ -185,6 +185,9 @@ class OperationalSpaceController {
             }
             // Assert Number of Sites and Bodies are equal:
             assert(site_ids.size() == body_ids.size() && "Number of Sites and Bodies must be equal.");
+            
+            // Initialize mj_data with initial state:
+            update_mj_data();
 
             // Initialize Optimization:
             initialize_optimization();
@@ -209,16 +212,26 @@ class OperationalSpaceController {
             state = new_state;
         }
 
-        void update_taskspace_targets(Eigen::Ref<const Matrix<model::site_ids_size, 6>>& new_taskspace_targets) {
+        void update_taskspace_targets(const Matrix<model::site_ids_size, 6>& new_taskspace_targets) {
             std::lock_guard<std::mutex> lock(mutex);
             taskspace_targets = new_taskspace_targets;
+        }
+
+        Vector<model::nu_size> get_torque_command() {
+            std::lock_guard<std::mutex> lock(mutex);
+            return torque_command;
+        }
+
+        Vector<optimization::design_vector_size> get_solution() {
+            std::lock_guard<std::mutex> lock(mutex);
+            return solution;
         }
 
         private:
             // Shared Variables: (Inputs: state and taskspace_targets) (Outputs: torque_command)
             State state;
-            Matrix<model::site_ids_size, 6> taskspace_targets;
-            Vector<model::nu_size> torque_command;
+            Matrix<model::site_ids_size, 6> taskspace_targets = Matrix<model::site_ids_size, 6>::Constant(1e-6);
+            Vector<model::nu_size> torque_command = Vector<model::nu_size>::Zero();
             // Control Thread:
             int control_rate_ms;
             std::atomic<bool> running{true};
@@ -236,7 +249,7 @@ class OperationalSpaceController {
             std::vector<int> contact_site_ids;
             std::vector<int> body_ids;
             Matrix<model::site_ids_size, 3> points;
-            const bool is_fixed_based = false;
+            static constexpr bool is_fixed_based = false;
             /* OSQP Solver, settings, and matrices */
             OsqpInstance instance;
             OsqpSolver solver;
@@ -247,6 +260,8 @@ class OperationalSpaceController {
             const double infinity = std::numeric_limits<double>::infinity();
             OSCData osc_data;
             OptimizationData opt_data;
+            Eigen::SparseMatrix<double> sparse_H;
+            Eigen::SparseMatrix<double> sparse_A;
             const float big_number = 1e4;
             // Constraints:
             MatrixColMajor<optimization::design_vector_size, optimization::design_vector_size> Abox = 
@@ -277,13 +292,12 @@ class OperationalSpaceController {
                 infinity, infinity, big_number,
                 infinity, infinity, big_number
             };
-            Vector<optimization::bineq_sz> binq_lb = Vector<optimization::bineq_sz>::Constant(-infinity);
+            Vector<optimization::bineq_sz> bineq_lb = Vector<optimization::bineq_sz>::Constant(-infinity);
             
             void update_mj_data() {
-                std::lock_guard<std::mutex> lock(mutex);
                 Vector<model::nq_size> qpos = Vector<model::nq_size>::Zero();
                 Vector<model::nv_size> qvel = Vector<model::nv_size>::Zero();
-                if (is_fixed_based) {
+                if constexpr (is_fixed_based) {
                     qpos = state.motor_position;
                     qvel = state.motor_velocity;
                 } 
@@ -412,12 +426,12 @@ class OperationalSpaceController {
     
             void update_optimization_data() {
                 // Convert OSCData to Column Major for Casadi Functions:
-                auto mass_matrix = matrix_utils::transformMatrix<model::nv_size, model::nv_size, matrix_utils::ColumnMajor>(osc_data.mass_matrix.data());
-                auto coriolis_matrix = matrix_utils::transformMatrix<model::nv_size, 1, matrix_utils::ColumnMajor>(osc_data.coriolis_matrix.data());
-                auto contact_jacobian = matrix_utils::transformMatrix<model::nv_size, optimization::z_size, matrix_utils::ColumnMajor>(osc_data.contact_jacobian.data());
-                auto taskspace_jacobian = matrix_utils::transformMatrix<s_size, model::nv_size, matrix_utils::ColumnMajor>(osc_data.taskspace_jacobian.data());
-                auto taskspace_bias = matrix_utils::transformMatrix<s_size, 1, matrix_utils::ColumnMajor>(osc_data.taskspace_bias.data());
-                auto desired_taskspace_ddx = matrix_utils::transformMatrix<model::site_ids_size, 6, matrix_utils::ColumnMajor>(taskspace_targets.data());
+                auto mass_matrix = matrix_utils::transformMatrix<double, model::nv_size, model::nv_size, matrix_utils::ColumnMajor>(osc_data.mass_matrix.data());
+                auto coriolis_matrix = matrix_utils::transformMatrix<double, model::nv_size, 1, matrix_utils::ColumnMajor>(osc_data.coriolis_matrix.data());
+                auto contact_jacobian = matrix_utils::transformMatrix<double, model::nv_size, optimization::z_size, matrix_utils::ColumnMajor>(osc_data.contact_jacobian.data());
+                auto taskspace_jacobian = matrix_utils::transformMatrix<double, s_size, model::nv_size, matrix_utils::ColumnMajor>(osc_data.taskspace_jacobian.data());
+                auto taskspace_bias = matrix_utils::transformMatrix<double, s_size, 1, matrix_utils::ColumnMajor>(osc_data.taskspace_bias.data());
+                auto desired_taskspace_ddx = matrix_utils::transformMatrix<double, model::site_ids_size, 6, matrix_utils::ColumnMajor>(taskspace_targets.data());
                 
                 // Evaluate Casadi Functions:
                 auto Aeq_matrix = evaluate_function<AeqParams>(Aeq_ops, {design_vector.data(), mass_matrix.data(), coriolis_matrix.data(), contact_jacobian.data()});
@@ -438,32 +452,17 @@ class OperationalSpaceController {
     
             void initialize_optimization() {
                 // Initialize the Optimization: (Everything should be Column Major for OSQP)
-                // Create Dummy Matrices to initialize size:
-                MatrixColMajor<constraint_matrix_rows, constraint_matrix_cols> constraint_matrix = MatrixColMajor<constraint_matrix_rows, constraint_matrix_cols>::Zero();
-                Vector<bounds_size> bounds = Vector<bounds_size>::Zero();
-                MatrixColMajor<optimization::H_rows, optimization::H_cols> H = MatrixColMajor<optimization::H_rows, optimization::H_cols>::Zero();
-                Vector<optimization::f_sz> f = Vector<optimization::f_sz>::Zero();
-    
-                // Setup Internal OSQP workspace:
-                instance.objective_matrix = H.sparseView();
-                instance.objective_vector = f;
-                instance.constraint_matrix = constraint_matrix.sparseView();
-                instance.lower_bounds = bounds;
-                instance.upper_bounds = bounds;
-                
-                // Return type is absl::Status
-                auto status = solver.Init(instance, settings);
-                assert(status.ok() && "OSQP Solver failed to initialize.");
-            }
-    
-            void update_optimization() {
-                /* Update Optimization Data: */
+
+                // Get initial data from initial state: (Required to generate the correct sparsity pattern)
+                update_osc_data();
+                update_optimization_data();
+
                 // Concatenate Constraint Matrix:
                 MatrixColMajor<constraint_matrix_rows, constraint_matrix_cols> A;
                 A << opt_data.Aeq, opt_data.Aineq, Abox;
                 // Concatenate Lower Bounds:
                 Vector<bounds_size> lb;
-                lb << opt_data.beq, opt_data.bineq_lb, dv_lb, u_lb, z_lb;
+                lb << opt_data.beq, bineq_lb, dv_lb, u_lb, z_lb;
                 // Concatenate Upper Bounds:
                 Vector<bounds_size> ub;
                 Vector<optimization::z_size> z_ub_masked = z_ub;
@@ -474,25 +473,126 @@ class OperationalSpaceController {
                     idx += 3;
                 }
                 ub << opt_data.beq, opt_data.bineq, dv_ub, u_ub, z_ub_masked;
-    
-                // Update Solver:
-                solver.UpdateObjectiveMatrix(opt_data.H.sparseView());
-                solver.SetObjectiveVector(opt_data.f);
-                solver.UpdateConstraintMatrix(A.sparseView());
-                solver.SetBounds(lb, ub);
+                
+                // Initialize Sparse Matrix:
+                sparse_H = opt_data.H.sparseView();
+                sparse_A = A.sparseView();
+                sparse_H.makeCompressed();
+                sparse_A.makeCompressed();
+
+                // Setup Internal OSQP workspace:
+                instance.objective_matrix = sparse_H;
+                instance.objective_vector = opt_data.f;
+                instance.constraint_matrix = sparse_A;
+                instance.lower_bounds = lb;
+                instance.upper_bounds = ub;
+                
+                // Return type is absl::Status
+                auto status = solver.Init(instance, settings);
+                assert(status.ok() && "OSQP Solver failed to initialize.");
             }
+            
+            void update_optimization() {
+                // Concatenate Constraint Matrix:
+                MatrixColMajor<constraint_matrix_rows, constraint_matrix_cols> A;
+                A << opt_data.Aeq, opt_data.Aineq, Abox;
+                // Concatenate Lower Bounds:
+                Vector<bounds_size> lb;
+                lb << opt_data.beq, bineq_lb, dv_lb, u_lb, z_lb;
+                // Concatenate Upper Bounds:
+                Vector<bounds_size> ub;
+                Vector<optimization::z_size> z_ub_masked = z_ub;
+                // Mask z_ub with contact_mask:
+                int idx = 2;
+                for(double& mask : state.contact_mask) {
+                    z_ub_masked(idx) *= mask; 
+                    idx += 3;
+                }
+                ub << opt_data.beq, opt_data.bineq, dv_ub, u_ub, z_ub_masked;
+                
+                // Initialize Sparse Matrix:
+                sparse_H = opt_data.H.sparseView();
+                sparse_A = A.sparseView();
+                sparse_H.makeCompressed();
+                sparse_A.makeCompressed();
+
+                // Setup Internal OSQP workspace:
+                instance.objective_matrix = sparse_H;
+                instance.objective_vector = opt_data.f;
+                instance.constraint_matrix = sparse_A;
+                instance.lower_bounds = lb;
+                instance.upper_bounds = ub;
+                
+                // Return type is absl::Status
+                auto status = solver.Init(instance, settings);
+                assert(status.ok() && "OSQP Solver failed to initialize.");
+
+            }
+
+            // void update_optimization() {
+            //     /* Update Optimization Data: */
+            //     // Concatenate Constraint Matrix:
+            //     MatrixColMajor<constraint_matrix_rows, constraint_matrix_cols> A;
+            //     A << opt_data.Aeq, opt_data.Aineq, Abox;
+            //     // Concatenate Lower Bounds:
+            //     Vector<bounds_size> lb;
+            //     lb << opt_data.beq, bineq_lb, dv_lb, u_lb, z_lb;
+            //     // Concatenate Upper Bounds:
+            //     Vector<bounds_size> ub;
+            //     Vector<optimization::z_size> z_ub_masked = z_ub;
+            //     // Mask z_ub with contact_mask:
+            //     int idx = 2;
+            //     for(double& mask : state.contact_mask) {
+            //         z_ub_masked(idx) *= mask; 
+            //         idx += 3;
+            //     }
+            //     ub << opt_data.beq, opt_data.bineq, dv_ub, u_ub, z_ub_masked;
+                
+            //     // Debug:
+            //     // std::cout << "A: " << A << std::endl;
+            //     // std::cout << "lb: " << lb << std::endl;
+            //     // std::cout << "ub: " << ub << std::endl;
+            //     // std::cout << "H: " << opt_data.H << std::endl;
+            //     // std::cout << "f: " << opt_data.f << std::endl;
+
+            //     sparse_H = opt_data.H.sparseView();
+            //     sparse_A = A.sparseView();
+            //     sparse_H.makeCompressed();
+            //     sparse_A.makeCompressed();
+
+            //     // Update Solver:
+            //     auto objective_status = solver.UpdateObjectiveMatrix(sparse_H);
+            //     auto objectivevector_status = solver.SetObjectiveVector(opt_data.f);
+            //     auto constraint_status = solver.UpdateConstraintMatrix(sparse_A);
+            //     auto bounds_status = solver.SetBounds(lb, ub);
+
+            //     // Debug:
+            //     std::cout << "Objective Status: " << objective_status << std::endl;
+            //     std::cout << "Objective Vector Status: " << objectivevector_status << std::endl;
+            //     std::cout << "Constraint Status: " << constraint_status << std::endl;
+            //     std::cout << "Bounds Status: " << bounds_status << std::endl;
+
+            //     // Debug Instance:
+            //     // std::cout << "Objective Matrix: " << instance.objective_matrix << std::endl;
+            //     // std::cout << "Objective Vector: " << instance.objective_vector << std::endl;
+            //     // std::cout << "Constraint Matrix: " << instance.constraint_matrix << std::endl;
+            //     // std::cout << "Lower Bounds: " << instance.lower_bounds << std::endl;
+            //     // std::cout << "Upper Bounds: " << instance.upper_bounds << std::endl;
+            // }
     
             void solve_optimization() {
                 // Solve the Optimization:
                 exit_code = solver.Solve();
                 solution = solver.primal_solution();
+                // Debug:
+                // std::cout << "Solution: " << solution << std::endl;
             }
     
             void reset_optimization() {
                 // Set Warm Start to Zero:
                 Vector<constraint_matrix_cols> primal_vector = Vector<constraint_matrix_cols>::Zero();
                 Vector<constraint_matrix_rows> dual_vector = Vector<constraint_matrix_rows>::Zero();
-                solver.SetWarmStart(primal_vector, dual_vector);
+                std::ignore = solver.SetWarmStart(primal_vector, dual_vector);
             }
 
             void control_loop() {
@@ -517,7 +617,7 @@ class OperationalSpaceController {
                         solve_optimization();
                         
                         // Get torques from QP solution:
-                        torque_command = solution(Eigen::seq(model::dv_idx, model::u_idx))
+                        torque_command = solution(Eigen::seqN(optimization::dv_idx, optimization::u_size));
                     }
                     // Control Rate:
                     std::this_thread::sleep_for(std::chrono::milliseconds(control_rate_ms));
