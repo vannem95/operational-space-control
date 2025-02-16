@@ -1,12 +1,17 @@
+#pragma once
+
 #include <filesystem>
 #include <vector>
 #include <string>
 #include <cstdlib>
+#include <thread>
+#include <mutex>
+#include <atomic>
 
 #include "mujoco/mujoco.h"
 #include "Eigen/Dense"
 #include "Eigen/SparseCore"
-#include "osqp-cpp/osqp++.h"
+#include "osqp++.h"
 
 #include "src/unitree_go2/autogen/autogen_functions.h"
 #include "src/unitree_go2/autogen/autogen_defines.h"
@@ -14,6 +19,7 @@
 #include "src/utilities.h"
 
 using namespace constants;
+using namespace osqp;
 
 // Anonymous Namespace for shorthand constants:
 namespace {
@@ -108,7 +114,6 @@ struct OSCData {
     Matrix<model::nv_size, optimization::z_size> contact_jacobian;
     Matrix<s_size, model::nv_size> taskspace_jacobian;
     Vector<s_size> taskspace_bias;
-    Vector<model::contact_site_ids_size> contact_mask;
     Vector<model::nq_size> previous_q;
     Vector<model::nv_size> previous_qd;
 };
@@ -122,9 +127,20 @@ struct OptimizationData {
     Vector<optimization::bineq_sz> bineq;
 };
 
+struct State {
+    Vector<model::nu_size> motor_position;
+    Vector<model::nu_size> motor_velocity;
+    Vector<model::nu_size> motor_acceleration;
+    Vector<model::nu_size> torque_estimate;
+    Vector<4> body_rotation;
+    Vector<3> body_velocity;
+    Vector<3> body_acceleration;
+    Vector<model::contact_site_ids_size> contact_mask;
+};
+
 class OperationalSpaceController {
     public:
-        OperationalSpaceController() {}
+        OperationalSpaceController(State initial_state, int control_rate) : state(initial_state), control_rate_ms(control_rate) {}
         ~OperationalSpaceController() {}
 
         void initialize(std::filesystem::path xml_path) {
@@ -169,6 +185,18 @@ class OperationalSpaceController {
             }
             // Assert Number of Sites and Bodies are equal:
             assert(site_ids.size() == body_ids.size() && "Number of Sites and Bodies must be equal.");
+
+            // Initialize Optimization:
+            initialize_optimization();
+        }
+
+        void initialize_control_thread() {
+            thread = std::thread(&OperationalSpaceController::control_loop, this);
+        }
+
+        void stop_control_thread() {
+            running = false;
+            thread.join();
         }
 
         void close() {
@@ -176,188 +204,26 @@ class OperationalSpaceController {
             mj_deleteModel(mj_model);
         }
 
-        OSCData get_osc_data(Eigen::Matrix<double, model::body_ids_size, 3, Eigen::RowMajor>& points) {
-            // Mass Matrix:
-            Matrix<model::nv_size, model::nv_size> mass_matrix = 
-                Matrix<model::nv_size, model::nv_size>::Zero();
-            mj_fullM(mj_model, mass_matrix.data(), mj_data->qM);
-
-            // Coriolis Matrix:
-            Vector<model::nv_size> coriolis_matrix = 
-                Eigen::Map<Vector<model::nv_size>>(mj_data->qfrc_bias);
-
-            // Generalized Positions and Velocities:
-            Vector<model::nq_size> generalized_positions = 
-                Eigen::Map<Vector<model::nq_size> >(mj_data->qpos);
-            Vector<model::nv_size> generalized_velocities = 
-                Eigen::Map<Vector<model::nv_size>>(mj_data->qvel);
-
-            // Jacobian Calculation:
-            Matrix<p_size, model::nv_size> jacobian_translation = 
-                Matrix<p_size, model::nv_size>::Zero();
-            Matrix<r_size, model::nv_size> jacobian_rotation = 
-                Matrix<r_size, model::nv_size>::Zero();
-            Matrix<p_size, model::nv_size> jacobian_dot_translation = 
-                Matrix<p_size, model::nv_size>::Zero();
-            Matrix<r_size, model::nv_size> jacobian_dot_rotation = 
-                Matrix<r_size, model::nv_size>::Zero();
-            for (int i = 0; i < model::body_ids_size; i++) {
-                // Temporary Jacobian Matrices:
-                Matrix<3, model::nv_size> jacp = Matrix<3, model::nv_size>::Zero();
-                Matrix<3, model::nv_size> jacr = Matrix<3, model::nv_size>::Zero();
-                Matrix<3, model::nv_size> jacp_dot = Matrix<3, model::nv_size>::Zero();
-                Matrix<3, model::nv_size> jacr_dot = Matrix<3, model::nv_size>::Zero();
-
-                // Calculate Jacobian:
-                mj_jac(mj_model, mj_data, jacp.data(), jacr.data(), points.row(i).data(), body_ids[i]);
-
-                // Calculate Jacobian Dot:
-                mj_jacDot(mj_model, mj_data, jacp_dot.data(), jacr_dot.data(), points.row(i).data(), body_ids[i]);
-
-                // Append to Jacobian Matrices:
-                int row_offset = i * 3;
-                for(int row_idx = 0; row_idx < 3; row_idx++) {
-                    for(int col_idx = 0; col_idx < model::nv_size; col_idx++) {
-                        jacobian_translation(row_idx + row_offset, col_idx) = jacp(row_idx, col_idx);
-                        jacobian_rotation(row_idx + row_offset, col_idx) = jacr(row_idx, col_idx);
-                        jacobian_dot_translation(row_idx + row_offset, col_idx) = jacp_dot(row_idx, col_idx);
-                        jacobian_dot_rotation(row_idx + row_offset, col_idx) = jacr_dot(row_idx, col_idx);
-                    }
-                }
-            }
-
-            // Stack Jacobian Matrices: Taskspace Jacobian: [jacp; jacr], Jacobian Dot: [jacp_dot; jacr_dot]
-            Matrix<s_size, model::nv_size> taskspace_jacobian = Matrix<s_size, model::nv_size>::Zero();
-            Matrix<s_size, model::nv_size> jacobian_dot = Matrix<s_size, model::nv_size>::Zero();
-            taskspace_jacobian << jacobian_translation, jacobian_rotation;
-            jacobian_dot << jacobian_dot_translation, jacobian_dot_rotation;
-
-            // Calculate Taskspace Bias Acceleration:
-            Vector<s_size> taskspace_bias = Vector<s_size>::Zero();
-            taskspace_bias = jacobian_dot * generalized_velocities;
-
-            // Contact Jacobian: Shape (NV, 3 * num_contacts) 
-            // This assumes contact frames are the last rows of the translation component of the taskspace_jacobian (jacobian_translation).
-            // contact_jacobian = jacobian_translation[end-(3 * contact_site_ids_size):end, :].T
-            Matrix<model::nv_size, optimization::z_size> contact_jacobian = 
-                Matrix<model::nv_size, optimization::z_size>::Zero();
-
-            contact_jacobian = jacobian_translation(
-                Eigen::seq(Eigen::placeholders::end - Eigen::fix<optimization::z_size>, Eigen::placeholders::last),
-                Eigen::placeholders::all
-            ).transpose();
-
-            // Contact Mask: Shape (num_contacts, 1)
-            Vector<model::contact_site_ids_size> contact_mask = Vector<model::contact_site_ids_size>::Zero();
-            double contact_threshold = 1e-3;
-            for(int i = 0; i < model::contact_site_ids_size; i++) {
-                auto contact = mj_data->contact[i];
-                contact_mask(i) = contact.dist < contact_threshold;
-            }
-
-            OSCData osc_data{
-                .mass_matrix = mass_matrix,
-                .coriolis_matrix = coriolis_matrix,
-                .contact_jacobian = contact_jacobian,
-                .taskspace_jacobian = taskspace_jacobian,
-                .taskspace_bias = taskspace_bias,
-                .contact_mask = contact_mask,
-                .previous_q = generalized_positions,
-                .previous_qd = generalized_velocities  
-            };
-
-            return osc_data;
+        void update_state(const State& new_state) {
+            std::lock_guard<std::mutex> lock(mutex);
+            state = new_state;
         }
 
-        OptimizationData get_optimization_data(OSCData& osc_data, Matrix<model::site_ids_size, 6>& desired_taskspace_accelerations) {
-            // Convert OSCData to Column Major for Casadi Functions:
-            auto mass_matrix = matrix_utils::transformMatrix<model::nv_size, model::nv_size, matrix_utils::ColumnMajor>(osc_data.mass_matrix.data());
-            auto coriolis_matrix = matrix_utils::transformMatrix<model::nv_size, 1, matrix_utils::ColumnMajor>(osc_data.coriolis_matrix.data());
-            auto contact_jacobian = matrix_utils::transformMatrix<model::nv_size, optimization::z_size, matrix_utils::ColumnMajor>(osc_data.contact_jacobian.data());
-            auto taskspace_jacobian = matrix_utils::transformMatrix<s_size, model::nv_size, matrix_utils::ColumnMajor>(osc_data.taskspace_jacobian.data());
-            auto taskspace_bias = matrix_utils::transformMatrix<s_size, 1, matrix_utils::ColumnMajor>(osc_data.taskspace_bias.data());
-            auto desired_taskspace_ddx = matrix_utils::transformMatrix<model::site_ids_size, 6, matrix_utils::ColumnMajor>(desired_taskspace_accelerations.data());
-            
-            // Evaluate Casadi Functions:
-            auto Aeq_matrix = evaluate_function<AeqParams>(Aeq_ops, {design_vector.data(), mass_matrix.data(), coriolis_matrix.data(), contact_jacobian.data()});
-            auto beq_matrix = evaluate_function<beqParams>(beq_ops, {design_vector.data(), mass_matrix.data(), coriolis_matrix.data(), contact_jacobian.data()});
-            auto Aineq_matrix = evaluate_function<AineqParams>(Aineq_ops, {design_vector.data()});
-            auto bineq_matrix = evaluate_function<bineqParams>(bineq_ops, {design_vector.data()});
-            auto H_matrix = evaluate_function<HParams>(H_ops, {design_vector.data(), desired_taskspace_ddx.data(), taskspace_jacobian.data(), taskspace_bias.data()});
-            auto f_matrix = evaluate_function<fParams>(f_ops, {design_vector.data(), desired_taskspace_ddx.data(), taskspace_jacobian.data(), taskspace_bias.data()});
-
-            OptimizationData opt_data {
-                .H = H_matrix,
-                .f = f_matrix,
-                .Aeq = Aeq_matrix,
-                .beq = beq_matrix,
-                .Aineq = Aineq_matrix,
-                .bineq = bineq_matrix
-            };
-
-            return opt_data;
-        }
-
-        void initialize_optimization(void) {
-            // Initialize the Optimization: (Everything should be Column Major for OSQP)
-            // Create Dummy Matrices to initialize size:
-            MatrixColMajor<constraint_matrix_rows, constraint_matrix_cols> constraint_matrix = MatrixColMajor<constraint_matrix_rows, constraint_matrix_cols>::Zero();
-            Vector<bounds_size> bounds = Vector<bounds_size>::Zero();
-            MatrixColMajor<optimization::H_rows, optimization::H_cols> H = MatrixColMajor<optimization::H_rows, optimization::H_cols>::Zero();
-            Vector<optimization::f_sz> f = Vector<optimization::f_sz>::Zero();
-
-            // Setup Internal OSQP workspace:
-            instance.objective_matrix = H.sparseView();
-            instance.objective_vector = f;
-            instance.constraint_matrix = constraint_matrix.sparseView();
-            instance.lower_bounds = bounds;
-            instance.upper_bounds = bounds;
-            
-            // Return type is absl::Status
-            auto status = solver.Init(instance, settings);
-            assert(status.ok() && "OSQP Solver failed to initialize.");
-        }
-
-        void update_optimization(OptimizationData& opt_data, Vector<model::contact_site_ids_size>& contact_mask) {
-            /* Update Optimization Data: */
-            // Concatenate Constraint Matrix:
-            MatrixColMajor<constraint_matrix_rows, constraint_matrix_cols> A;
-            A << opt_data.Aeq, opt_data.Aineq, Abox;
-            // Concatenate Lower Bounds:
-            Vector<bounds_size> lb;
-            lb << opt_data.beq, opt_data.bineq_lb, dv_lb, u_lb, z_lb;
-            // Concatenate Upper Bounds:
-            Vector<bounds_size> ub;
-            Vector<optimization::z_size> z_ub_masked = z_ub;
-            // Mask z_ub with contact_mask:
-            int idx = 2;
-            for(double& mask : contact_mask) {
-                z_ub_masked(idx) *= mask; 
-                idx += 3;
-            }
-            ub << opt_data.beq, opt_data.bineq, dv_ub, u_ub, z_ub_masked;
-
-            // Update Solver:
-            solver.UpdateObjectiveMatrix(opt_data.H.sparseView());
-            solver.SetObjectiveVector(opt_data.f);
-            solver.UpdateConstraintMatrix(A.sparseView());
-            solver.SetBounds(lb, ub);
-        }
-
-        void solve_optimization(void) {
-            // Solve the Optimization:
-            exit_code = solver.Solve();
-            solution = solver.primal_solution();
-        }
-
-        void reset_optimization(void) {
-            // Set Warm Start to Zero:
-            Vector<constraint_matrix_cols> primal_vector = Vector<constraint_matrix_cols>::Zero();
-            Vector<constraint_matrix_rows> dual_vector = Vector<constraint_matrix_rows>::Zero();
-            solver.SetWarmStart(primal_vector, dual_vector);
+        void update_taskspace_targets(Eigen::Ref<const Matrix<model::site_ids_size, 6>>& new_taskspace_targets) {
+            std::lock_guard<std::mutex> lock(mutex);
+            taskspace_targets = new_taskspace_targets;
         }
 
         private:
+            // Shared Variables: (Inputs: state and taskspace_targets) (Outputs: torque_command)
+            State state;
+            Matrix<model::site_ids_size, 6> taskspace_targets;
+            Vector<model::nu_size> torque_command;
+            // Control Thread:
+            int control_rate_ms;
+            std::atomic<bool> running{true};
+            std::mutex mutex;
+            std::thread thread;
             /* Mujoco Variables */
             mjModel* mj_model;
             mjData* mj_data;
@@ -369,6 +235,8 @@ class OperationalSpaceController {
             std::vector<int> noncontact_site_ids;
             std::vector<int> contact_site_ids;
             std::vector<int> body_ids;
+            Matrix<model::site_ids_size, 3> points;
+            const bool is_fixed_based = false;
             /* OSQP Solver, settings, and matrices */
             OsqpInstance instance;
             OsqpSolver solver;
@@ -376,13 +244,15 @@ class OperationalSpaceController {
             OsqpExitCode exit_code;
             Vector<optimization::design_vector_size> solution = Vector<optimization::design_vector_size>::Zero();
             Vector<optimization::design_vector_size> design_vector = Vector<optimization::design_vector_size>::Zero();
-            infinity = std::numeric_limits<double>::infinity();
-            constexpr float big_number = 1e4;
+            const double infinity = std::numeric_limits<double>::infinity();
+            OSCData osc_data;
+            OptimizationData opt_data;
+            const float big_number = 1e4;
             // Constraints:
             MatrixColMajor<optimization::design_vector_size, optimization::design_vector_size> Abox = 
                 MatrixColMajor<optimization::design_vector_size, optimization::design_vector_size>::Identity();
-            Vector<optimization::dv_size> dv_lb = Vector<optimization::dv_size>::Constant(-infinity)
-            Vector<optimization::dv_size> dv_ub = Vector<optimization::dv_size>::Constant(infinity)
+            Vector<optimization::dv_size> dv_lb = Vector<optimization::dv_size>::Constant(-infinity);
+            Vector<optimization::dv_size> dv_ub = Vector<optimization::dv_size>::Constant(infinity);
             Vector<model::nu_size> u_lb = {
                 -23.7, -23.7, -45.3,
                 -23.7, -23.7, -45.3,
@@ -406,6 +276,251 @@ class OperationalSpaceController {
                 infinity, infinity, big_number,
                 infinity, infinity, big_number,
                 infinity, infinity, big_number
-            }
+            };
             Vector<optimization::bineq_sz> binq_lb = Vector<optimization::bineq_sz>::Constant(-infinity);
+            
+            void update_mj_data() {
+                std::lock_guard<std::mutex> lock(mutex);
+                Vector<model::nq_size> qpos = Vector<model::nq_size>::Zero();
+                Vector<model::nv_size> qvel = Vector<model::nv_size>::Zero();
+                if (is_fixed_based) {
+                    qpos = state.motor_position;
+                    qvel = state.motor_velocity;
+                } 
+                else {
+                    const Vector<3> zero_vector = {0.0, 0.0, 0.0};
+                    qpos << zero_vector, state.body_rotation, state.motor_position;
+                    qvel << zero_vector, state.body_velocity, state.motor_velocity;
+                }
+
+                // Update Mujoco Data:
+                mj_data->qpos = qpos.data();
+                mj_data->qvel = qvel.data();
+
+                // Minimal steps needed to update mujoco data:
+                mj_kinematics(mj_model, mj_data);
+                mj_comPos(mj_model, mj_data);
+                mj_comVel(mj_model, mj_data);
+
+                // Update Points:
+                points = Eigen::Map<Matrix<model::site_ids_size, 3>>(mj_data->site_xpos);
+
+                // If sites != the site_id mappings
+                // Matrix<model::site_ids_size, 3> site_xpos = Eigen::Map<Matrix<model::site_ids_size, 3>>(mj_data->site_xpos);
+                // int iter = 0;
+                // for(const int& site_id : site_ids)
+                //     points.row(iter) = Eigen::Map<Matrix<1, 3>>(mj_data->site_xpos[site_id]);
+            }
+
+            void update_osc_data() {
+                // Mass Matrix:
+                Matrix<model::nv_size, model::nv_size> mass_matrix = 
+                    Matrix<model::nv_size, model::nv_size>::Zero();
+                mj_fullM(mj_model, mass_matrix.data(), mj_data->qM);
+    
+                // Coriolis Matrix:
+                Vector<model::nv_size> coriolis_matrix = 
+                    Eigen::Map<Vector<model::nv_size>>(mj_data->qfrc_bias);
+    
+                // Generalized Positions and Velocities:
+                Vector<model::nq_size> generalized_positions = 
+                    Eigen::Map<Vector<model::nq_size> >(mj_data->qpos);
+                Vector<model::nv_size> generalized_velocities = 
+                    Eigen::Map<Vector<model::nv_size>>(mj_data->qvel);
+    
+                // Jacobian Calculation:
+                Matrix<p_size, model::nv_size> jacobian_translation = 
+                    Matrix<p_size, model::nv_size>::Zero();
+                Matrix<r_size, model::nv_size> jacobian_rotation = 
+                    Matrix<r_size, model::nv_size>::Zero();
+                Matrix<p_size, model::nv_size> jacobian_dot_translation = 
+                    Matrix<p_size, model::nv_size>::Zero();
+                Matrix<r_size, model::nv_size> jacobian_dot_rotation = 
+                    Matrix<r_size, model::nv_size>::Zero();
+                for (int i = 0; i < model::body_ids_size; i++) {
+                    // Temporary Jacobian Matrices:
+                    Matrix<3, model::nv_size> jacp = Matrix<3, model::nv_size>::Zero();
+                    Matrix<3, model::nv_size> jacr = Matrix<3, model::nv_size>::Zero();
+                    Matrix<3, model::nv_size> jacp_dot = Matrix<3, model::nv_size>::Zero();
+                    Matrix<3, model::nv_size> jacr_dot = Matrix<3, model::nv_size>::Zero();
+    
+                    // Calculate Jacobian:
+                    mj_jac(mj_model, mj_data, jacp.data(), jacr.data(), points.row(i).data(), body_ids[i]);
+    
+                    // Calculate Jacobian Dot:
+                    mj_jacDot(mj_model, mj_data, jacp_dot.data(), jacr_dot.data(), points.row(i).data(), body_ids[i]);
+    
+                    // Append to Jacobian Matrices:
+                    int row_offset = i * 3;
+                    for(int row_idx = 0; row_idx < 3; row_idx++) {
+                        for(int col_idx = 0; col_idx < model::nv_size; col_idx++) {
+                            jacobian_translation(row_idx + row_offset, col_idx) = jacp(row_idx, col_idx);
+                            jacobian_rotation(row_idx + row_offset, col_idx) = jacr(row_idx, col_idx);
+                            jacobian_dot_translation(row_idx + row_offset, col_idx) = jacp_dot(row_idx, col_idx);
+                            jacobian_dot_rotation(row_idx + row_offset, col_idx) = jacr_dot(row_idx, col_idx);
+                        }
+                    }
+                }
+    
+                // Stack Jacobian Matrices: Taskspace Jacobian: [jacp; jacr], Jacobian Dot: [jacp_dot; jacr_dot]
+                Matrix<s_size, model::nv_size> taskspace_jacobian = Matrix<s_size, model::nv_size>::Zero();
+                Matrix<s_size, model::nv_size> jacobian_dot = Matrix<s_size, model::nv_size>::Zero();
+                taskspace_jacobian << jacobian_translation, jacobian_rotation;
+                jacobian_dot << jacobian_dot_translation, jacobian_dot_rotation;
+    
+                // Calculate Taskspace Bias Acceleration:
+                Vector<s_size> taskspace_bias = Vector<s_size>::Zero();
+                taskspace_bias = jacobian_dot * generalized_velocities;
+    
+                // Contact Jacobian: Shape (NV, 3 * num_contacts) 
+                // This assumes contact frames are the last rows of the translation component of the taskspace_jacobian (jacobian_translation).
+                // contact_jacobian = jacobian_translation[end-(3 * contact_site_ids_size):end, :].T
+                Matrix<model::nv_size, optimization::z_size> contact_jacobian = 
+                    Matrix<model::nv_size, optimization::z_size>::Zero();
+    
+                contact_jacobian = jacobian_translation(
+                    Eigen::seq(Eigen::placeholders::end - Eigen::fix<optimization::z_size>, Eigen::placeholders::last),
+                    Eigen::placeholders::all
+                ).transpose();
+    
+                // (NOTE:) CONTACT IS NOW HANDLED BY STATE STRUCT:
+                // Contact Mask: Shape (num_contacts, 1)
+                // Vector<model::contact_site_ids_size> contact_mask = Vector<model::contact_site_ids_size>::Zero();
+                // double contact_threshold = 1e-3;
+                // for(int i = 0; i < model::contact_site_ids_size; i++) {
+                //     auto contact = mj_data->contact[i];
+                //     contact_mask(i) = contact.dist < contact_threshold;
+                // }
+    
+                // Hardware:
+                // Vector<model::contact_site_ids_size> contact_mask = Vector<model::contact_site_ids_size>::Zero();
+                // double contact_threshold = 24.0;
+                // for(int i = 0; i < model::contact_site_ids_size; i++) {
+                //     double contact = state.contacts[i];
+                //     contact_mask(i) = contact < contact_threshold;
+                // }
+    
+                // Assign to OSCData:
+                osc_data.mass_matrix = mass_matrix;
+                osc_data.coriolis_matrix = coriolis_matrix;
+                osc_data.contact_jacobian = contact_jacobian;
+                osc_data.taskspace_jacobian = taskspace_jacobian;
+                osc_data.taskspace_bias = taskspace_bias;
+                osc_data.previous_q = generalized_positions;
+                osc_data.previous_qd = generalized_velocities;
+            }
+    
+            void update_optimization_data() {
+                // Convert OSCData to Column Major for Casadi Functions:
+                auto mass_matrix = matrix_utils::transformMatrix<model::nv_size, model::nv_size, matrix_utils::ColumnMajor>(osc_data.mass_matrix.data());
+                auto coriolis_matrix = matrix_utils::transformMatrix<model::nv_size, 1, matrix_utils::ColumnMajor>(osc_data.coriolis_matrix.data());
+                auto contact_jacobian = matrix_utils::transformMatrix<model::nv_size, optimization::z_size, matrix_utils::ColumnMajor>(osc_data.contact_jacobian.data());
+                auto taskspace_jacobian = matrix_utils::transformMatrix<s_size, model::nv_size, matrix_utils::ColumnMajor>(osc_data.taskspace_jacobian.data());
+                auto taskspace_bias = matrix_utils::transformMatrix<s_size, 1, matrix_utils::ColumnMajor>(osc_data.taskspace_bias.data());
+                auto desired_taskspace_ddx = matrix_utils::transformMatrix<model::site_ids_size, 6, matrix_utils::ColumnMajor>(taskspace_targets.data());
+                
+                // Evaluate Casadi Functions:
+                auto Aeq_matrix = evaluate_function<AeqParams>(Aeq_ops, {design_vector.data(), mass_matrix.data(), coriolis_matrix.data(), contact_jacobian.data()});
+                auto beq_matrix = evaluate_function<beqParams>(beq_ops, {design_vector.data(), mass_matrix.data(), coriolis_matrix.data(), contact_jacobian.data()});
+                auto Aineq_matrix = evaluate_function<AineqParams>(Aineq_ops, {design_vector.data()});
+                auto bineq_matrix = evaluate_function<bineqParams>(bineq_ops, {design_vector.data()});
+                auto H_matrix = evaluate_function<HParams>(H_ops, {design_vector.data(), desired_taskspace_ddx.data(), taskspace_jacobian.data(), taskspace_bias.data()});
+                auto f_matrix = evaluate_function<fParams>(f_ops, {design_vector.data(), desired_taskspace_ddx.data(), taskspace_jacobian.data(), taskspace_bias.data()});
+    
+                // Assign to OptimizationData:
+                opt_data.H = H_matrix;
+                opt_data.f = f_matrix;
+                opt_data.Aeq = Aeq_matrix;
+                opt_data.beq = beq_matrix;
+                opt_data.Aineq = Aineq_matrix;
+                opt_data.bineq = bineq_matrix;
+            }
+    
+            void initialize_optimization() {
+                // Initialize the Optimization: (Everything should be Column Major for OSQP)
+                // Create Dummy Matrices to initialize size:
+                MatrixColMajor<constraint_matrix_rows, constraint_matrix_cols> constraint_matrix = MatrixColMajor<constraint_matrix_rows, constraint_matrix_cols>::Zero();
+                Vector<bounds_size> bounds = Vector<bounds_size>::Zero();
+                MatrixColMajor<optimization::H_rows, optimization::H_cols> H = MatrixColMajor<optimization::H_rows, optimization::H_cols>::Zero();
+                Vector<optimization::f_sz> f = Vector<optimization::f_sz>::Zero();
+    
+                // Setup Internal OSQP workspace:
+                instance.objective_matrix = H.sparseView();
+                instance.objective_vector = f;
+                instance.constraint_matrix = constraint_matrix.sparseView();
+                instance.lower_bounds = bounds;
+                instance.upper_bounds = bounds;
+                
+                // Return type is absl::Status
+                auto status = solver.Init(instance, settings);
+                assert(status.ok() && "OSQP Solver failed to initialize.");
+            }
+    
+            void update_optimization() {
+                /* Update Optimization Data: */
+                // Concatenate Constraint Matrix:
+                MatrixColMajor<constraint_matrix_rows, constraint_matrix_cols> A;
+                A << opt_data.Aeq, opt_data.Aineq, Abox;
+                // Concatenate Lower Bounds:
+                Vector<bounds_size> lb;
+                lb << opt_data.beq, opt_data.bineq_lb, dv_lb, u_lb, z_lb;
+                // Concatenate Upper Bounds:
+                Vector<bounds_size> ub;
+                Vector<optimization::z_size> z_ub_masked = z_ub;
+                // Mask z_ub with contact_mask:
+                int idx = 2;
+                for(double& mask : state.contact_mask) {
+                    z_ub_masked(idx) *= mask; 
+                    idx += 3;
+                }
+                ub << opt_data.beq, opt_data.bineq, dv_ub, u_ub, z_ub_masked;
+    
+                // Update Solver:
+                solver.UpdateObjectiveMatrix(opt_data.H.sparseView());
+                solver.SetObjectiveVector(opt_data.f);
+                solver.UpdateConstraintMatrix(A.sparseView());
+                solver.SetBounds(lb, ub);
+            }
+    
+            void solve_optimization() {
+                // Solve the Optimization:
+                exit_code = solver.Solve();
+                solution = solver.primal_solution();
+            }
+    
+            void reset_optimization() {
+                // Set Warm Start to Zero:
+                Vector<constraint_matrix_cols> primal_vector = Vector<constraint_matrix_cols>::Zero();
+                Vector<constraint_matrix_rows> dual_vector = Vector<constraint_matrix_rows>::Zero();
+                solver.SetWarmStart(primal_vector, dual_vector);
+            }
+
+            void control_loop() {
+                // Thread Loop:
+                while(running) {
+                    /* Lock Guard Scope */
+                    {   
+                        std::lock_guard<std::mutex> lock(mutex);
+                        // Update Mujoco Data:
+                        update_mj_data();
+
+                        // Get OSC Data:
+                        update_osc_data();
+
+                        // Get Optimization Data:
+                        update_optimization_data();
+
+                        // Update Optimization:
+                        update_optimization();
+
+                        // Solve Optimization:
+                        solve_optimization();
+                        
+                        // Get torques from QP solution:
+                        torque_command = solution(Eigen::seq(model::dv_idx, model::u_idx))
+                    }
+                    // Control Rate:
+                    std::this_thread::sleep_for(std::chrono::milliseconds(control_rate_ms));
+                }
+            }
 };

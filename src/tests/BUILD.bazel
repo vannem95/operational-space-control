@@ -10,3 +10,16 @@ cc_binary(
     ],
     visibility = ["//visibility:public"],
 )
+
+
+cc_binary(
+    name = "osc_test",
+    srcs = ["osc_test.cc"],
+    data = ["//models/unitree_go2:unitree_go2"],
+    deps = [
+        "//src/unitree_go2:operational_space_controller",
+        "@mujoco-bazel//:mujoco",
+        "@eigen//:eigen",
+        "@glfw-bazel//:glfw",
+    ]
+)
