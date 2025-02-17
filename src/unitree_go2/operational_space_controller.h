@@ -313,13 +313,6 @@ class OperationalSpaceController {
                 mj_data->qpos = qpos.data();
                 mj_data->qvel = qvel.data();
 
-                /* Minimal Pipeline Steps Needed: 2-18 */
-                // Runs steps 1-18:
-                // mj_step1(mj_model, mj_data);
-
-                // Runs steps 2-22:
-                // mj_forward(mj_model, mj_data);
-
                 // Runs steps: 2-12, 12-18:
                 mj_fwdPosition(mj_model, mj_data);
                 mj_fwdVelocity(mj_model, mj_data);
@@ -534,36 +527,6 @@ class OperationalSpaceController {
                 Vector<constraint_matrix_rows> dual_vector = Vector<constraint_matrix_rows>::Zero();
                 std::ignore = solver.SetWarmStart(primal_vector, dual_vector);
             }
-
-            /* Consistent Sleep Time: */
-            // void control_loop() {
-            //     // Thread Loop:
-            //     while(running) {
-            //         /* Lock Guard Scope */
-            //         {   
-            //             std::lock_guard<std::mutex> lock(mutex);
-            //             // Update Mujoco Data:
-            //             update_mj_data();
-
-            //             // Get OSC Data:
-            //             update_osc_data();
-
-            //             // Get Optimization Data:
-            //             update_optimization_data();
-
-            //             // Update Optimization:
-            //             update_optimization();
-
-            //             // Solve Optimization:
-            //             solve_optimization();
-                        
-            //             // Get torques from QP solution:
-            //             torque_command = solution(Eigen::seqN(optimization::dv_idx, optimization::u_size));
-            //         }
-            //         // Control Rate:
-            //         std::this_thread::sleep_for(std::chrono::microseconds(control_rate_us));
-            //     }
-            // }
 
             /* Consistent Execution Time: */
             void control_loop() {
