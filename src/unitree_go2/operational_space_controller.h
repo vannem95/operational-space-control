@@ -449,17 +449,11 @@ class OperationalSpaceController {
                 Vector<bounds_size> ub;
                 Vector<optimization::z_size> z_lb_masked = z_lb;
                 Vector<optimization::z_size> z_ub_masked = z_ub;
-                // OLD:
-                // Mask z_ub with contact_mask:
-                // int idx = 2;
-                // for(double& mask : state.contact_mask) {
-                //     z_ub_masked(idx) *= mask; 
-                //     idx += 3;
-                // }
                 for(int i = 0; i < model::contact_site_ids_size; i++) {
                     z_lb_masked(Eigen::seqN(3 * i, 3)) *= state.contact_mask(i);
                     z_ub_masked(Eigen::seqN(3 * i, 3)) *= state.contact_mask(i);
                 }
+                lb << opt_data.beq, bineq_lb, dv_lb, u_lb, z_lb_masked;
                 ub << opt_data.beq, opt_data.bineq, dv_ub, u_ub, z_ub_masked;
                 
                 // Initialize Sparse Matrix:
@@ -489,13 +483,6 @@ class OperationalSpaceController {
                 Vector<bounds_size> ub;
                 Vector<optimization::z_size> z_lb_masked = z_lb;
                 Vector<optimization::z_size> z_ub_masked = z_ub;
-                // OLD
-                // Mask z bounds with contact_mask:
-                // int idx = 2;
-                // for(double& mask : state.contact_mask) {
-                //     z_ub_masked(idx) *= mask; 
-                //     idx += 3;
-                // }
                 for(int i = 0; i < model::contact_site_ids_size; i++) {
                     z_lb_masked(Eigen::seqN(3 * i, 3)) *= state.contact_mask(i);
                     z_ub_masked(Eigen::seqN(3 * i, 3)) *= state.contact_mask(i);
@@ -510,13 +497,13 @@ class OperationalSpaceController {
                 sparse_A.makeCompressed();
 
                 // Check if sparisty changed:
-                // auto sparsity_check = solver.UpdateObjectiveAndConstraintMatrices(sparse_H, sparse_A);
-                // if(sparsity_check.ok()) {
-                //     // Update Internal OSQP workspace:
-                //     std::ignore = solver.SetObjectiveVector(opt_data.f);
-                //     std::ignore = solver.SetBounds(lb, ub);
-                // }
-                // else {
+                auto sparsity_check = solver.UpdateObjectiveAndConstraintMatrices(sparse_H, sparse_A);
+                if(sparsity_check.ok()) {
+                    // Update Internal OSQP workspace:
+                    std::ignore = solver.SetObjectiveVector(opt_data.f);
+                    std::ignore = solver.SetBounds(lb, ub);
+                }
+                else {
                     // Reinitalize OSQP workspace:
                     instance.objective_matrix = sparse_H;
                     instance.objective_vector = opt_data.f;
@@ -530,7 +517,7 @@ class OperationalSpaceController {
                     
                     // Setwarmstart:
                     auto warmstart_status = solver.SetWarmStart(solution, dual_solution);
-                // }
+                }
             }
     
             void solve_optimization() {
