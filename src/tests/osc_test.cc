@@ -142,7 +142,7 @@ int main(int argc, char** argv) {
     OsqpSettings osqp_settings;
     osqp_settings.verbose = false;
     osqp_settings.polish = true;
-    osqp_settings.polish_refine_iter = 5;
+    osqp_settings.polish_refine_iter = 3;
     osqp_settings.eps_abs = 1e-3;
 
     OperationalSpaceController osc(initial_state, control_rate, osqp_settings);
