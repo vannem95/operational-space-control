@@ -12,6 +12,7 @@
 #include "Eigen/Dense"
 #include "Eigen/SparseCore"
 #include "osqp++.h"
+#include "osqp.h"
 
 #include "src/unitree_go2/autogen/autogen_functions.h"
 #include "src/unitree_go2/autogen/autogen_defines.h"
@@ -260,7 +261,7 @@ class OperationalSpaceController {
             Vector<optimization::design_vector_size> solution = Vector<optimization::design_vector_size>::Zero();
             Vector<constraint_matrix_rows> dual_solution = Vector<constraint_matrix_rows>::Zero();
             Vector<optimization::design_vector_size> design_vector = Vector<optimization::design_vector_size>::Zero();
-            const double infinity = std::numeric_limits<double>::infinity();
+            const double infinity = OSQP_INFTY;
             OSCData osc_data;
             OptimizationData opt_data;
             const float big_number = 1e4;

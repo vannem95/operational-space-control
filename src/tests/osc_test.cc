@@ -1,5 +1,6 @@
 #include <iostream>
 #include <filesystem>
+#include <cmath>
 
 #include "mujoco/mujoco.h"
 #include "Eigen/Dense"
@@ -166,7 +167,7 @@ int main(int argc, char** argv) {
 
     // Loop:
     int visualize_iter = 0;
-    while(mj_data->time < 5) {
+    while(mj_data->time < 30) {
         // Get data to make next_state:
         Eigen::VectorXd qpos = Eigen::Map<Eigen::VectorXd>(mj_data->qpos, mj_model->nq);
         Eigen::VectorXd qvel = Eigen::Map<Eigen::VectorXd>(mj_data->qvel, mj_model->nv);
@@ -199,9 +200,25 @@ int main(int argc, char** argv) {
         // Update OSC state:
         osc.update_state(next_state);
 
+        // Sinusoidal Z Targets:
+        {
+            double kp = 20.0;
+            double kd = 2.0;
+            double magnitude = 0.1;
+            double frequency = 0.5;
+            double position_target = 0.285 + magnitude * std::sin(frequency * mj_data->time);
+            double velocity_target = magnitude * frequency * std::cos(frequency * mj_data->time);
+            double acceleration_target = -magnitude * frequency * frequency * std::sin(frequency * mj_data->time);
+            double position_error = position_target - qpos(2);
+            double velocity_error = velocity_target - qvel(2);
+            double command = acceleration_target + kd * position_error + kp * velocity_error;
+            taskspace_targets(0, 2) = command;
+        }
+        
+        osc.update_taskspace_targets(taskspace_targets);
+
         // Get torque command: OSC
         Eigen::VectorXd osc_torque_command = osc.get_torque_command();
-        std::cout << "OSC Torque Command: " << osc_torque_command.transpose() << std::endl;
         mj_data->ctrl = osc_torque_command.data();
 
         // Step simulation model:
