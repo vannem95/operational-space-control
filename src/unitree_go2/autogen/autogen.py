@@ -112,7 +112,6 @@ class AutoGen():
             constraint_4 = -x[0] - x[1] - self.mu * x[2]
             return casadi.vertcat(constraint_1, constraint_2, constraint_3, constraint_4)
 
-        # contact_forces = casadi.reshape(z, self.num_contact_site_ids, 3)
         contact_forces = casadi.vertsplit_n(z, self.num_contact_site_ids)
 
         inequality_constraints = []
@@ -410,7 +409,7 @@ namespace constants {{
 
 def main(argv):
     # Initialize Mujoco Model:
-    mj_model = mujoco.MjModel.from_xml_path("models/unitree_go2/scene_mjx_torque.xml")
+    mj_model = mujoco.MjModel.from_xml_path("models/unitree_go2/go2_mjx_torque.xml")
 
     # Generate Functions:
     autogen = AutoGen(mj_model)

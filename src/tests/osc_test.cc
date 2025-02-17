@@ -28,6 +28,8 @@ int main(int argc, char** argv) {
         printf("%s\n", error);
         return 1;
     }
+    // Physics timestep:
+    mj_model->opt.timestep = 0.002;
     mjData* mj_data = mj_makeData(mj_model);
 
     glfwInit();
@@ -52,8 +54,14 @@ int main(int argc, char** argv) {
     // Initialize mj_data:
     mj_data->qpos = mj_model->key_qpos;
     mj_data->qvel = mj_model->key_qvel;
+    mj_data->ctrl = mj_model->key_ctrl;
 
     mj_forward(mj_model, mj_data);
+
+    Eigen::VectorXd qpos_init = Eigen::Map<Eigen::VectorXd>(mj_data->qpos, mj_model->nq);
+    Eigen::VectorXd qvel_init = Eigen::Map<Eigen::VectorXd>(mj_data->qvel, mj_model->nv);
+    std::cout << "Generalized Positions: " << qpos_init.transpose() << std::endl;
+    std::cout << "Generalized Velocities: " << qvel_init.transpose() << std::endl;
 
     // site_xpos matches the site_id mappings
     Eigen::Matrix<double, Eigen::Dynamic, Eigen::Dynamic, Eigen::RowMajor> site_xpos = 
@@ -115,6 +123,9 @@ int main(int argc, char** argv) {
         contact_mask(i) = contact.dist < contact_threshold;
     }
 
+    Eigen::VectorXd desired_q = joint_pos;
+    Eigen::VectorXd desired_qd = Eigen::VectorXd::Zero(model::nu_size);
+
     // Required initial arguments for OSC:
     State initial_state;
     initial_state.motor_position = joint_pos;
@@ -131,8 +142,8 @@ int main(int argc, char** argv) {
     OsqpSettings osqp_settings;
     osqp_settings.verbose = false;
     osqp_settings.polish = true;
-    osqp_settings.polish_refine_iter = 3;
-    osqp_settings.eps_abs = 1e-3;
+    osqp_settings.polish_refine_iter = 5;
+    osqp_settings.eps_abs = 1e-6;
 
     OperationalSpaceController osc(initial_state, control_rate, osqp_settings);
 
@@ -157,9 +168,6 @@ int main(int argc, char** argv) {
     // Loop:
     int visualize_iter = 0;
     while(mj_data->time < 5) {
-        // Step simulation model:
-        mj_step(mj_model, mj_data);
-
         // Get data to make next_state:
         Eigen::VectorXd qpos = Eigen::Map<Eigen::VectorXd>(mj_data->qpos, mj_model->nq);
         Eigen::VectorXd qvel = Eigen::Map<Eigen::VectorXd>(mj_data->qvel, mj_model->nv);
@@ -178,6 +186,9 @@ int main(int argc, char** argv) {
             contact_mask(i) = contact.dist < contact_threshold;
         }
 
+        // Print Base Position:
+        // std::cout << "Base Position: " << qpos(Eigen::seqN(0, 3)).transpose() << std::endl;
+
         // Create state struct:
         State next_state;
         next_state.motor_position = joint_pos;
@@ -192,10 +203,34 @@ int main(int argc, char** argv) {
         // Update OSC state:
         osc.update_state(next_state);
 
-        // Get torque command:
-        Eigen::VectorXd torque_command = osc.get_torque_command();
-        // std::cout << "Torque Command: " << torque_command.transpose() << std::endl;
-        mj_data->ctrl = torque_command.data();
+        // Get torque command: OSC
+        Eigen::VectorXd osc_torque_command = osc.get_torque_command();
+        std::cout << "OSC Torque Command: " << osc_torque_command.transpose() << std::endl;
+        mj_data->ctrl = osc_torque_command.data();
+
+        // PD Controller:
+        double kp = 50.0;
+        double kd = 10.0;
+        Eigen::VectorXd q_error = desired_q - joint_pos;
+        Eigen::VectorXd qd_error = desired_qd - joint_vel;
+        Eigen::VectorXd pd_torque_command = kp * q_error + kd * qd_error;
+        Vector<model::nu_size> u_lb = {
+            -23.7, -23.7, -45.3,
+            -23.7, -23.7, -45.3,
+            -23.7, -23.7, -45.3,
+            -23.7, -23.7, -45.3
+        };
+        Vector<model::nu_size> u_ub = {
+            23.7, 23.7, 45.3,
+            23.7, 23.7, 45.3,
+            23.7, 23.7, 45.3,
+            23.7, 23.7, 45.3
+        };
+        for(int i = 0; i < model::nu_size; i++) {
+            pd_torque_command(i) = std::clamp(pd_torque_command(i), u_lb(i), u_ub(i));
+        }
+        std::cout << "PD Torque Command: " << pd_torque_command.transpose() << std::endl;
+        // mj_data->ctrl = pd_torque_command.data();
 
         if(visualize_iter % 10 == 0) {
             mjv_updateScene(mj_model, mj_data, &opt, &pert, &cam, mjCAT_ALL, &scn);
@@ -208,6 +243,9 @@ int main(int argc, char** argv) {
             glfwPollEvents();
         }
         visualize_iter++;
+
+        // Step simulation model: (This always needs to be at the end...)
+        mj_step(mj_model, mj_data);
     }
 
     // close GLFW, free visualization storage
