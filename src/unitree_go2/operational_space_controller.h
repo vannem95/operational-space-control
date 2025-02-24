@@ -7,6 +7,9 @@
 #include <thread>
 #include <mutex>
 #include <atomic>
+#include <chrono>
+#include <iostream>
+#include <cassert>
 
 #include "mujoco/mujoco.h"
 #include "Eigen/Dense"
