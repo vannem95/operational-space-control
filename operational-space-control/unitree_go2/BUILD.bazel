@@ -3,9 +3,9 @@ cc_library(
     srcs = ["operational_space_controller.h"],
     deps = [
         ":utilities",
-        "//src:utilities",
-        "//src/unitree_go2/autogen:autogen_functions_cc",
-        "//src/unitree_go2/autogen:autogen_defines_cc",
+        "//operational-space-control:utilities",
+        "//operational-space-control/unitree_go2/autogen:autogen_functions_cc",
+        "//operational-space-control/unitree_go2/autogen:autogen_defines_cc",
         "@mujoco-bazel//:mujoco",
         "@eigen//:eigen",
         "@osqp-cpp//:osqp++",

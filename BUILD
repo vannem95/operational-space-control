@@ -1,7 +1,8 @@
 cc_library(
     name = "operational_space_controller",
     deps = [
-        "//src/unitree_go2:operational_space_controller",
+        "//operational-space-control/unitree_go2:operational_space_controller",
+        "//operational-space-control/unitree_go2/autogen:autogen_defines_cc",
     ],
     visibility = ["//visibility:public"],
 )

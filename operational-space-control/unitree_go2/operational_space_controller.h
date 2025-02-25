@@ -17,10 +17,10 @@
 #include "osqp++.h"
 #include "osqp.h"
 
-#include "src/unitree_go2/autogen/autogen_functions.h"
-#include "src/unitree_go2/autogen/autogen_defines.h"
-#include "src/unitree_go2/utilities.h"
-#include "src/utilities.h"
+#include "operational-space-control/unitree_go2/autogen/autogen_functions.h"
+#include "operational-space-control/unitree_go2/autogen/autogen_defines.h"
+#include "operational-space-control/unitree_go2/utilities.h"
+#include "operational-space-control/utilities.h"
 
 
 using namespace constants;
