@@ -22,7 +22,7 @@ class AutoGen():
 
         # Parse Configuration YAML File:
         r = Runfiles.Create()
-        with open(r.Rlocation("_main/config/unitree_go2/unitree_go2_config.yaml"), "r") as file:
+        with open(r.Rlocation("operational-space-controller/config/unitree_go2/unitree_go2_config.yaml"), "r") as file:
             config = yaml.safe_load(file)
 
         # Get Weight Configuration:
@@ -416,8 +416,7 @@ def main(argv):
     r = Runfiles.Create()
     mj_model = mujoco.MjModel.from_xml_path(
         r.Rlocation(
-            path="_main/models/unitree_go2/go2_mjx_torque.xml",
-            source_repo="CurrentRepository",
+            path="operational-space-controller/models/unitree_go2/go2_mjx_torque.xml",
         )
     )
 
