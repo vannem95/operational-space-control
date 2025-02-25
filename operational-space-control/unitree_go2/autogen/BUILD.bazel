@@ -8,6 +8,7 @@ py_binary(
         "//config/unitree_go2:unitree_go2_config",
     ],
     deps = [
+        "@rules_python//python/runfiles",
         "@pypi//mujoco:pkg",
         "@pypi//casadi:pkg",
         "@pypi//absl_py:pkg",

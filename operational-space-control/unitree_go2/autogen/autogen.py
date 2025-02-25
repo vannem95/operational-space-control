@@ -9,6 +9,9 @@ import mujoco
 
 from casadi import MX, DM
 
+from python.runfiles import Runfiles
+
+
 FLAGS = flags.FLAGS
 flags.DEFINE_string("filepath", None, "Bazel filepath to the autogen folder (This should be automatically determinded by the genrule).")
 
@@ -18,7 +21,8 @@ class AutoGen():
         self.mj_model = mj_model
 
         # Parse Configuration YAML File:
-        with open("config/unitree_go2/unitree_go2_config.yaml", "r") as file:
+        r = Runfiles.Create()
+        with open(r.Rlocation("_main/config/unitree_go2/unitree_go2_config.yaml"), "r") as file:
             config = yaml.safe_load(file)
 
         # Get Weight Configuration:
@@ -409,7 +413,13 @@ namespace constants {{
 
 def main(argv):
     # Initialize Mujoco Model:
-    mj_model = mujoco.MjModel.from_xml_path("models/unitree_go2/go2_mjx_torque.xml")
+    r = Runfiles.Create()
+    mj_model = mujoco.MjModel.from_xml_path(
+        r.Rlocation(
+            path="_main/models/unitree_go2/go2_mjx_torque.xml",
+            source_repo="CurrentRepository",
+        )
+    )
 
     # Generate Functions:
     autogen = AutoGen(mj_model)
