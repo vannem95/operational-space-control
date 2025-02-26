@@ -11,6 +11,9 @@
 #include <iostream>
 #include <cassert>
 
+#include "absl/status/status.h"
+#include "absl/log/absl_check.h"
+
 #include "mujoco/mujoco.h"
 #include "Eigen/Dense"
 #include "Eigen/SparseCore"
@@ -155,8 +158,9 @@ class OperationalSpaceController {
             mj_model = mj_loadXML(xml_path.c_str(), nullptr, error, 1000);
             if( !mj_model ) {
                 printf("%s\n", error);
-                std::exit(EXIT_FAILURE);
+                return absl::InternalError("Failed to load Mujoco Model");
             }
+
             // Physics timestep:
             mj_model->opt.timestep = 0.002;
             
@@ -208,7 +212,10 @@ class OperationalSpaceController {
             update_mj_data();
 
             // Initialize Optimization:
-            _initialize_optimization();
+            absl::Status result = set_up_optimization();
+            if(!result.ok())
+                return result;
+
             optimization_initialized = true;
 
             return absl::OkStatus();
@@ -219,17 +226,27 @@ class OperationalSpaceController {
                 return absl::FailedPreconditionError("Initialization precoditions not met. Initialize controller and optimization before starting control thread.");
             
             thread = std::thread(&OperationalSpaceController::control_loop, this);
+            control_thread_initialized = true;
             return absl::OkStatus();
         }
 
-        void stop_control_thread() {
+        absl::Status stop_control_thread() {
+            if(!initialized || !control_thread_initialized || !control_thread_initialized)
+                return absl::FailedPreconditionError("Motor Controller not initialized");
+
             running = false;
             thread.join();
+            return absl::OkStatus();
         }
 
-        void close() {
+        absl::Status clean_up() {
+            if(!initialized)
+                return absl::FailedPreconditionError("Operational Space Controller not initialized. Nothing to clean up");
+
             mj_deleteData(mj_data);
             mj_deleteModel(mj_model);
+
+            return absl::OkStatus();
         }
 
         void update_state(const State& new_state) {
@@ -265,6 +282,7 @@ class OperationalSpaceController {
             /* Initialization Flags */
             bool initialized = false;
             bool optimization_initialized = false;
+            bool control_thread_initialized = false;
             /* Mujoco Variables */
             mjModel* mj_model;
             mjData* mj_data;
@@ -321,6 +339,45 @@ class OperationalSpaceController {
             };
             Vector<optimization::bineq_sz> bineq_lb = Vector<optimization::bineq_sz>::Constant(-infinity);
             
+            absl::Status set_up_optimization() {
+                // Initialize the Optimization: (Everything should be Column Major for OSQP)
+                // Get initial data from initial state:
+                update_osc_data();
+                update_optimization_data();
+
+                // Concatenate Constraint Matrix:
+                MatrixColMajor<constraint_matrix_rows, constraint_matrix_cols> A;
+                A << opt_data.Aeq, opt_data.Aineq, Abox;
+                // Calculate Bounds:
+                Vector<bounds_size> lb;
+                Vector<bounds_size> ub;
+                Vector<optimization::z_size> z_lb_masked = z_lb;
+                Vector<optimization::z_size> z_ub_masked = z_ub;
+                for(int i = 0; i < model::contact_site_ids_size; i++) {
+                    z_lb_masked(Eigen::seqN(3 * i, 3)) *= state.contact_mask(i);
+                    z_ub_masked(Eigen::seqN(3 * i, 3)) *= state.contact_mask(i);
+                }
+                lb << opt_data.beq, bineq_lb, dv_lb, u_lb, z_lb_masked;
+                ub << opt_data.beq, opt_data.bineq, dv_ub, u_ub, z_ub_masked;
+                
+                // Initialize Sparse Matrix:
+                Eigen::SparseMatrix<double> sparse_H = opt_data.H.sparseView();
+                Eigen::SparseMatrix<double> sparse_A = A.sparseView();
+                sparse_H.makeCompressed();
+                sparse_A.makeCompressed();
+
+                // Initalize OSQP workspace:
+                instance.objective_matrix = sparse_H;
+                instance.objective_vector = opt_data.f;
+                instance.constraint_matrix = sparse_A;
+                instance.lower_bounds = lb;
+                instance.upper_bounds = ub;
+                
+                // Check initialization:
+                absl::Status result = solver.Init(instance, settings);
+                return result;
+            }
+
             void update_mj_data() {
                 Vector<model::nq_size> qpos = Vector<model::nq_size>::Zero();
                 Vector<model::nv_size> qvel = Vector<model::nv_size>::Zero();
@@ -453,47 +510,8 @@ class OperationalSpaceController {
                 opt_data.Aineq = Aineq_matrix;
                 opt_data.bineq = bineq_matrix;
             }
-    
-            void _initialize_optimization() {
-                // Initialize the Optimization: (Everything should be Column Major for OSQP)
-                // Get initial data from initial state:
-                update_osc_data();
-                update_optimization_data();
-
-                // Concatenate Constraint Matrix:
-                MatrixColMajor<constraint_matrix_rows, constraint_matrix_cols> A;
-                A << opt_data.Aeq, opt_data.Aineq, Abox;
-                // Calculate Bounds:
-                Vector<bounds_size> lb;
-                Vector<bounds_size> ub;
-                Vector<optimization::z_size> z_lb_masked = z_lb;
-                Vector<optimization::z_size> z_ub_masked = z_ub;
-                for(int i = 0; i < model::contact_site_ids_size; i++) {
-                    z_lb_masked(Eigen::seqN(3 * i, 3)) *= state.contact_mask(i);
-                    z_ub_masked(Eigen::seqN(3 * i, 3)) *= state.contact_mask(i);
-                }
-                lb << opt_data.beq, bineq_lb, dv_lb, u_lb, z_lb_masked;
-                ub << opt_data.beq, opt_data.bineq, dv_ub, u_ub, z_ub_masked;
-                
-                // Initialize Sparse Matrix:
-                Eigen::SparseMatrix<double> sparse_H = opt_data.H.sparseView();
-                Eigen::SparseMatrix<double> sparse_A = A.sparseView();
-                sparse_H.makeCompressed();
-                sparse_A.makeCompressed();
-
-                // Initalize OSQP workspace:
-                instance.objective_matrix = sparse_H;
-                instance.objective_vector = opt_data.f;
-                instance.constraint_matrix = sparse_A;
-                instance.lower_bounds = lb;
-                instance.upper_bounds = ub;
-                
-                // Return type is absl::Status
-                absl::Status status = solver.Init(instance, settings);
-                assert(status.ok() && "OSQP Solver failed to initialize.");
-            }
             
-            void update_optimization() {
+            absl::Status update_optimization() {
                 // Concatenate Constraint Matrix:
                 MatrixColMajor<constraint_matrix_rows, constraint_matrix_cols> A;
                 A << opt_data.Aeq, opt_data.Aineq, Abox;
@@ -516,11 +534,12 @@ class OperationalSpaceController {
                 sparse_A.makeCompressed();
 
                 // Check if sparisty changed:
+                absl::Status result;
                 auto sparsity_check = solver.UpdateObjectiveAndConstraintMatrices(sparse_H, sparse_A);
                 if(sparsity_check.ok()) {
                     // Update Internal OSQP workspace:
-                    std::ignore = solver.SetObjectiveVector(opt_data.f);
-                    std::ignore = solver.SetBounds(lb, ub);
+                    result.Update(solver.SetObjectiveVector(opt_data.f));
+                    result.Update(solver.SetBounds(lb, ub));
                 }
                 else {
                     // Reinitalize OSQP workspace:
@@ -531,12 +550,13 @@ class OperationalSpaceController {
                     instance.upper_bounds = ub;
                     
                     // Return type is absl::Status
-                    auto status = solver.Init(instance, settings);
-                    assert(status.ok() && "OSQP Solver failed to initialize.");
+                    result.Update(solver.Init(instance, settings));
                     
                     // Setwarmstart:
-                    auto warmstart_status = solver.SetWarmStart(solution, dual_solution);
+                    result.Update(solver.SetWarmStart(solution, dual_solution));
                 }
+
+                return result;
             }
     
             void solve_optimization() {
@@ -574,8 +594,8 @@ class OperationalSpaceController {
                         // Get Optimization Data:
                         update_optimization_data();
 
-                        // Update Optimization:
-                        update_optimization();
+                        // Update Optimization: (No error handling for now)
+                        std::ignore = update_optimization();
 
                         // Solve Optimization:
                         solve_optimization();
