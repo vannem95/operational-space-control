@@ -20,7 +20,7 @@ archive_override(
     module_name = "mujoco-bazel",
     strip_prefix = "mujoco-bazel-main",
     urls = ["https://github.com/jeh15/mujoco-bazel/archive/refs/heads/main.zip"],
-    integrity = "sha256-1DPjO/tY5r8DTuvQz/cOYDrKzataaXJCP/DUP6Ktz/o=",
+    integrity = "sha256-GWLqAiunkC0Pfx61ayaQoPrC62O02tnh2gqM9z2Wm/o=",
 )
 
 # GLFW: (Visualize MuJoCo simulations)

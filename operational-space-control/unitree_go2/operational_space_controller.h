@@ -143,13 +143,14 @@ struct State {
     Vector<model::contact_site_ids_size> contact_mask;
 };
 
+//TODO(jeh15): Refactor all voids with absl::Status
 class OperationalSpaceController {
     public:
-        OperationalSpaceController(State initial_state,  int control_rate = 2000, OsqpSettings osqp_settings = OsqpSettings()) : 
-            state(initial_state), control_rate_us(control_rate), settings(osqp_settings) {}
+        OperationalSpaceController(int control_rate = 2000, OsqpSettings osqp_settings = OsqpSettings()) : 
+            control_rate_us(control_rate), settings(osqp_settings) {}
         ~OperationalSpaceController() {}
 
-        void initialize(std::filesystem::path xml_path) {
+        absl::Status initialize(std::filesystem::path xml_path, State initial_state) {
             char error[1000];
             mj_model = mj_loadXML(xml_path.c_str(), nullptr, error, 1000);
             if( !mj_model ) {
@@ -191,16 +192,34 @@ class OperationalSpaceController {
             }
             // Assert Number of Sites and Bodies are equal:
             assert(site_ids.size() == body_ids.size() && "Number of Sites and Bodies must be equal.");
-            
+
+            // Set initial state to initialize the optimization:
+            state = initial_state;
+            initialized = true;
+
+            return absl::OkStatus();
+        }
+
+        absl::Status initialize_optimization() {
+            if(!initialized)
+                return absl::FailedPreconditionError("Operational Space Controller not initialized.");
+
             // Initialize mj_data with initial state:
             update_mj_data();
 
             // Initialize Optimization:
-            initialize_optimization();
+            _initialize_optimization();
+            optimization_initialized = true;
+
+            return absl::OkStatus();
         }
 
-        void initialize_control_thread() {
+        absl::Status initialize_control_thread() {
+            if(!initialized || !optimization_initialized)
+                return absl::FailedPreconditionError("Initialization precoditions not met. Initialize controller and optimization before starting control thread.");
+            
             thread = std::thread(&OperationalSpaceController::control_loop, this);
+            return absl::OkStatus();
         }
 
         void stop_control_thread() {
@@ -243,6 +262,9 @@ class OperationalSpaceController {
             std::atomic<bool> running{true};
             std::mutex mutex;
             std::thread thread;
+            /* Initialization Flags */
+            bool initialized = false;
+            bool optimization_initialized = false;
             /* Mujoco Variables */
             mjModel* mj_model;
             mjData* mj_data;
@@ -432,7 +454,7 @@ class OperationalSpaceController {
                 opt_data.bineq = bineq_matrix;
             }
     
-            void initialize_optimization() {
+            void _initialize_optimization() {
                 // Initialize the Optimization: (Everything should be Column Major for OSQP)
                 // Get initial data from initial state:
                 update_osc_data();
@@ -467,7 +489,7 @@ class OperationalSpaceController {
                 instance.upper_bounds = ub;
                 
                 // Return type is absl::Status
-                auto status = solver.Init(instance, settings);
+                absl::Status status = solver.Init(instance, settings);
                 assert(status.ok() && "OSQP Solver failed to initialize.");
             }
             

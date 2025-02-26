@@ -7,10 +7,10 @@
 #include "osqp++.h"
 #include "GLFW/glfw3.h"
 
-#include "src/unitree_go2/operational_space_controller.h"
+#include "operational-space-control/unitree_go2/operational_space_controller.h"
 
 // For debugging:
-#include "src/unitree_go2/autogen/autogen_functions.h"
+#include "operational-space-control/unitree_go2/autogen/autogen_functions.h"
 
 
 char error[1000];
@@ -145,11 +145,12 @@ int main(int argc, char** argv) {
     osqp_settings.polish_refine_iter = 3;
     osqp_settings.eps_abs = 1e-3;
 
-    OperationalSpaceController osc(initial_state, control_rate, osqp_settings);
+    OperationalSpaceController osc(control_rate, osqp_settings);
 
     // Get model path:
     std::filesystem::path model_path = "models/unitree_go2/go2_mjx_torque.xml";
-    osc.initialize(model_path);
+    osc.initialize(model_path, initial_state);
+    osc.initialize_optimization();
     
     // Update Taskspace Targets:
     Eigen::Matrix<double, model::site_ids_size, 6, Eigen::RowMajor> taskspace_targets = Eigen::Matrix<double, model::site_ids_size, 6, Eigen::RowMajor>::Zero();
