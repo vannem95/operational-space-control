@@ -576,11 +576,11 @@ class OperationalSpaceController {
             /* Consistent Execution Time: */
             void control_loop() {
                 using Clock = std::chrono::steady_clock;
-                auto next_execution_time = Clock::now();
+                auto next_time = Clock::now();
                 // Thread Loop:
                 while(running) {
                     // Calculate next execution time first
-                    next_execution_time += std::chrono::microseconds(control_rate_us);
+                    next_time += std::chrono::microseconds(control_rate_us);
 
                     /* Lock Guard Scope */
                     {   
@@ -605,16 +605,16 @@ class OperationalSpaceController {
                     }
                     // Check for overrun and sleep until next execution time
                     auto now = Clock::now();
-                    if (now < next_execution_time) {
-                        std::this_thread::sleep_until(next_execution_time);
+                    if (now < next_time) {
+                        std::this_thread::sleep_until(next_time);
                     } 
                     else {
                         // Log overrun
-                        auto overrun = std::chrono::duration_cast<std::chrono::microseconds>(now - next_execution_time);
+                        auto overrun = std::chrono::duration_cast<std::chrono::microseconds>(now - next_time);
                         std::cout << "Operational Space Control Loop Execution Time Exceeded Control Rate: " 
                                 << overrun.count() << "us" << std::endl;
                         // Reset next execution time to prevent cascading delays
-                        next_execution_time = now;
+                        next_time = now;
                     }
                 }
             }
