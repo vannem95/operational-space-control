@@ -141,8 +141,9 @@ struct State {
     Vector<model::nu_size> motor_acceleration;
     Vector<model::nu_size> torque_estimate;
     Vector<4> body_rotation;
-    Vector<3> body_velocity;
-    Vector<3> body_acceleration;
+    Vector<3> linear_body_velocity;
+    Vector<3> angular_body_velocity;
+    Vector<3> linear_body_acceleration;
     Vector<model::contact_site_ids_size> contact_mask;
 };
 
@@ -388,7 +389,7 @@ class OperationalSpaceController {
                 else {
                     const Vector<3> zero_vector = {0.0, 0.0, 0.0};
                     qpos << zero_vector, state.body_rotation, state.motor_position;
-                    qvel << zero_vector, state.body_velocity, state.motor_velocity;
+                    qvel << state.linear_body_velocity, state.angular_body_velocity, state.motor_velocity;
                 }
 
                 // Update Mujoco Data:
