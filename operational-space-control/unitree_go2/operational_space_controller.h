@@ -305,7 +305,7 @@ class OperationalSpaceController {
             Vector<optimization::design_vector_size> solution = Vector<optimization::design_vector_size>::Zero();
             Vector<constraint_matrix_rows> dual_solution = Vector<constraint_matrix_rows>::Zero();
             Vector<optimization::design_vector_size> design_vector = Vector<optimization::design_vector_size>::Zero();
-            const double infinity = static_cast<double>(OSQP_INFTY);
+            const double infinity = OSQP_INFTY;
             OSCData osc_data;
             OptimizationData opt_data;
             const float big_number = 1e4;
