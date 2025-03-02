@@ -416,7 +416,7 @@ def main(argv):
     r = Runfiles.Create()
     mj_model = mujoco.MjModel.from_xml_path(
         r.Rlocation(
-            path="operational-space-controller/models/unitree_go2/go2_mjx_torque.xml",
+            path="mujoco-models/models/unitree_go2/go2_estimation.xml",
         )
     )
 

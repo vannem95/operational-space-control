@@ -29,6 +29,16 @@ archive_override(
     integrity = "sha256-GWLqAiunkC0Pfx61ayaQoPrC62O02tnh2gqM9z2Wm/o=",
 )
 
+# Mujoco Models:
+bazel_dep(name = "mujoco-models")
+archive_override(
+    module_name = "mujoco-models",
+    strip_prefix = "mujoco-models-main",
+    urls = ["https://github.com/jeh15/mujoco-models/archive/refs/heads/main.zip"],
+    integrity = "sha256-IlXHiGASPtsFwusLfH6uc/tK9AmOML1H8LDG5JsK88k=",
+)
+
+
 # GLFW: (Visualize MuJoCo simulations)
 bazel_dep(name = "glfw-bazel")
 archive_override(

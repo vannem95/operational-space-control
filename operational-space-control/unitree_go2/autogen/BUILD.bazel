@@ -5,7 +5,7 @@ py_binary(
     name = "autogen",
     srcs = ["autogen.py"],
     data = [
-        "//models/unitree_go2:unitree_go2",
+        "@mujoco-models//:unitree_go2",
         "//config/unitree_go2:unitree_go2_config",
     ],
     deps = [
@@ -20,7 +20,7 @@ py_binary(
 genrule(
     name = "autogen_rule",
     srcs = [
-        "//models/unitree_go2:unitree_go2",
+        "@mujoco-models//:unitree_go2",
         "//config/unitree_go2:unitree_go2_config",
     ],
     tools = [":autogen"],
