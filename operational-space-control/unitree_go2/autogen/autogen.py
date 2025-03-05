@@ -105,7 +105,7 @@ class AutoGen():
 
         """
         # Unpack Design Variables:
-        dv = q[:self.dv_idx] 
+        dv = q[:self.dv_idx]
         u = q[self.dv_idx:self.u_idx]
         z = q[self.u_idx:self.z_idx]
 
@@ -157,15 +157,15 @@ class AutoGen():
 
         # Split into Translational and Rotational components:
         ddx_task_p, ddx_task_r = casadi.vertsplit_n(ddx_task, 2)
-        ddx_base_p, ddx_fl_p, ddx_fr_p, ddx_hl_p, ddx_hr_p = casadi.vertsplit_n(ddx_task_p, self.num_site_ids)
-        ddx_base_r, ddx_fl_r, ddx_fr_r, ddx_hl_r, ddx_hr_r = casadi.vertsplit_n(ddx_task_r, self.num_site_ids)
+        ddx_base_p, ddx_fr_p, ddx_fl_p, ddx_hr_p, ddx_hl_p = casadi.vertsplit_n(ddx_task_p, self.num_site_ids)
+        ddx_base_r, ddx_fr_r, ddx_fl_r, ddx_hr_r, ddx_hl_r = casadi.vertsplit_n(ddx_task_r, self.num_site_ids)
 
         # Split Desired Task Acceleration:
         desired_task_p, desired_task_r = casadi.horzsplit_n(desired_task_ddx, 2)
         desired_task_p = casadi.vertsplit_n(desired_task_p, self.num_site_ids)
         desired_task_r = casadi.vertsplit_n(desired_task_r, self.num_site_ids)
-        desired_base_p, desired_fl_p, desired_fr_p, desired_hl_p, desired_hr_p = map(lambda x: x.T, desired_task_p)
-        desired_base_r, desired_fl_r, desired_fr_r, desired_hl_r, desired_hr_r = map(lambda x: x.T, desired_task_r)
+        desired_base_p, desired_fr_p, desired_fl_p, desired_hr_p, desired_hl_p = map(lambda x: x.T, desired_task_p)
+        desired_base_r, desired_fr_r, desired_fl_r, desired_hr_r, desired_hl_r = map(lambda x: x.T, desired_task_r)
 
         # I could make this more general at the cost of readability...
         # ddx_task_p = casadi.vertsplit_n(ddx_task_p, self.num_site_ids)
@@ -366,7 +366,7 @@ class AutoGen():
 
 using namespace std::string_view_literals;
 
-namespace constants {{
+namespace operational_space_controller::constants {{
     namespace model {{
         // Mujoco Model Constants:
         constexpr int nq_size  = {self.mj_model.nq};
@@ -416,7 +416,7 @@ def main(argv):
     r = Runfiles.Create()
     mj_model = mujoco.MjModel.from_xml_path(
         r.Rlocation(
-            path="mujoco-models/models/unitree_go2/go2_estimation.xml",
+            path="mujoco-models/models/unitree_go2/go2.xml",
         )
     )
 

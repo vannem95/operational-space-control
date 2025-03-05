@@ -20,38 +20,24 @@
 #include "osqp++.h"
 #include "osqp.h"
 
-#include "operational-space-control/unitree_go2/autogen/autogen_functions.h"
-#include "operational-space-control/unitree_go2/autogen/autogen_defines.h"
 #include "operational-space-control/unitree_go2/utilities.h"
 #include "operational-space-control/utilities.h"
 
+#include "operational-space-control/unitree_go2/autogen/autogen_functions.h"
+#include "operational-space-control/unitree_go2/autogen/autogen_defines.h"
 
-using namespace constants;
+#include "operational-space-control/unitree_go2/aliases.h"
+#include "operational-space-control/unitree_go2/constants.h"
+#include "operational-space-control/unitree_go2/containers.h"
+
+
+using namespace operational_space_controller::constants;
+using namespace operational_space_controller::containers;
+using namespace operational_space_controller::aliases;
 using namespace osqp;
 
 // Anonymous Namespace for shorthand constants:
 namespace {
-    // s_size : Size of fully spatial vector representation for all bodies
-    constexpr int s_size = 6 * model::body_ids_size;
-    // p_size : Size of translation component to a spatial vector:
-    constexpr int p_size = 3 * model::body_ids_size;
-    // r_size : Size of rotation component to a spatial vector:
-    constexpr int r_size = 3 * model::body_ids_size;
-
-    // Constraint Matrix Size:
-    constexpr int constraint_matrix_rows = optimization::Aeq_rows + optimization::Aineq_rows + optimization::design_vector_size;
-    constexpr int constraint_matrix_cols = optimization::design_vector_size;
-    constexpr int bounds_size = optimization::beq_sz + optimization::bineq_sz + optimization::design_vector_size;
-
-    template <int Rows_, int Cols_>
-    using Matrix = Eigen::Matrix<double, Rows_, Cols_, Eigen::RowMajor>;
-    
-    template <int Rows_>
-    using Vector = Eigen::Matrix<double, Rows_, 1>;
-
-    template <int Rows_, int Cols_>
-    using MatrixColMajor = Eigen::Matrix<double, Rows_, Cols_, Eigen::ColMajor>;
-
     // Map Casadi Functions to FunctionOperations Struct:
     FunctionOperations Aeq_ops{
         .incref=Aeq_incref,
@@ -115,37 +101,6 @@ namespace {
     using fParams =
         FunctionParams<f_SZ_ARG, f_SZ_RES, f_SZ_IW, f_SZ_W, optimization::f_sz, 1, optimization::f_sz, 4>;
 }
-
-struct OSCData {
-    Matrix<model::nv_size, model::nv_size> mass_matrix;    
-    Vector<model::nv_size> coriolis_matrix;
-    Matrix<model::nv_size, optimization::z_size> contact_jacobian;
-    Matrix<s_size, model::nv_size> taskspace_jacobian;
-    Vector<s_size> taskspace_bias;
-    Vector<model::nq_size> previous_q;
-    Vector<model::nv_size> previous_qd;
-};
-
-struct OptimizationData {
-    MatrixColMajor<optimization::H_rows, optimization::H_cols> H;
-    Vector<optimization::f_sz> f;
-    MatrixColMajor<optimization::Aeq_rows, optimization::Aeq_cols> Aeq;
-    Vector<optimization::beq_sz> beq;
-    Matrix<optimization::Aineq_rows, optimization::Aineq_cols> Aineq;
-    Vector<optimization::bineq_sz> bineq;
-};
-
-struct State {
-    Vector<model::nu_size> motor_position;
-    Vector<model::nu_size> motor_velocity;
-    Vector<model::nu_size> motor_acceleration;
-    Vector<model::nu_size> torque_estimate;
-    Vector<4> body_rotation;
-    Vector<3> linear_body_velocity;
-    Vector<3> angular_body_velocity;
-    Vector<3> linear_body_acceleration;
-    Vector<model::contact_site_ids_size> contact_mask;
-};
 
 //TODO(jeh15): Refactor all voids with absl::Status
 class OperationalSpaceController {
@@ -240,6 +195,18 @@ class OperationalSpaceController {
             return absl::OkStatus();
         }
 
+        bool is_initialized() {
+            return initialized;
+        }
+
+        bool is_optimization_initialized() {
+            return optimization_initialized;
+        }
+
+        bool is_thread_initialized() {
+            return thread_initialized;
+        }
+
         absl::Status clean_up() {
             if(!initialized)
                 return absl::FailedPreconditionError("Operational Space Controller not initialized. Nothing to clean up");
@@ -303,7 +270,7 @@ class OperationalSpaceController {
             OsqpSettings settings;
             OsqpExitCode exit_code;
             Vector<optimization::design_vector_size> solution = Vector<optimization::design_vector_size>::Zero();
-            Vector<constraint_matrix_rows> dual_solution = Vector<constraint_matrix_rows>::Zero();
+            Vector<optimization::constraint_matrix_rows> dual_solution = Vector<optimization::constraint_matrix_rows>::Zero();
             Vector<optimization::design_vector_size> design_vector = Vector<optimization::design_vector_size>::Zero();
             const double infinity = OSQP_INFTY;
             OSCData osc_data;
@@ -347,11 +314,11 @@ class OperationalSpaceController {
                 update_optimization_data();
 
                 // Concatenate Constraint Matrix:
-                MatrixColMajor<constraint_matrix_rows, constraint_matrix_cols> A;
+                MatrixColMajor<optimization::constraint_matrix_rows, optimization::constraint_matrix_cols> A;
                 A << opt_data.Aeq, opt_data.Aineq, Abox;
                 // Calculate Bounds:
-                Vector<bounds_size> lb;
-                Vector<bounds_size> ub;
+                Vector<optimization::bounds_size> lb;
+                Vector<optimization::bounds_size> ub;
                 Vector<optimization::z_size> z_lb_masked = z_lb;
                 Vector<optimization::z_size> z_ub_masked = z_ub;
                 for(int i = 0; i < model::contact_site_ids_size; i++) {
@@ -422,14 +389,14 @@ class OperationalSpaceController {
                     Eigen::Map<Vector<model::nv_size>>(mj_data->qvel);
     
                 // Jacobian Calculation:
-                Matrix<p_size, model::nv_size> jacobian_translation = 
-                    Matrix<p_size, model::nv_size>::Zero();
-                Matrix<r_size, model::nv_size> jacobian_rotation = 
-                    Matrix<r_size, model::nv_size>::Zero();
-                Matrix<p_size, model::nv_size> jacobian_dot_translation = 
-                    Matrix<p_size, model::nv_size>::Zero();
-                Matrix<r_size, model::nv_size> jacobian_dot_rotation = 
-                    Matrix<r_size, model::nv_size>::Zero();
+                Matrix<optimization::p_size, model::nv_size> jacobian_translation = 
+                    Matrix<optimization::p_size, model::nv_size>::Zero();
+                Matrix<optimization::r_size, model::nv_size> jacobian_rotation = 
+                    Matrix<optimization::r_size, model::nv_size>::Zero();
+                Matrix<optimization::p_size, model::nv_size> jacobian_dot_translation = 
+                    Matrix<optimization::p_size, model::nv_size>::Zero();
+                Matrix<optimization::r_size, model::nv_size> jacobian_dot_rotation = 
+                    Matrix<optimization::r_size, model::nv_size>::Zero();
                 for (int i = 0; i < model::body_ids_size; i++) {
                     // Temporary Jacobian Matrices:
                     Matrix<3, model::nv_size> jacp = Matrix<3, model::nv_size>::Zero();
@@ -456,13 +423,13 @@ class OperationalSpaceController {
                 }
     
                 // Stack Jacobian Matrices: Taskspace Jacobian: [jacp; jacr], Jacobian Dot: [jacp_dot; jacr_dot]
-                Matrix<s_size, model::nv_size> taskspace_jacobian = Matrix<s_size, model::nv_size>::Zero();
-                Matrix<s_size, model::nv_size> jacobian_dot = Matrix<s_size, model::nv_size>::Zero();
+                Matrix<optimization::s_size, model::nv_size> taskspace_jacobian = Matrix<optimization::s_size, model::nv_size>::Zero();
+                Matrix<optimization::s_size, model::nv_size> jacobian_dot = Matrix<optimization::s_size, model::nv_size>::Zero();
                 taskspace_jacobian << jacobian_translation, jacobian_rotation;
                 jacobian_dot << jacobian_dot_translation, jacobian_dot_rotation;
     
                 // Calculate Taskspace Bias Acceleration:
-                Vector<s_size> taskspace_bias = Vector<s_size>::Zero();
+                Vector<optimization::s_size> taskspace_bias = Vector<optimization::s_size>::Zero();
                 taskspace_bias = jacobian_dot * generalized_velocities;
     
                 // Contact Jacobian: Shape (NV, 3 * num_contacts) 
@@ -491,8 +458,8 @@ class OperationalSpaceController {
                 auto mass_matrix = matrix_utils::transformMatrix<double, model::nv_size, model::nv_size, matrix_utils::ColumnMajor>(osc_data.mass_matrix.data());
                 auto coriolis_matrix = matrix_utils::transformMatrix<double, model::nv_size, 1, matrix_utils::ColumnMajor>(osc_data.coriolis_matrix.data());
                 auto contact_jacobian = matrix_utils::transformMatrix<double, model::nv_size, optimization::z_size, matrix_utils::ColumnMajor>(osc_data.contact_jacobian.data());
-                auto taskspace_jacobian = matrix_utils::transformMatrix<double, s_size, model::nv_size, matrix_utils::ColumnMajor>(osc_data.taskspace_jacobian.data());
-                auto taskspace_bias = matrix_utils::transformMatrix<double, s_size, 1, matrix_utils::ColumnMajor>(osc_data.taskspace_bias.data());
+                auto taskspace_jacobian = matrix_utils::transformMatrix<double, optimization::s_size, model::nv_size, matrix_utils::ColumnMajor>(osc_data.taskspace_jacobian.data());
+                auto taskspace_bias = matrix_utils::transformMatrix<double, optimization::s_size, 1, matrix_utils::ColumnMajor>(osc_data.taskspace_bias.data());
                 auto desired_taskspace_ddx = matrix_utils::transformMatrix<double, model::site_ids_size, 6, matrix_utils::ColumnMajor>(taskspace_targets.data());
                 
                 // Evaluate Casadi Functions:
@@ -514,11 +481,11 @@ class OperationalSpaceController {
             
             absl::Status update_optimization() {
                 // Concatenate Constraint Matrix:
-                MatrixColMajor<constraint_matrix_rows, constraint_matrix_cols> A;
+                MatrixColMajor<optimization::constraint_matrix_rows, optimization::constraint_matrix_cols> A;
                 A << opt_data.Aeq, opt_data.Aineq, Abox;
                 // Calculate Bounds:
-                Vector<bounds_size> lb;
-                Vector<bounds_size> ub;
+                Vector<optimization::bounds_size> lb;
+                Vector<optimization::bounds_size> ub;
                 Vector<optimization::z_size> z_lb_masked = z_lb;
                 Vector<optimization::z_size> z_ub_masked = z_ub;
                 for(int i = 0; i < model::contact_site_ids_size; i++) {
@@ -569,8 +536,8 @@ class OperationalSpaceController {
     
             void reset_optimization() {
                 // Set Warm Start to Zero:
-                Vector<constraint_matrix_cols> primal_vector = Vector<constraint_matrix_cols>::Zero();
-                Vector<constraint_matrix_rows> dual_vector = Vector<constraint_matrix_rows>::Zero();
+                Vector<optimization::constraint_matrix_cols> primal_vector = Vector<optimization::constraint_matrix_cols>::Zero();
+                Vector<optimization::constraint_matrix_rows> dual_vector = Vector<optimization::constraint_matrix_rows>::Zero();
                 std::ignore = solver.SetWarmStart(primal_vector, dual_vector);
             }
 

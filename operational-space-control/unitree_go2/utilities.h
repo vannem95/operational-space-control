@@ -1,8 +1,9 @@
 #pragma once
 
-#include <Eigen/Dense>
 #include <array>
 #include <algorithm>
+
+#include <Eigen/Dense>
 
 namespace {
     typedef void (*func_incref)();
@@ -71,7 +72,3 @@ ReturnType<Params> evaluate_function(
 
     return Eigen::Map<ReturnType<Params>>(result);
 }
-
-// Example usage:
-// using MyFunctionParams = FunctionParams<2, 1, 100, 200, 3, 4, 12, 2>;
-// auto result = evaluate_function<MyFunctionParams>(ops, arguments);

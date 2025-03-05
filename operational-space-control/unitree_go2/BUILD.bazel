@@ -1,9 +1,37 @@
 load("@rules_cc//cc:defs.bzl", "cc_library")
 
 cc_library(
+    name = "aliases",
+    srcs = ["aliases.h"],
+    deps = ["@eigen//:eigen"],
+    visibility = ["//visibility:public"],
+)
+
+cc_library(
+    name = "constants",
+    srcs = ["constants.h"],
+    deps = ["//operational-space-control/unitree_go2/autogen:autogen_defines_cc"],
+    visibility = ["//visibility:public"],
+)
+
+cc_library(
+    name = "containers",
+    srcs = ["containers.h"],
+    deps = [
+        ":aliases",
+        ":constants",
+        "//operational-space-control/unitree_go2/autogen:autogen_defines_cc",
+    ],
+    visibility = ["//visibility:public"],
+)
+
+cc_library(
     name = "operational_space_controller",
     srcs = ["operational_space_controller.h"],
     deps = [
+        ":aliases",
+        ":constants",
+        ":containers",
         ":utilities",
         "//operational-space-control:utilities",
         "//operational-space-control/unitree_go2/autogen:autogen_functions_cc",

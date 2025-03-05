@@ -1,18 +1,18 @@
 body_list:
   - base_link
-  - front_left_calf
   - front_right_calf
-  - hind_left_calf
+  - front_left_calf
   - hind_right_calf
+  - hind_left_calf
 
 noncontact_site_list:
   - imu
 
 contact_site_list:
-  - front_left_foot
   - front_right_foot
-  - hind_left_foot
+  - front_left_foot
   - hind_right_foot
+  - hind_left_foot
 
 friction_coefficient: 0.8
 
