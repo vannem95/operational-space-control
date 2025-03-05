@@ -222,17 +222,17 @@ class OperationalSpaceController {
             return absl::OkStatus();
         }
 
-        absl::Status initialize_control_thread() {
+        absl::Status initialize_thread() {
             if(!initialized || !optimization_initialized)
                 return absl::FailedPreconditionError("Initialization precoditions not met. Initialize controller and optimization before starting control thread.");
             
             thread = std::thread(&OperationalSpaceController::control_loop, this);
-            control_thread_initialized = true;
+            thread_initialized = true;
             return absl::OkStatus();
         }
 
-        absl::Status stop_control_thread() {
-            if(!initialized || !control_thread_initialized || !control_thread_initialized)
+        absl::Status stop_thread() {
+            if(!initialized || !thread_initialized || !thread_initialized)
                 return absl::FailedPreconditionError("Motor Controller not initialized");
 
             running = false;
@@ -283,7 +283,7 @@ class OperationalSpaceController {
             /* Initialization Flags */
             bool initialized = false;
             bool optimization_initialized = false;
-            bool control_thread_initialized = false;
+            bool thread_initialized = false;
             /* Mujoco Variables */
             mjModel* mj_model;
             mjData* mj_data;
