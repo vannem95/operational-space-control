@@ -12,5 +12,7 @@ namespace operational_space_controller {
 
         template <int Rows_, int Cols_>
         using MatrixColMajor = Eigen::Matrix<double, Rows_, Cols_, Eigen::ColMajor>;
+
+        using TaskspaceTargets = Matrix<model::site_ids_size, 6>;
     }
 }

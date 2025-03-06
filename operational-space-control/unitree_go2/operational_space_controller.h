@@ -222,7 +222,7 @@ class OperationalSpaceController {
             state = new_state;
         }
 
-        void update_taskspace_targets(const Matrix<model::site_ids_size, 6>& new_taskspace_targets) {
+        void update_taskspace_targets(const TaskspaceTargets& new_taskspace_targets) {
             std::lock_guard<std::mutex> lock(mutex);
             taskspace_targets = new_taskspace_targets;
         }
