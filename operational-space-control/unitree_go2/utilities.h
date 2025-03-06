@@ -5,6 +5,9 @@
 
 #include <Eigen/Dense>
 
+#include "operational-space-control/unitree_go2/autogen/autogen_functions.h"
+
+
 namespace {
     typedef void (*func_incref)();
     typedef int (*func_checkout)();
