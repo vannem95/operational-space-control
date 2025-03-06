@@ -1,5 +1,7 @@
 #pragma once
 
+#include "Eigen/Dense"
+
 #include "operational-space-control/unitree_go2/autogen/autogen_defines.h"
 
 using namespace operational_space_controller::constants;
@@ -18,5 +20,10 @@ namespace operational_space_controller::constants {
         constexpr int constraint_matrix_rows = optimization::Aeq_rows + optimization::Aineq_rows + optimization::design_vector_size;
         constexpr int constraint_matrix_cols = optimization::design_vector_size;
         constexpr int bounds_size = optimization::beq_sz + optimization::bineq_sz + optimization::design_vector_size;
+
+        // Index Sequences:
+        Eigen::seqN dv_sequence = Eigen::seqN(0, optimization::dv_size);
+        Eigen::seqN u_sequence = Eigen::seqN(optimization::dv_idx, optimization::u_size);
+        Eigen::seqN z_sequence = Eigen::seqN(optimization::u_idx, optimization::z_size);
     }
 }
