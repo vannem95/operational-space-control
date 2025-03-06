@@ -21,9 +21,5 @@ namespace operational_space_controller {
         using TaskspaceTargets = Matrix<model::site_ids_size, 6>;
 
         using OptimizationSolution = Vector<optimization::design_vector_size>;
-
-        using dv_sequence = Eigen::seqN(0, optimization::dv_size);
-        using u_sequence = Eigen::seqN(optimization::dv_idx, optimization::u_size);
-        using z_sequence = Eigen::seqN(optimization::u_idx, optimization::z_size);
     }
 }
