@@ -10,10 +10,10 @@ py_binary(
     ],
     deps = [
         "@rules_python//python/runfiles",
-        "@pypi//mujoco:pkg",
-        "@pypi//casadi:pkg",
-        "@pypi//absl_py:pkg",
-        "@pypi//pyyaml:pkg",
+        "@pypi_operational-space-controller//mujoco:pkg",
+        "@pypi_operational-space-controller//casadi:pkg",
+        "@pypi_operational-space-controller//absl_py:pkg",
+        "@pypi_operational-space-controller//pyyaml:pkg",
     ],
 )
 
