@@ -188,7 +188,7 @@ class OperationalSpaceController {
 
         absl::Status stop_thread() {
             if(!thread_initialized)
-                return absl::FailedPreconditionError("Motor Controller not initialized");
+                return absl::FailedPreconditionError("Operation Space Control Thread not initialized");
 
             running = false;
             thread.join();
