@@ -242,11 +242,6 @@ class OperationalSpaceController {
             State state;
             Matrix<model::site_ids_size, 6> taskspace_targets = Matrix<model::site_ids_size, 6>::Zero();
             Vector<model::nu_size> torque_command = Vector<model::nu_size>::Zero();
-            // Control Thread:
-            int control_rate_us;
-            std::atomic<bool> running{true};
-            std::mutex mutex;
-            std::thread thread;
             /* Initialization Flags */
             bool initialized = false;
             bool optimization_initialized = false;
@@ -265,6 +260,11 @@ class OperationalSpaceController {
             std::vector<int> body_ids;
             Matrix<model::site_ids_size, 3> points;
             static constexpr bool is_fixed_based = false;
+            // Control Thread:
+            int control_rate_us;
+            std::atomic<bool> running{true};
+            std::mutex mutex;
+            std::thread thread;
             /* OSQP Solver, settings, and matrices */
             OsqpInstance instance;
             OsqpSolver solver;
