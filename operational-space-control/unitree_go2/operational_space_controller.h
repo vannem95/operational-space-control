@@ -105,11 +105,11 @@ namespace {
 //TODO(jeh15): Refactor all voids with absl::Status
 class OperationalSpaceController {
     public:
-        OperationalSpaceController(int control_rate = 2000, OsqpSettings osqp_settings = OsqpSettings()) : 
-            control_rate_us(control_rate), settings(osqp_settings) {}
+        OperationalSpaceController(std::filesystem::path xml_path, int control_rate_us = 2000, OsqpSettings osqp_settings = OsqpSettings()) : 
+            xml_path(xml_path), control_rate_us(control_rate_us), settings(osqp_settings) {}
         ~OperationalSpaceController() {}
 
-        absl::Status initialize(std::filesystem::path xml_path, State initial_state) {
+        absl::Status initialize(State initial_state) {
             char error[1000];
             mj_model = mj_loadXML(xml_path.c_str(), nullptr, error, 1000);
             if( !mj_model ) {
@@ -254,6 +254,7 @@ class OperationalSpaceController {
             /* Mujoco Variables */
             mjModel* mj_model;
             mjData* mj_data;
+            std::filesystem::path xml_path;
             std::vector<std::string> sites;
             std::vector<std::string> bodies;
             std::vector<std::string> noncontact_sites;
