@@ -1,4 +1,5 @@
 #include <filesystem>
+#include <cmath>
 
 #include "absl/status/status.h"
 #include "absl/log/absl_check.h"
@@ -13,9 +14,8 @@
 #include "operational-space-control/unitree_go2/constants.h"
 #include "operational-space-control/unitree_go2/operational_space_controller.h"
 
-using operational_space_controller::aliases;
-using operational_space_controller::containers;
-using Eigen::placeholders;
+using namespace operational_space_controller::aliases;
+using namespace operational_space_controller::containers;
 using rules_cc::cc::runfiles::Runfiles;
 
 
@@ -34,12 +34,12 @@ int main(int argc, char** argv) {
 
     // Load Simulation Model
     char mj_error[1000];
-    MjModel* mj_model = mj_loadXML(simulation_model_path.c_str(), nullptr, mj_error, 1000);
+    mjModel* mj_model = mj_loadXML(simulation_model_path.c_str(), nullptr, mj_error, 1000);
     if (!mj_model) {
         printf("%s\n", mj_error);
-        return absl::InternalError("Failed to load mujoco model");
+        return 1;
     }
-    MjData* mj_data = mj_makeData(mj_model);
+    mjData* mj_data = mj_makeData(mj_model);
 
     // Initialize mj_data:
     mj_data->qpos = mj_model->key_qpos;
@@ -87,9 +87,10 @@ int main(int argc, char** argv) {
         osc_model_path
     );
 
-    Vector<model::nq_size> qpos = Eigen::Map<Vector<model::nu_size>>(mj_data->qpos);
+    Vector<model::nq_size> qpos = Eigen::Map<Vector<model::nq_size>>(mj_data->qpos);
     Vector<model::nv_size> qvel = Eigen::Map<Vector<model::nv_size>>(mj_data->qvel);
-    Vector<model::nv_size> qfrc_actuator = Eigen::Map<Vector<model::nu_size>>(mj_data->qfrc_actuator);
+    Vector<model::nv_size> qfrc_actuator = Eigen::Map<Vector<model::nv_size>>(mj_data->qfrc_actuator);
+    Vector<3> initial_position = qpos(Eigen::seqN(0, 3));
 
     State initial_state;
     initial_state.motor_position = qpos(Eigen::seqN(7, model::nu_size));
@@ -123,9 +124,9 @@ int main(int argc, char** argv) {
         visualization_timer = current_time - visualization_start_time;
 
         // Update State Struct:
-        Vector<model::nq_size> qpos = Eigen::Map<Vector<model::nu_size>>(mj_data->qpos);
+        Vector<model::nq_size> qpos = Eigen::Map<Vector<model::nq_size>>(mj_data->qpos);
         Vector<model::nv_size> qvel = Eigen::Map<Vector<model::nv_size>>(mj_data->qvel);
-        Vector<model::nv_size> qfrc_actuator = Eigen::Map<Vector<model::nu_size>>(mj_data->qfrc_actuator);
+        Vector<model::nv_size> qfrc_actuator = Eigen::Map<Vector<model::nv_size>>(mj_data->qfrc_actuator);
 
         State state;
         state.motor_position = qpos(Eigen::seqN(7, model::nu_size));
@@ -136,25 +137,32 @@ int main(int argc, char** argv) {
         state.angular_body_velocity = qvel(Eigen::seqN(3, 3));
         state.contact_mask = Vector<model::contact_site_ids_size>::Constant(1.0);
 
-        result.Update(controller.update_state(state));
-        ABSL_CHECK(result.ok()) << result.message();
+        controller.update_state(state);
         
         // Update Taskspace Targets:
-        osc::aliases::TaskspaceTargets taskspace_targets = osc::aliases::TaskspaceTargets::Zero();
+        TaskspaceTargets taskspace_targets = TaskspaceTargets::Zero();
 
-        // Position and Velocity:
+        // Sinusoidal Position and Velocity Tracking:
+        double amplitude = 0.1;
+        double frequency = 0.5;
+        Vector<3> position_target = Vector<3>(
+            initial_position(0), initial_position(1), initial_position(2) + amplitude * std::sin(2.0 * M_PI * frequency * current_time)
+        );
+        Vector<3> velocity_target = Vector<3>(
+            0.0, 0.0, 2.0 * M_PI * amplitude * frequency * std::cos(2.0 * M_PI * frequency * current_time)
+        );
+        Eigen::Quaternion<double> body_rotation = Eigen::Quaternion<double>(state.body_rotation(0), state.body_rotation(1), state.body_rotation(2), state.body_rotation(3));
         Vector<3> body_position = qpos(Eigen::seqN(0, 3));
-        interface::aliases::common::Vector3<double> position_error = inital_position - body_position;
-        interface::aliases::common::Vector3<double> velocity_error = interface::aliases::common::Vector3<double>::Zero() - state.linear_body_velocity;
-        interface::aliases::common::Vector3<double> rotation_error = (Eigen::Quaternion<double>(1, 0, 0, 0) * state.body_rotation.conjugate()).vec();
-        interface::aliases::common::Vector3<double> angular_velocity_error = interface::aliases::common::Vector3<double>::Zero() - state.angular_body_velocity;
-        interface::aliases::common::Vector3<double> linear_control = 150.0 * (position_error) + 25.0 * (velocity_error);
-        interface::aliases::common::Vector3<double> angular_control = 50.0 * (rotation_error) + 10.0 * (angular_velocity_error);
+        Vector<3> position_error = position_target - body_position;
+        Vector<3> velocity_error = velocity_target - state.linear_body_velocity;
+        Vector<3> rotation_error = (Eigen::Quaternion<double>(1, 0, 0, 0) * body_rotation.conjugate()).vec();
+        Vector<3> angular_velocity_error = Vector<3>::Zero() - state.angular_body_velocity;
+        Vector<3> linear_control = 150.0 * (position_error) + 25.0 * (velocity_error);
+        Vector<3> angular_control = 50.0 * (rotation_error) + 10.0 * (angular_velocity_error);
         Eigen::Vector<double, 6> cmd {linear_control(0), linear_control(1), linear_control(2), angular_control(0), angular_control(1), angular_control(2)};
         taskspace_targets.row(0) = cmd;
 
-        result.Update(interface.update_taskspace_targets(taskspace_targets));
-        ABSL_CHECK(result.ok()) << result.message();
+        controller.update_taskspace_targets(taskspace_targets);
 
         // Get Torque Command:
         Vector<model::nu_size> torque_command = controller.get_torque_command();
