@@ -16,5 +16,5 @@ cc_binary(
         "@abseil-cpp//absl/status:status",
         "@rules_cc//cc/runfiles:runfiles",
         "@bazel_tools//tools/cpp/runfiles",
-    ]
+    ],
 )
