@@ -137,6 +137,7 @@ int main(int argc, char** argv) {
         state.contact_mask = Vector<model::contact_site_ids_size>::Constant(1.0);
 
         result.Update(controller.update_state(state));
+        ABSL_CHECK(result.ok()) << result.message();
         
         // Update Taskspace Targets:
         osc::aliases::TaskspaceTargets taskspace_targets = osc::aliases::TaskspaceTargets::Zero();
@@ -153,6 +154,7 @@ int main(int argc, char** argv) {
         taskspace_targets.row(0) = cmd;
 
         result.Update(interface.update_taskspace_targets(taskspace_targets));
+        ABSL_CHECK(result.ok()) << result.message();
 
         // Get Torque Command:
         Vector<model::nu_size> torque_command = controller.get_torque_command();
