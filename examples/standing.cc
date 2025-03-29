@@ -15,6 +15,7 @@
 
 using namespace operational_space_controller::aliases;
 using namespace operational_space_controller::containers;
+using namespace operational_space_controller::constants;
 using rules_cc::cc::runfiles::Runfiles;
 
 
