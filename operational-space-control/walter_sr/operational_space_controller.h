@@ -288,20 +288,20 @@ class OperationalSpaceController {
             // MAX TORQUE 2.64 Nm
             // knee - link: https://mjbots.com/products/mj5208
             // Knee motor runs through a 19:30 pulley reduction.
-            // PEAK TORQUE 1.7 Nm
+            // PEAK TORQUE 1.7 Nm (with 19:30 gear reduction - 1.076666)
             // =========== motor names: ====================================================================================
             // actuators/control inputs - [bl_hip/knee,br,fl,fr] - [torso_left_thigh_joint/shin,right,head_left,right]
             Vector<model::nu_size> u_lb = {
-                -2.64, -2.64,
-                -2.64, -2.64,
-                -2.64, -2.64,
-                -2.64, -2.64
+                -2.64, -1.076,
+                -2.64, -1.076,
+                -2.64, -1.076,
+                -2.64, -1.076
             };
             Vector<model::nu_size> u_ub = {
-                2.64, 2.64,
-                2.64, 2.64,
-                2.64, 2.64,
-                2.64, 2.64
+                2.64, 1.076,
+                2.64, 1.076,
+                2.64, 1.076,
+                2.64, 1.076
             };
             Vector<optimization::z_size> z_lb = {
                 -infinity, -infinity, 0.0,
@@ -387,7 +387,10 @@ class OperationalSpaceController {
                  
 
                 // Update Points:
-                points = Eigen::Map<Matrix<model::site_ids_size, 3>>(mj_data->site_xpos);
+                points = Eigen::Map<Matrix<model::site_ids_size, 3>>(mj_data->site_xpos)(site_ids, Eigen::placehodler::all);
+
+                // std::cout << points.transpose() std::endl;
+                // Write function that reorders points relative to the body_id vector...
             }
 
             void update_osc_data() {

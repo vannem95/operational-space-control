@@ -34,8 +34,7 @@ bazel_dep(name = "mujoco-models")
 archive_override(
     module_name = "mujoco-models",
     strip_prefix = "mujoco-models-main",
-    urls = ["https://github.com/jeh15/mujoco-models/archive/refs/heads/main.zip"],
-    integrity = "sha256-1yew7axbhAsKespRTa/NTyBk5x4h7NA6eRpxB2Pqp/k=",
+    urls = ["https://github.com/vannem95/mujoco-models/archive/refs/heads/main.zip"]
 )
 
 
