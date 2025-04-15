@@ -387,7 +387,10 @@ class OperationalSpaceController {
                  
 
                 // Update Points:
-                points = Eigen::Map<Matrix<model::site_ids_size, 3>>(mj_data->site_xpos)(site_ids, Eigen::placehodler::all);
+                points = Eigen::Map<Matrix<model::site_ids_size, 3>>(mj_data->site_xpos)(site_ids, Eigen::placeholder::all);
+                //  just have to match the types
+
+                
 
                 // std::cout << points.transpose() std::endl;
                 // Write function that reorders points relative to the body_id vector...

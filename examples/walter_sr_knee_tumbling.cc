@@ -91,6 +91,9 @@ int main(int argc, char** argv) {
     Vector<model::nq_size> qpos = Eigen::Map<Vector<model::nq_size>>(mj_data->qpos);
     Vector<model::nv_size> qvel = Eigen::Map<Vector<model::nv_size>>(mj_data->qvel);
     Vector<model::nv_size> qfrc_actuator = Eigen::Map<Vector<model::nv_size>>(mj_data->qfrc_actuator);
+    //===================================================
+    //                  edits -- print qpos to see whats going on
+    //===================================================
     Vector<3> initial_position = qpos(Eigen::seqN(0, 3));
 
     State initial_state;
@@ -129,6 +132,11 @@ int main(int argc, char** argv) {
         Vector<model::nv_size> qvel = Eigen::Map<Vector<model::nv_size>>(mj_data->qvel);
         Vector<model::nv_size> qfrc_actuator = Eigen::Map<Vector<model::nv_size>>(mj_data->qfrc_actuator);
 
+        //===================================================
+        //                  print qpos
+        //===================================================                
+        std::cout << "qpos: " << qpos << std::endl;
+
         State state;
         state.motor_position = qpos(Eigen::seqN(7, model::nu_size));
         state.motor_velocity = qvel(Eigen::seqN(6, model::nu_size));
@@ -146,6 +154,9 @@ int main(int argc, char** argv) {
         // Sinusoidal Position and Velocity Tracking:
         double amplitude = 0.05;
         double frequency = 0.5;
+        //===================================================
+        //                  edits
+        //===================================================        
         Vector<3> position_target = Vector<3>(
             // initial_position(0) + amplitude * std::sin(2.0 * M_PI * frequency * current_time), initial_position(1), initial_position(2)
             initial_position(0) + amplitude * std::sin(2.0 * M_PI * frequency * current_time), initial_position(1), initial_position(2)
