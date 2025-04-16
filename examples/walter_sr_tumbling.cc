@@ -147,12 +147,13 @@ int main(int argc, char** argv) {
         double amplitude = 0.05;
         double frequency = 0.5;
         Vector<3> position_target = Vector<3>(
-            // initial_position(0) + amplitude * std::sin(2.0 * M_PI * frequency * current_time), initial_position(1), initial_position(2)
             initial_position(0) + amplitude * std::sin(2.0 * M_PI * frequency * current_time), initial_position(1), initial_position(2)
+            // initial_position(0), initial_position(1), initial_position(2)
         );
         Vector<3> velocity_target = Vector<3>(
-            // 2.0 * M_PI * amplitude * frequency * std::cos(2.0 * M_PI * frequency * current_time),0.0, 0.0
             2.0 * M_PI * amplitude * frequency * std::cos(2.0 * M_PI * frequency * current_time),0.0, 0.0
+            // 0.0, 0.0, 0.0
+            
         );
         Eigen::Quaternion<double> body_rotation = Eigen::Quaternion<double>(state.body_rotation(0), state.body_rotation(1), state.body_rotation(2), state.body_rotation(3));
         Vector<3> body_position = qpos(Eigen::seqN(0, 3));

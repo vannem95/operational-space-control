@@ -11,6 +11,8 @@
 #include <iostream>
 #include <cassert>
 
+#include <typeinfo>
+
 #include "absl/status/status.h"
 #include "absl/log/absl_check.h"
 
@@ -259,6 +261,7 @@ class OperationalSpaceController {
             std::vector<int> contact_site_ids;
             std::vector<int> body_ids;
             Matrix<model::site_ids_size, 3> points;
+            // Matrix<model::site_ids_size, 3> points2;
             static constexpr bool is_fixed_based = false;
             // Control Thread:
             int control_rate_us;
@@ -387,13 +390,21 @@ class OperationalSpaceController {
                  
 
                 // Update Points:
-                points = Eigen::Map<Matrix<model::site_ids_size, 3>>(mj_data->site_xpos)(site_ids, Eigen::placeholder::all);
-                //  just have to match the types
-
+                // points= Eigen::Map<Matrix<model::site_ids_size, 3>>(mj_data->site_xpos);
                 
+                // points2= Eigen::Map<Matrix<model::site_ids_size, 3>>(mj_data->site_xpos);
+                // points(site_ids, Eigen::placeholder::all);
+                Eigen::Matrix<double, model::site_ids_size, 3> points;
+                for (int i = 0; i < model::site_ids_size; ++i) {
+                    int site_index = site_ids[i];
+                    points.row(i) = Eigen::Vector3d(mj_data->site_xpos[3 * site_index + 0],
+                                                    mj_data->site_xpos[3 * site_index + 1],
+                                                    mj_data->site_xpos[3 * site_index + 2]);
+                  }             
+                // points = Eigen::Map<Matrix<model::site_ids_size, 3>>(mj_data->site_xpos)(site_ids, Eigen::placeholder::all);
 
-                // std::cout << points.transpose() std::endl;
-                // Write function that reorders points relative to the body_id vector...
+                // std::cout << "points2 - unordered: " << points2 << std::endl;
+                // std::cout << "points - REORDERED: " << points << std::endl;
             }
 
             void update_osc_data() {

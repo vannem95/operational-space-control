@@ -96,6 +96,9 @@ int main(int argc, char** argv) {
     //===================================================
     Vector<3> initial_position = qpos(Eigen::seqN(0, 3));
 
+    Eigen::Matrix<double, model::site_ids_size, 3> site_data;
+
+
     State initial_state;
     initial_state.motor_position = qpos(Eigen::seqN(7, model::nu_size));
     initial_state.motor_velocity = qvel(Eigen::seqN(6, model::nu_size));
@@ -123,6 +126,19 @@ int main(int argc, char** argv) {
     double visualization_interval = 0.01;
     double simulation_time = 20.0;
     auto current_time = mj_data->time;
+
+    // to get points / site position --> we need to build site-ids using sites
+    std::vector<std::string> sites;
+    std::vector<int> site_ids;
+    for(const std::string_view& site : model::site_list) {
+        std::string site_str = std::string(site);
+        int id = mj_name2id(mj_model, mjOBJ_SITE, site_str.data());
+        assert(id != -1 && "Site not found in model.");
+        sites.push_back(site_str);
+        site_ids.push_back(id);
+    }
+
+
     while(current_time < simulation_time) {
         current_time = mj_data->time;
         visualization_timer = current_time - visualization_start_time;
@@ -132,10 +148,17 @@ int main(int argc, char** argv) {
         Vector<model::nv_size> qvel = Eigen::Map<Vector<model::nv_size>>(mj_data->qvel);
         Vector<model::nv_size> qfrc_actuator = Eigen::Map<Vector<model::nv_size>>(mj_data->qfrc_actuator);
 
+        Eigen::Matrix<double, model::site_ids_size, 3> site_data;
+        for (int i = 0; i < model::site_ids_size; ++i) {
+            int site_index = site_ids[i];
+            site_data.row(i) = Eigen::Vector3d(mj_data->site_xpos[3 * site_index + 0],
+                                            mj_data->site_xpos[3 * site_index + 1],
+                                            mj_data->site_xpos[3 * site_index + 2]);
+          }
         //===================================================
         //                  print qpos
         //===================================================                
-        std::cout << "qpos: " << qpos << std::endl;
+        std::cout << "site data: " << site_data << std::endl;
 
         State state;
         state.motor_position = qpos(Eigen::seqN(7, model::nu_size));
@@ -152,18 +175,19 @@ int main(int argc, char** argv) {
         TaskspaceTargets taskspace_targets = TaskspaceTargets::Zero();
 
         // Sinusoidal Position and Velocity Tracking:
-        double amplitude = 0.05;
+        double amplitude = 0.5;
         double frequency = 0.5;
-        //===================================================
-        //                  edits
-        //===================================================        
+
+        // targets
         Vector<3> position_target = Vector<3>(
+            // sine wave in x-axis --> front/back
             // initial_position(0) + amplitude * std::sin(2.0 * M_PI * frequency * current_time), initial_position(1), initial_position(2)
-            initial_position(0) + amplitude * std::sin(2.0 * M_PI * frequency * current_time), initial_position(1), initial_position(2)
+            initial_position(0), initial_position(1), initial_position(2)
         );
         Vector<3> velocity_target = Vector<3>(
+            // sine wave in x-axis --> front/back
             // 2.0 * M_PI * amplitude * frequency * std::cos(2.0 * M_PI * frequency * current_time),0.0, 0.0
-            2.0 * M_PI * amplitude * frequency * std::cos(2.0 * M_PI * frequency * current_time),0.0, 0.0
+            0.0,0.0,0.0
         );
         Eigen::Quaternion<double> body_rotation = Eigen::Quaternion<double>(state.body_rotation(0), state.body_rotation(1), state.body_rotation(2), state.body_rotation(3));
         Vector<3> body_position = qpos(Eigen::seqN(0, 3));
