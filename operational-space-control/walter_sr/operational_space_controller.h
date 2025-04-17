@@ -390,17 +390,17 @@ class OperationalSpaceController {
                  
 
                 // Update Points:
-                // points= Eigen::Map<Matrix<model::site_ids_size, 3>>(mj_data->site_xpos);
+                points= Eigen::Map<Matrix<model::site_ids_size, 3>>(mj_data->site_xpos)(site_ids, Eigen::placeholders::all);
                 
                 // points2= Eigen::Map<Matrix<model::site_ids_size, 3>>(mj_data->site_xpos);
                 // points(site_ids, Eigen::placeholder::all);
-                Eigen::Matrix<double, model::site_ids_size, 3> points;
-                for (int i = 0; i < model::site_ids_size; ++i) {
-                    int site_index = site_ids[i];
-                    points.row(i) = Eigen::Vector3d(mj_data->site_xpos[3 * site_index + 0],
-                                                    mj_data->site_xpos[3 * site_index + 1],
-                                                    mj_data->site_xpos[3 * site_index + 2]);
-                  }             
+                // Eigen::Matrix<double, model::site_ids_size, 3> points;
+                // for (int i = 0; i < model::site_ids_size; ++i) {
+                //     int site_index = site_ids[i];
+                //     points.row(i) = Eigen::Vector3d(mj_data->site_xpos[3 * site_index + 0],
+                //                                     mj_data->site_xpos[3 * site_index + 1],
+                //                                     mj_data->site_xpos[3 * site_index + 2]);
+                //   }             
                 // points = Eigen::Map<Matrix<model::site_ids_size, 3>>(mj_data->site_xpos)(site_ids, Eigen::placeholder::all);
 
                 // std::cout << "points2 - unordered: " << points2 << std::endl;
