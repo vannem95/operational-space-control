@@ -148,13 +148,9 @@ int main(int argc, char** argv) {
         Vector<model::nv_size> qvel = Eigen::Map<Vector<model::nv_size>>(mj_data->qvel);
         Vector<model::nv_size> qfrc_actuator = Eigen::Map<Vector<model::nv_size>>(mj_data->qfrc_actuator);
 
-        Eigen::Matrix<double, model::site_ids_size, 3> site_data;
-        for (int i = 0; i < model::site_ids_size; ++i) {
-            int site_index = site_ids[i];
-            site_data.row(i) = Eigen::Vector3d(mj_data->site_xpos[3 * site_index + 0],
-                                            mj_data->site_xpos[3 * site_index + 1],
-                                            mj_data->site_xpos[3 * site_index + 2]);
-          }
+        // Eigen::Matrix<double, model::site_ids_size, 3> site_data;
+        site_data = Eigen::Map<Matrix<model::site_ids_size, 3>>(mj_data->site_xpos)(site_ids, Eigen::placeholders::all);
+
         //===================================================
         //                  print qpos
         //===================================================                
@@ -197,7 +193,8 @@ int main(int argc, char** argv) {
         Vector<3> angular_velocity_error = Vector<3>::Zero() - state.angular_body_velocity;
         Vector<3> linear_control = 150.0 * (position_error) + 25.0 * (velocity_error);
         Vector<3> angular_control = 50.0 * (rotation_error) + 10.0 * (angular_velocity_error);
-        Eigen::Vector<double, 6> cmd {linear_control(0), linear_control(1), linear_control(2), angular_control(0), angular_control(1), angular_control(2)};
+        // Eigen::Vector<double, 6> cmd {linear_control(0), linear_control(1), linear_control(2), angular_control(0), angular_control(1), angular_control(2)};
+        Eigen::Vector<double, 6> cmd {linear_control(0), linear_control(1), linear_control(2), 0, 0, 0};
         taskspace_targets.row(0) = cmd;
 
         controller.update_taskspace_targets(taskspace_targets);

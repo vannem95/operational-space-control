@@ -164,19 +164,19 @@ class AutoGen():
         #-------------------------------------------------------------------------------------------------------------------------
         # edits
         #-------------------------------------------------------------------------------------------------------------------------
-        # ddx_torso_p, ddx_tls_p, ddx_trs_p,  ddx_hls_p,  ddx_hrs_p, ddx_tlf_p, ddx_tlr_p, ddx_trf_p, ddx_trr_p, ddx_hlf_p, ddx_hlr_p, ddx_hrf_p, ddx_hrr_p = casadi.vertsplit_n(ddx_task_p, self.num_site_ids)
-        # ddx_torso_r, ddx_tls_r, ddx_trs_r,  ddx_hls_r,  ddx_hrs_r, ddx_tlf_r, ddx_tlr_r, ddx_trf_r, ddx_trr_r, ddx_hlf_r, ddx_hlr_r, ddx_hrf_r, ddx_hrr_r = casadi.vertsplit_n(ddx_task_r, self.num_site_ids)
-        ddx_torso_p, ddx_tlf_p, ddx_tlr_p, ddx_trf_p, ddx_trr_p, ddx_hlf_p, ddx_hlr_p, ddx_hrf_p, ddx_hrr_p = casadi.vertsplit_n(ddx_task_p, self.num_site_ids)
-        ddx_torso_r, ddx_tlf_r, ddx_tlr_r, ddx_trf_r, ddx_trr_r, ddx_hlf_r, ddx_hlr_r, ddx_hrf_r, ddx_hrr_r = casadi.vertsplit_n(ddx_task_r, self.num_site_ids)
+        ddx_torso_p, ddx_tls_p, ddx_trs_p,  ddx_hls_p,  ddx_hrs_p, ddx_tlf_p, ddx_tlr_p, ddx_trf_p, ddx_trr_p, ddx_hlf_p, ddx_hlr_p, ddx_hrf_p, ddx_hrr_p = casadi.vertsplit_n(ddx_task_p, self.num_site_ids)
+        ddx_torso_r, ddx_tls_r, ddx_trs_r,  ddx_hls_r,  ddx_hrs_r, ddx_tlf_r, ddx_tlr_r, ddx_trf_r, ddx_trr_r, ddx_hlf_r, ddx_hlr_r, ddx_hrf_r, ddx_hrr_r = casadi.vertsplit_n(ddx_task_r, self.num_site_ids)
+        # ddx_torso_p, ddx_tlf_p, ddx_tlr_p, ddx_trf_p, ddx_trr_p, ddx_hlf_p, ddx_hlr_p, ddx_hrf_p, ddx_hrr_p = casadi.vertsplit_n(ddx_task_p, self.num_site_ids)
+        # ddx_torso_r, ddx_tlf_r, ddx_tlr_r, ddx_trf_r, ddx_trr_r, ddx_hlf_r, ddx_hlr_r, ddx_hrf_r, ddx_hrr_r = casadi.vertsplit_n(ddx_task_r, self.num_site_ids)
 
         # Split Desired Task Acceleration:
         desired_task_p, desired_task_r = casadi.horzsplit_n(desired_task_ddx, 2)
         desired_task_p = casadi.vertsplit_n(desired_task_p, self.num_site_ids)
         desired_task_r = casadi.vertsplit_n(desired_task_r, self.num_site_ids)
-        # desired_torso_p, desired_tls_p, desired_trs_p, desired_hls_p, desired_hrs_p, desired_tlf_p, desired_tlr_p, desired_trf_p, desired_trr_p, desired_hlf_p, desired_hlr_p, desired_hrf_p, desired_hrr_p = map(lambda x: x.T, desired_task_p)
-        # desired_torso_r, desired_tls_r, desired_trs_r, desired_hls_r, desired_hrs_r, desired_tlf_r, desired_tlr_r, desired_trf_r, desired_trr_r, desired_hlf_r, desired_hlr_r, desired_hrf_r, desired_hrr_r = map(lambda x: x.T, desired_task_r)
-        desired_torso_p, desired_tlf_p, desired_tlr_p, desired_trf_p, desired_trr_p, desired_hlf_p, desired_hlr_p, desired_hrf_p, desired_hrr_p = map(lambda x: x.T, desired_task_p)
-        desired_torso_r, desired_tlf_r, desired_tlr_r, desired_trf_r, desired_trr_r, desired_hlf_r, desired_hlr_r, desired_hrf_r, desired_hrr_r = map(lambda x: x.T, desired_task_r)
+        desired_torso_p, desired_tls_p, desired_trs_p, desired_hls_p, desired_hrs_p, desired_tlf_p, desired_tlr_p, desired_trf_p, desired_trr_p, desired_hlf_p, desired_hlr_p, desired_hrf_p, desired_hrr_p = map(lambda x: x.T, desired_task_p)
+        desired_torso_r, desired_tls_r, desired_trs_r, desired_hls_r, desired_hrs_r, desired_tlf_r, desired_tlr_r, desired_trf_r, desired_trr_r, desired_hlf_r, desired_hlr_r, desired_hrf_r, desired_hrr_r = map(lambda x: x.T, desired_task_r)
+        # desired_torso_p, desired_tlf_p, desired_tlr_p, desired_trf_p, desired_trr_p, desired_hlf_p, desired_hlr_p, desired_hrf_p, desired_hrr_p = map(lambda x: x.T, desired_task_p)
+        # desired_torso_r, desired_tlf_r, desired_tlr_r, desired_trf_r, desired_trr_r, desired_hlf_r, desired_hlr_r, desired_hrf_r, desired_hrr_r = map(lambda x: x.T, desired_task_r)
 
         # I could make this more general at the cost of readability...
         # ddx_task_p = casadi.vertsplit_n(ddx_task_p, self.num_site_ids)
@@ -193,38 +193,38 @@ class AutoGen():
                 ddx_torso_r,
                 desired_torso_r,
             ),
-            # 'tls_translational_tracking': self._objective_tracking(
-            #     ddx_tls_p,
-            #     desired_tls_p,
-            # ),
-            # 'tls_rotational_tracking': self._objective_tracking(
-            #     ddx_tls_r,
-            #     desired_tls_r,
-            # ),
-            # 'trs_translational_tracking': self._objective_tracking(
-            #     ddx_trs_p,
-            #     desired_trs_p,
-            # ),
-            # 'trs_rotational_tracking': self._objective_tracking(
-            #     ddx_trs_r,
-            #     desired_trs_r,
-            # ),
-            # 'hls_translational_tracking': self._objective_tracking(
-            #     ddx_hls_p,
-            #     desired_hls_p,
-            # ),
-            # 'hls_rotational_tracking': self._objective_tracking(
-            #     ddx_hls_r,
-            #     desired_hls_r,
-            # ),
-            # 'hrs_translational_tracking': self._objective_tracking(
-            #     ddx_hrs_p,
-            #     desired_hrs_p,
-            # ),
-            # 'hrs_rotational_tracking': self._objective_tracking(
-            #     ddx_hrs_r,
-            #     desired_hrs_r,
-            # ),
+            'tls_translational_tracking': self._objective_tracking(
+                ddx_tls_p,
+                desired_tls_p,
+            ),
+            'tls_rotational_tracking': self._objective_tracking(
+                ddx_tls_r,
+                desired_tls_r,
+            ),
+            'trs_translational_tracking': self._objective_tracking(
+                ddx_trs_p,
+                desired_trs_p,
+            ),
+            'trs_rotational_tracking': self._objective_tracking(
+                ddx_trs_r,
+                desired_trs_r,
+            ),
+            'hls_translational_tracking': self._objective_tracking(
+                ddx_hls_p,
+                desired_hls_p,
+            ),
+            'hls_rotational_tracking': self._objective_tracking(
+                ddx_hls_r,
+                desired_hls_r,
+            ),
+            'hrs_translational_tracking': self._objective_tracking(
+                ddx_hrs_p,
+                desired_hrs_p,
+            ),
+            'hrs_rotational_tracking': self._objective_tracking(
+                ddx_hrs_r,
+                desired_hrs_r,
+            ),
             'tlf_translational_tracking': self._objective_tracking(
                 ddx_tlf_p,
                 desired_tlf_p,
