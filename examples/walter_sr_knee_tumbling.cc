@@ -97,6 +97,7 @@ int main(int argc, char** argv) {
     Vector<3> initial_position = qpos(Eigen::seqN(0, 3));
 
     Eigen::Matrix<double, model::site_ids_size, 3> site_data;
+    Eigen::Matrix<double, model::site_ids_size, 3> initial_site_data;
 
 
     State initial_state;
@@ -137,6 +138,7 @@ int main(int argc, char** argv) {
         sites.push_back(site_str);
         site_ids.push_back(id);
     }
+    initial_site_data = Eigen::Map<Matrix<model::site_ids_size, 3>>(mj_data->site_xpos)(site_ids, Eigen::placeholders::all);
 
 
     while(current_time < simulation_time) {
@@ -155,6 +157,7 @@ int main(int argc, char** argv) {
         //                  print qpos
         //===================================================                
         std::cout << "site data: " << site_data << std::endl;
+        std::cout << "initial_site_data data: " << initial_site_data << std::endl;
 
         State state;
         state.motor_position = qpos(Eigen::seqN(7, model::nu_size));
@@ -174,28 +177,80 @@ int main(int argc, char** argv) {
         double amplitude = 0.5;
         double frequency = 0.5;
 
+        // ------------------------------------------------------------------
+        //       standing
+        // ------------------------------------------------------------------
         // targets
-        Vector<3> position_target = Vector<3>(
-            // sine wave in x-axis --> front/back
-            // initial_position(0) + amplitude * std::sin(2.0 * M_PI * frequency * current_time), initial_position(1), initial_position(2)
-            initial_position(0), initial_position(1), initial_position(2)
+        // Vector<3> position_target = Vector<3>(
+        //     // sine wave in x-axis --> front/back
+        //     // initial_position(0) + amplitude * std::sin(2.0 * M_PI * frequency * current_time), initial_position(1), initial_position(2)
+        //     initial_position(0), initial_position(1), initial_position(2)
+        // );
+        // Vector<3> velocity_target = Vector<3>(
+        //     // sine wave in x-axis --> front/back
+        //     // 2.0 * M_PI * amplitude * frequency * std::cos(2.0 * M_PI * frequency * current_time),0.0, 0.0
+        //     0.0,0.0,0.0
+        // );
+        // Eigen::Quaternion<double> body_rotation = Eigen::Quaternion<double>(state.body_rotation(0), state.body_rotation(1), state.body_rotation(2), state.body_rotation(3));
+        // Vector<3> body_position = qpos(Eigen::seqN(0, 3));
+        // Vector<3> position_error = position_target - body_position;
+        // Vector<3> velocity_error = velocity_target - state.linear_body_velocity;
+        // Vector<3> rotation_error = (Eigen::Quaternion<double>(1, 0, 0, 0) * body_rotation.conjugate()).vec();
+        // Vector<3> angular_velocity_error = Vector<3>::Zero() - state.angular_body_velocity;
+        // Vector<3> linear_control = 150.0 * (position_error) + 25.0 * (velocity_error);
+        // Vector<3> angular_control = 50.0 * (rotation_error) + 10.0 * (angular_velocity_error);
+        // // Eigen::Vector<double, 6> cmd {linear_control(0), linear_control(1), linear_control(2), angular_control(0), angular_control(1), angular_control(2)};
+        // Eigen::Vector<double, 6> cmd {linear_control(0), linear_control(1), linear_control(2), 0, 0, 0};
+
+        // ------------------------------------------------------------------
+        //       z-axis
+        // ------------------------------------------------------------------
+        // targets
+        Vector<3> tl_position_target = Vector<3>(
+            initial_site_data(1,0), initial_site_data(1,1), initial_site_data(1,2)+0.05
         );
-        Vector<3> velocity_target = Vector<3>(
-            // sine wave in x-axis --> front/back
-            // 2.0 * M_PI * amplitude * frequency * std::cos(2.0 * M_PI * frequency * current_time),0.0, 0.0
-            0.0,0.0,0.0
+        Vector<3> tr_position_target = Vector<3>(
+            initial_site_data(2,0), initial_site_data(2,1), initial_site_data(2,2)+0.05
         );
-        Eigen::Quaternion<double> body_rotation = Eigen::Quaternion<double>(state.body_rotation(0), state.body_rotation(1), state.body_rotation(2), state.body_rotation(3));
-        Vector<3> body_position = qpos(Eigen::seqN(0, 3));
-        Vector<3> position_error = position_target - body_position;
-        Vector<3> velocity_error = velocity_target - state.linear_body_velocity;
-        Vector<3> rotation_error = (Eigen::Quaternion<double>(1, 0, 0, 0) * body_rotation.conjugate()).vec();
-        Vector<3> angular_velocity_error = Vector<3>::Zero() - state.angular_body_velocity;
-        Vector<3> linear_control = 150.0 * (position_error) + 25.0 * (velocity_error);
-        Vector<3> angular_control = 50.0 * (rotation_error) + 10.0 * (angular_velocity_error);
-        // Eigen::Vector<double, 6> cmd {linear_control(0), linear_control(1), linear_control(2), angular_control(0), angular_control(1), angular_control(2)};
-        Eigen::Vector<double, 6> cmd {linear_control(0), linear_control(1), linear_control(2), 0, 0, 0};
-        taskspace_targets.row(0) = cmd;
+        Vector<3> hl_position_target = Vector<3>(
+            initial_site_data(3,0), initial_site_data(3,1), initial_site_data(3,2)+0.05
+        );
+        Vector<3> hr_position_target = Vector<3>(
+            initial_site_data(4,0), initial_site_data(4,1), initial_site_data(4,2)+0.05
+        );
+        // Vector<3> velocity_target = Vector<3>(
+        //     // sine wave in x-axis --> front/back
+        //     // 2.0 * M_PI * amplitude * frequency * std::cos(2.0 * M_PI * frequency * current_time),0.0, 0.0
+        //     0.0,0.0,0.0
+        // );
+        // Eigen::Quaternion<double> body_rotation = Eigen::Quaternion<double>(state.body_rotation(0), state.body_rotation(1), state.body_rotation(2), state.body_rotation(3));
+        Vector<3> tl_body_position = site_data(1,Eigen::seqN(0, 3));
+        Vector<3> tr_body_position = site_data(2,Eigen::seqN(0, 3));
+        Vector<3> hl_body_position = site_data(3,Eigen::seqN(0, 3));
+        Vector<3> hr_body_position = site_data(4,Eigen::seqN(0, 3));
+        Vector<3> tl_position_error = (tl_position_target - tl_body_position); 
+        Vector<3> tr_position_error = (tr_position_target - tr_body_position); 
+        Vector<3> hl_position_error = (hl_position_target - hl_body_position);
+        Vector<3> hr_position_error = (hr_position_target - hr_body_position);
+        // Vector<3> velocity_error = velocity_target - state.linear_body_velocity;
+        // Vector<3> rotation_error = (Eigen::Quaternion<double>(1, 0, 0, 0) * body_rotation.conjugate()).vec();
+        // Vector<3> angular_velocity_error = Vector<3>::Zero() - state.angular_body_velocity;
+        // Vector<3> linear_control = 150.0 * (position_error) + 25.0 * (velocity_error);
+        Vector<3> tl_linear_control = 15000.0 * (tl_position_error);
+        Vector<3> tr_linear_control = 15000.0 * (tr_position_error);
+        Vector<3> hl_linear_control = 15000.0 * (hl_position_error);
+        Vector<3> hr_linear_control = 15000.0 * (hr_position_error);
+        // Vector<3> angular_control = 50.0 * (rotation_error) + 10.0 * (angular_velocity_error);
+        // // Eigen::Vector<double, 6> cmd {linear_control(0), linear_control(1), linear_control(2), angular_control(0), angular_control(1), angular_control(2)};
+        Eigen::Vector<double, 6> cmd1 {tl_linear_control(0), tl_linear_control(1), tl_linear_control(2), 0, 0, 0};        
+        Eigen::Vector<double, 6> cmd2 {tr_linear_control(0), tr_linear_control(1), tr_linear_control(2), 0, 0, 0};        
+        Eigen::Vector<double, 6> cmd3 {hl_linear_control(0), hl_linear_control(1), hl_linear_control(2), 0, 0, 0};        
+        Eigen::Vector<double, 6> cmd4 {hr_linear_control(0), hr_linear_control(1), hr_linear_control(2), 0, 0, 0};        
+
+        taskspace_targets.row(1) = cmd1;
+        taskspace_targets.row(2) = cmd2;
+        taskspace_targets.row(3) = cmd3;
+        taskspace_targets.row(4) = cmd4;
 
         controller.update_taskspace_targets(taskspace_targets);
 
