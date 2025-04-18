@@ -236,16 +236,24 @@ int main(int argc, char** argv) {
         // Vector<3> rotation_error = (Eigen::Quaternion<double>(1, 0, 0, 0) * body_rotation.conjugate()).vec();
         // Vector<3> angular_velocity_error = Vector<3>::Zero() - state.angular_body_velocity;
         // Vector<3> linear_control = 150.0 * (position_error) + 25.0 * (velocity_error);
+
+
         Vector<3> tl_linear_control = 15000.0 * (tl_position_error);
         Vector<3> tr_linear_control = 15000.0 * (tr_position_error);
         Vector<3> hl_linear_control = 15000.0 * (hl_position_error);
         Vector<3> hr_linear_control = 15000.0 * (hr_position_error);
         // Vector<3> angular_control = 50.0 * (rotation_error) + 10.0 * (angular_velocity_error);
         // // Eigen::Vector<double, 6> cmd {linear_control(0), linear_control(1), linear_control(2), angular_control(0), angular_control(1), angular_control(2)};
-        Eigen::Vector<double, 6> cmd1 {tl_linear_control(0), tl_linear_control(1), tl_linear_control(2), 0, 0, 0};        
-        Eigen::Vector<double, 6> cmd2 {tr_linear_control(0), tr_linear_control(1), tr_linear_control(2), 0, 0, 0};        
-        Eigen::Vector<double, 6> cmd3 {hl_linear_control(0), hl_linear_control(1), hl_linear_control(2), 0, 0, 0};        
-        Eigen::Vector<double, 6> cmd4 {hr_linear_control(0), hr_linear_control(1), hr_linear_control(2), 0, 0, 0};        
+        // Eigen::Vector<double, 6> cmd1 {tl_linear_control(0), tl_linear_control(1), tl_linear_control(2), 0, 0, 0};        
+        // Eigen::Vector<double, 6> cmd2 {tr_linear_control(0), tr_linear_control(1), tr_linear_control(2), 0, 0, 0};        
+        // Eigen::Vector<double, 6> cmd3 {hl_linear_control(0), hl_linear_control(1), hl_linear_control(2), 0, 0, 0};        
+        // Eigen::Vector<double, 6> cmd4 {hr_linear_control(0), hr_linear_control(1), hr_linear_control(2), 0, 0, 0};        
+
+        Eigen::Vector<double, 6> cmd1 {0, 0, tl_linear_control(2), 0, 0, 0};        
+        Eigen::Vector<double, 6> cmd2 {0, 0, tr_linear_control(2), 0, 0, 0};        
+        Eigen::Vector<double, 6> cmd3 {0, 0, hl_linear_control(2), 0, 0, 0};        
+        Eigen::Vector<double, 6> cmd4 {0, 0, hr_linear_control(2), 0, 0, 0};        
+
 
         taskspace_targets.row(1) = cmd1;
         taskspace_targets.row(2) = cmd2;
