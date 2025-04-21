@@ -1,5 +1,6 @@
 #include <filesystem>
 #include <cmath>
+#include <fstream>
 
 #include "absl/status/status.h"
 #include "absl/log/absl_check.h"
@@ -125,12 +126,17 @@ int main(int argc, char** argv) {
     double visualization_timer = mj_data->time;
     double visualization_start_time = visualization_timer;
     double visualization_interval = 0.01;
-    double simulation_time = 20.0;
+    double simulation_time = 40.0;
     auto current_time = mj_data->time;
 
     // to get points / site position --> we need to build site-ids using sites
     std::vector<std::string> sites;
     std::vector<int> site_ids;
+
+    // record shin site to plot
+    std::vector<double> target_tl_shin_data;
+    std::vector<double> tl_shin_data;
+
     for(const std::string_view& site : model::site_list) {
         std::string site_str = std::string(site);
         int id = mj_name2id(mj_model, mjOBJ_SITE, site_str.data());
@@ -166,7 +172,7 @@ int main(int argc, char** argv) {
         state.body_rotation = qpos(Eigen::seqN(3, 4));
         state.linear_body_velocity = qvel(Eigen::seqN(0, 3));
         state.angular_body_velocity = qvel(Eigen::seqN(3, 3));
-        state.contact_mask = Vector<model::contact_site_ids_size>::Constant(1.0);
+        state.contact_mask = Vector<model::contact_site_ids_size>::Constant(0.0);
 
         controller.update_state(state);
         
@@ -174,8 +180,8 @@ int main(int argc, char** argv) {
         TaskspaceTargets taskspace_targets = TaskspaceTargets::Zero();
 
         // Sinusoidal Position and Velocity Tracking:
-        double amplitude = 0.5;
-        double frequency = 0.5;
+        double amplitude = 0.04;
+        double frequency = 0.1;
 
         // ------------------------------------------------------------------
         //       standing
@@ -207,17 +213,23 @@ int main(int argc, char** argv) {
         // ------------------------------------------------------------------
         // targets
         Vector<3> tl_position_target = Vector<3>(
-            initial_site_data(1,0), initial_site_data(1,1), initial_site_data(1,2)+0.05
+            initial_site_data(1,0), initial_site_data(1,1), initial_site_data(1,2)+amplitude * std::cos(2.0 * M_PI * frequency * current_time)+0.05
         );
         Vector<3> tr_position_target = Vector<3>(
-            initial_site_data(2,0), initial_site_data(2,1), initial_site_data(2,2)+0.05
+            initial_site_data(2,0), initial_site_data(2,1), initial_site_data(2,2)+amplitude * std::cos(2.0 * M_PI * frequency * current_time)+0.05
         );
         Vector<3> hl_position_target = Vector<3>(
-            initial_site_data(3,0), initial_site_data(3,1), initial_site_data(3,2)+0.05
+            initial_site_data(3,0), initial_site_data(3,1), initial_site_data(3,2)+amplitude * std::cos(2.0 * M_PI * frequency * current_time)+0.05
         );
         Vector<3> hr_position_target = Vector<3>(
-            initial_site_data(4,0), initial_site_data(4,1), initial_site_data(4,2)+0.05
+            initial_site_data(4,0), initial_site_data(4,1), initial_site_data(4,2)+amplitude * std::cos(2.0 * M_PI * frequency * current_time)+0.05
         );
+
+
+        // record target and actual (torso - left) shin site data
+        target_tl_shin_data.push_back(tl_position_target(2));
+        tl_shin_data.push_back(site_data(1,2));
+        
         // Vector<3> velocity_target = Vector<3>(
         //     // sine wave in x-axis --> front/back
         //     // 2.0 * M_PI * amplitude * frequency * std::cos(2.0 * M_PI * frequency * current_time),0.0, 0.0
@@ -238,10 +250,10 @@ int main(int argc, char** argv) {
         // Vector<3> linear_control = 150.0 * (position_error) + 25.0 * (velocity_error);
 
 
-        Vector<3> tl_linear_control = 15000.0 * (tl_position_error);
-        Vector<3> tr_linear_control = 15000.0 * (tr_position_error);
-        Vector<3> hl_linear_control = 15000.0 * (hl_position_error);
-        Vector<3> hr_linear_control = 15000.0 * (hr_position_error);
+        Vector<3> tl_linear_control = 150000.0 * (tl_position_error);
+        Vector<3> tr_linear_control = 150000.0 * (tr_position_error);
+        Vector<3> hl_linear_control = 150000.0 * (hl_position_error);
+        Vector<3> hr_linear_control = 150000.0 * (hr_position_error);
         // Vector<3> angular_control = 50.0 * (rotation_error) + 10.0 * (angular_velocity_error);
         // // Eigen::Vector<double, 6> cmd {linear_control(0), linear_control(1), linear_control(2), angular_control(0), angular_control(1), angular_control(2)};
         // Eigen::Vector<double, 6> cmd1 {tl_linear_control(0), tl_linear_control(1), tl_linear_control(2), 0, 0, 0};        
@@ -290,6 +302,18 @@ int main(int argc, char** argv) {
     mj_deleteData(mj_data);
     mj_deleteModel(mj_model);
     ABSL_CHECK(result.ok()) << result.message();
+
+    // save data to file
+    std::ofstream outfile("tl_shin_sine_data.txt");
+    if (outfile.is_open()) {
+        for (size_t i = 0; i < target_tl_shin_data.size(); ++i) {
+            outfile << target_tl_shin_data[i] << " " << tl_shin_data[i] << std::endl;
+        }
+        outfile.close();
+        std::cout << "Data saved to data.txt" << std::endl;
+    } else {
+        std::cerr << "Unable to open file for writing." << std::endl;
+    }
 
     return 0;
 }
