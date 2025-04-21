@@ -147,9 +147,8 @@ int main(int argc, char** argv) {
         double amplitude = 0.05;
         double frequency = 0.5;
         Vector<3> position_target = Vector<3>(
-            // initial_position(0) + amplitude * std::sin(2.0 * M_PI * frequency * current_time), initial_position(1), initial_position(2)
-            // z test
-            initial_position(0), initial_position(1), initial_position(2)-0.1
+            initial_position(0) + amplitude * std::sin(2.0 * M_PI * frequency * current_time), initial_position(1), initial_position(2)
+            // initial_position(0), initial_position(1), initial_position(2)
         );
         Vector<3> velocity_target = Vector<3>(
             2.0 * M_PI * amplitude * frequency * std::cos(2.0 * M_PI * frequency * current_time),0.0, 0.0
@@ -162,8 +161,6 @@ int main(int argc, char** argv) {
         Vector<3> velocity_error = velocity_target - state.linear_body_velocity;
         Vector<3> rotation_error = (Eigen::Quaternion<double>(1, 0, 0, 0) * body_rotation.conjugate()).vec();
         Vector<3> angular_velocity_error = Vector<3>::Zero() - state.angular_body_velocity;
-
-        // Vector<3> linear_control = 150.0 * (position_error) + 25.0 * (velocity_error);
         Vector<3> linear_control = 150.0 * (position_error) + 25.0 * (velocity_error);
         Vector<3> angular_control = 50.0 * (rotation_error) + 10.0 * (angular_velocity_error);
         Eigen::Vector<double, 6> cmd {linear_control(0), linear_control(1), linear_control(2), angular_control(0), angular_control(1), angular_control(2)};
