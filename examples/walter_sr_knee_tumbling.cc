@@ -43,10 +43,14 @@ int main(int argc, char** argv) {
     }
     mjData* mj_data = mj_makeData(mj_model);
 
+    // Reset Data to match Keyframe 1
+    mj_resetDataKeyframe(mj_model, mj_data, 1)
+
+
     // Initialize mj_data:
-    mj_data->qpos = mj_model->key_qpos;
-    mj_data->qvel = mj_model->key_qvel;
-    mj_data->ctrl = mj_model->key_ctrl;
+    // mj_data->qpos = mj_model->key_qpos;
+    // mj_data->qvel = mj_model->key_qvel;
+    // mj_data->ctrl = mj_model->key_ctrl;
     mj_forward(mj_model, mj_data);
 
     // Visualization:
@@ -213,16 +217,16 @@ int main(int argc, char** argv) {
         // ------------------------------------------------------------------
         // targets
         Vector<3> tl_position_target = Vector<3>(
-            initial_site_data(1,0), initial_site_data(1,1), initial_site_data(1,2)+amplitude * std::cos(2.0 * M_PI * frequency * current_time)+0.05
+            initial_site_data(1,0), initial_site_data(1,1), initial_site_data(1,2)+amplitude * std::cos(2.0 * M_PI * frequency * current_time)+0.04
         );
         Vector<3> tr_position_target = Vector<3>(
-            initial_site_data(2,0), initial_site_data(2,1), initial_site_data(2,2)+amplitude * std::cos(2.0 * M_PI * frequency * current_time)+0.05
+            initial_site_data(2,0), initial_site_data(2,1), initial_site_data(2,2)+amplitude * std::cos(2.0 * M_PI * frequency * current_time)+0.04
         );
         Vector<3> hl_position_target = Vector<3>(
-            initial_site_data(3,0), initial_site_data(3,1), initial_site_data(3,2)+amplitude * std::cos(2.0 * M_PI * frequency * current_time)+0.05
+            initial_site_data(3,0), initial_site_data(3,1), initial_site_data(3,2)+amplitude * std::cos(2.0 * M_PI * frequency * current_time)+0.04
         );
         Vector<3> hr_position_target = Vector<3>(
-            initial_site_data(4,0), initial_site_data(4,1), initial_site_data(4,2)+amplitude * std::cos(2.0 * M_PI * frequency * current_time)+0.05
+            initial_site_data(4,0), initial_site_data(4,1), initial_site_data(4,2)+amplitude * std::cos(2.0 * M_PI * frequency * current_time)+0.04
         );
 
 
