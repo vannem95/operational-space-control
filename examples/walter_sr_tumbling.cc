@@ -118,7 +118,7 @@ int main(int argc, char** argv) {
     double visualization_timer = mj_data->time;
     double visualization_start_time = visualization_timer;
     double visualization_interval = 0.01;
-    double simulation_time = 20.0;
+    double simulation_time = 60.0;
     auto current_time = mj_data->time;
     while(current_time < simulation_time) {
         current_time = mj_data->time;
@@ -145,15 +145,22 @@ int main(int argc, char** argv) {
 
         // Sinusoidal Position and Velocity Tracking:
         double amplitude = 0.05;
-        double frequency = 0.5;
+        double frequency = 0.05;
         Vector<3> position_target = Vector<3>(
-            initial_position(0) + amplitude * std::sin(2.0 * M_PI * frequency * current_time), initial_position(1), initial_position(2)
-            // initial_position(0), initial_position(1), initial_position(2)
+            // x-axis
+            // initial_position(0) + amplitude * std::sin(2.0 * M_PI * frequency * current_time), initial_position(1), initial_position(2)
+            // z-axis --> one position
+            // initial_position(0)+0.05, initial_position(1), initial_position(2)-0.05
+            // z-axis --> up and down
+            initial_position(0) + amplitude * std::sin(2.0 * M_PI * frequency * current_time), initial_position(1), initial_position(2)-amplitude * std::sin(2.0 * M_PI * frequency * current_time)
         );
         Vector<3> velocity_target = Vector<3>(
-            2.0 * M_PI * amplitude * frequency * std::cos(2.0 * M_PI * frequency * current_time),0.0, 0.0
+            // x-axis
+            // 2.0 * M_PI * amplitude * frequency * std::cos(2.0 * M_PI * frequency * current_time),0.0, 0.0
+            // z-axis --> one position
             // 0.0, 0.0, 0.0
-            
+            // z-axis --> up and down
+            2.0 * M_PI * amplitude * frequency * std::cos(2.0 * M_PI * frequency * current_time),0.0, -2.0 * M_PI * amplitude * frequency * std::cos(2.0 * M_PI * frequency * current_time)
         );
         Eigen::Quaternion<double> body_rotation = Eigen::Quaternion<double>(state.body_rotation(0), state.body_rotation(1), state.body_rotation(2), state.body_rotation(3));
         Vector<3> body_position = qpos(Eigen::seqN(0, 3));

@@ -44,7 +44,7 @@ int main(int argc, char** argv) {
     mjData* mj_data = mj_makeData(mj_model);
 
     // Reset Data to match Keyframe 1
-    mj_resetDataKeyframe(mj_model, mj_data, 1)
+    mj_resetDataKeyframe(mj_model, mj_data, 2);
 
 
     // Initialize mj_data:
@@ -104,6 +104,8 @@ int main(int argc, char** argv) {
     Eigen::Matrix<double, model::site_ids_size, 3> site_data;
     Eigen::Matrix<double, model::site_ids_size, 3> initial_site_data;
 
+    Eigen::Matrix<double, model::site_ids_size, 9> site_rotational_data;
+
 
     State initial_state;
     initial_state.motor_position = qpos(Eigen::seqN(7, model::nu_size));
@@ -112,7 +114,7 @@ int main(int argc, char** argv) {
     initial_state.body_rotation = qpos(Eigen::seqN(3, 4));
     initial_state.linear_body_velocity = qvel(Eigen::seqN(0, 3));
     initial_state.angular_body_velocity = qvel(Eigen::seqN(3, 3));
-    initial_state.contact_mask = Vector<model::contact_site_ids_size>::Constant(1.0);
+    initial_state.contact_mask = Vector<model::contact_site_ids_size>::Constant(0.0);
 
     TaskspaceTargets taskspace_targets = Matrix<model::site_ids_size, 6>::Zero();
 
@@ -162,12 +164,14 @@ int main(int argc, char** argv) {
 
         // Eigen::Matrix<double, model::site_ids_size, 3> site_data;
         site_data = Eigen::Map<Matrix<model::site_ids_size, 3>>(mj_data->site_xpos)(site_ids, Eigen::placeholders::all);
+        site_rotational_data = Eigen::Map<Matrix<model::site_ids_size, 9>>(mj_data->site_xmat)(site_ids, Eigen::placeholders::all);
 
         //===================================================
         //                  print qpos
         //===================================================                
-        std::cout << "site data: " << site_data << std::endl;
-        std::cout << "initial_site_data data: " << initial_site_data << std::endl;
+        // std::cout << "site data: " << site_data << std::endl;
+        // std::cout << "site rotational data: " << site_rotational_data << std::endl;
+        // std::cout << "initial_site_data data: " << initial_site_data << std::endl;
 
         State state;
         state.motor_position = qpos(Eigen::seqN(7, model::nu_size));
@@ -265,10 +269,15 @@ int main(int argc, char** argv) {
         // Eigen::Vector<double, 6> cmd3 {hl_linear_control(0), hl_linear_control(1), hl_linear_control(2), 0, 0, 0};        
         // Eigen::Vector<double, 6> cmd4 {hr_linear_control(0), hr_linear_control(1), hr_linear_control(2), 0, 0, 0};        
 
-        Eigen::Vector<double, 6> cmd1 {0, 0, tl_linear_control(2), 0, 0, 0};        
-        Eigen::Vector<double, 6> cmd2 {0, 0, tr_linear_control(2), 0, 0, 0};        
-        Eigen::Vector<double, 6> cmd3 {0, 0, hl_linear_control(2), 0, 0, 0};        
-        Eigen::Vector<double, 6> cmd4 {0, 0, hr_linear_control(2), 0, 0, 0};        
+        // Eigen::Vector<double, 6> cmd1 {0, 0, tl_linear_control(2), 0, 0, 0};        
+        // Eigen::Vector<double, 6> cmd2 {0, 0, tr_linear_control(2), 0, 0, 0};        
+        // Eigen::Vector<double, 6> cmd3 {0, 0, hl_linear_control(2), 0, 0, 0};        
+        // Eigen::Vector<double, 6> cmd4 {0, 0, hr_linear_control(2), 0, 0, 0};        
+
+        Eigen::Vector<double, 6> cmd1 {0, 0, 0, 0, 1e25, 0};        
+        Eigen::Vector<double, 6> cmd2 {0, 0, 0, 0, 0, 0};        
+        Eigen::Vector<double, 6> cmd3 {0, 0, 0, 0, 1e25, 0};        
+        Eigen::Vector<double, 6> cmd4 {0, 0, 0, 0, 0, 0};        
 
 
         taskspace_targets.row(1) = cmd1;
