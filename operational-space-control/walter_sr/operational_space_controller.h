@@ -294,17 +294,29 @@ class OperationalSpaceController {
             // PEAK TORQUE 1.7 Nm (with 19:30 gear reduction - 1.076666)
             // =========== motor names: ====================================================================================
             // actuators/control inputs - [bl_hip/knee,br,fl,fr] - [torso_left_thigh_joint/shin,right,head_left,right]
+            // Vector<model::nu_size> u_lb = {
+            //     -2.64, -1.076,
+            //     -2.64, -1.076,
+            //     -2.64, -1.076,
+            //     -2.64, -1.076
+            // };
+            // Vector<model::nu_size> u_ub = {
+            //     2.64, 1.076,
+            //     2.64, 1.076,
+            //     2.64, 1.076,
+            //     2.64, 1.076
+            // };
             Vector<model::nu_size> u_lb = {
-                -2.64, -1.076,
-                -2.64, -1.076,
-                -2.64, -1.076,
-                -2.64, -1.076
+                -infinity, -infinity,
+                -infinity, -infinity,
+                -infinity, -infinity,
+                -infinity, -infinity
             };
             Vector<model::nu_size> u_ub = {
-                2.64, 1.076,
-                2.64, 1.076,
-                2.64, 1.076,
-                2.64, 1.076
+                infinity, infinity,
+                infinity, infinity,
+                infinity, infinity,
+                infinity, infinity
             };
             Vector<optimization::z_size> z_lb = {
                 -infinity, -infinity, 0.0,

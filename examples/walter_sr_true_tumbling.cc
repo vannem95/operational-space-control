@@ -175,18 +175,6 @@ int main(int argc, char** argv) {
         // std::cout << "site rotational data: " << site_rotational_data << std::endl;
         // std::cout << "initial_site_data data: " << initial_site_data << std::endl;
 
-    
-
-
-        State state;
-        state.motor_position = qpos(Eigen::seqN(7, model::nu_size));
-        state.motor_velocity = qvel(Eigen::seqN(6, model::nu_size));
-        state.torque_estimate = qfrc_actuator(Eigen::seqN(6, model::nu_size));
-        state.body_rotation = qpos(Eigen::seqN(3, 4));
-        state.linear_body_velocity = qvel(Eigen::seqN(0, 3));
-        state.angular_body_velocity = qvel(Eigen::seqN(3, 3));
-        // state.contact_mask = Vector<model::contact_site_ids_size>::Constant(1.0);
-        state.contact_mask = contact_check;
 
         //===================================================
         // find contact mask based on dist between wheel and ground
@@ -202,6 +190,20 @@ int main(int argc, char** argv) {
         // std::cout << "contact_check data: " << contact_check << std::endl;
         // std::cout << "contact_mask data: " << state.contact_mask << std::endl;
         
+    
+
+
+        State state;
+        state.motor_position = qpos(Eigen::seqN(7, model::nu_size));
+        state.motor_velocity = qvel(Eigen::seqN(6, model::nu_size));
+        state.torque_estimate = qfrc_actuator(Eigen::seqN(6, model::nu_size));
+        state.body_rotation = qpos(Eigen::seqN(3, 4));
+        state.linear_body_velocity = qvel(Eigen::seqN(0, 3));
+        state.angular_body_velocity = qvel(Eigen::seqN(3, 3));
+        // state.contact_mask = Vector<model::contact_site_ids_size>::Constant(0.0);
+        state.contact_mask = contact_check;
+
+
 
         controller.update_state(state);
         
