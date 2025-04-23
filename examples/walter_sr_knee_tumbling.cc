@@ -274,11 +274,15 @@ int main(int argc, char** argv) {
         // Eigen::Vector<double, 6> cmd3 {0, 0, hl_linear_control(2), 0, 0, 0};        
         // Eigen::Vector<double, 6> cmd4 {0, 0, hr_linear_control(2), 0, 0, 0};        
 
-        Eigen::Vector<double, 6> cmd1 {0, 0, 0, 0, 1e25, 0};        
+        Eigen::Vector<double, 6> cmd1 {0, 0, 0, 0, 1e5, 0};        
         Eigen::Vector<double, 6> cmd2 {0, 0, 0, 0, 0, 0};        
-        Eigen::Vector<double, 6> cmd3 {0, 0, 0, 0, 1e25, 0};        
+        Eigen::Vector<double, 6> cmd3 {0, 0, 0, 0, 1e5, 0};        
         Eigen::Vector<double, 6> cmd4 {0, 0, 0, 0, 0, 0};        
 
+        // Eigen::Vector<double, 6> cmd1 {0, 0, 0, 0, 1e22, 0};        
+        // Eigen::Vector<double, 6> cmd2 {0, 0, 0, 0, 1e22, 0};        
+        // Eigen::Vector<double, 6> cmd3 {0, 0, 0, 0, 1e22, 0};        
+        // Eigen::Vector<double, 6> cmd4 {0, 0, 0, 0, 1e22, 0};        
 
         taskspace_targets.row(1) = cmd1;
         taskspace_targets.row(2) = cmd2;

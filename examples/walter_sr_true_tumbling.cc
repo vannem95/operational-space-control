@@ -43,8 +43,8 @@ int main(int argc, char** argv) {
     }
     mjData* mj_data = mj_makeData(mj_model);
 
-    // Reset Data to match Keyframe 1
-    mj_resetDataKeyframe(mj_model, mj_data, 2);
+    // Reset Data to match Keyframe 2
+    mj_resetDataKeyframe(mj_model, mj_data, 0);
 
 
     // Initialize mj_data:
@@ -104,6 +104,9 @@ int main(int argc, char** argv) {
     Eigen::Matrix<double, model::site_ids_size, 3> site_data;
     Eigen::Matrix<double, model::site_ids_size, 3> initial_site_data;
 
+    Eigen::Vector<double, model::contact_site_ids_size> contact_check;
+    double wheel_contact_check_height = 0.0615;
+
     Eigen::Matrix<double, model::site_ids_size, 9> site_rotational_data;
 
 
@@ -114,7 +117,7 @@ int main(int argc, char** argv) {
     initial_state.body_rotation = qpos(Eigen::seqN(3, 4));
     initial_state.linear_body_velocity = qvel(Eigen::seqN(0, 3));
     initial_state.angular_body_velocity = qvel(Eigen::seqN(3, 3));
-    initial_state.contact_mask = Vector<model::contact_site_ids_size>::Constant(0.0);
+    initial_state.contact_mask = Vector<model::contact_site_ids_size>::Constant(1.0);
 
     TaskspaceTargets taskspace_targets = Matrix<model::site_ids_size, 6>::Zero();
 
@@ -152,7 +155,6 @@ int main(int argc, char** argv) {
     }
     initial_site_data = Eigen::Map<Matrix<model::site_ids_size, 3>>(mj_data->site_xpos)(site_ids, Eigen::placeholders::all);
 
-
     while(current_time < simulation_time) {
         current_time = mj_data->time;
         visualization_timer = current_time - visualization_start_time;
@@ -173,6 +175,9 @@ int main(int argc, char** argv) {
         // std::cout << "site rotational data: " << site_rotational_data << std::endl;
         // std::cout << "initial_site_data data: " << initial_site_data << std::endl;
 
+    
+
+
         State state;
         state.motor_position = qpos(Eigen::seqN(7, model::nu_size));
         state.motor_velocity = qvel(Eigen::seqN(6, model::nu_size));
@@ -180,7 +185,23 @@ int main(int argc, char** argv) {
         state.body_rotation = qpos(Eigen::seqN(3, 4));
         state.linear_body_velocity = qvel(Eigen::seqN(0, 3));
         state.angular_body_velocity = qvel(Eigen::seqN(3, 3));
-        state.contact_mask = Vector<model::contact_site_ids_size>::Constant(0.0);
+        // state.contact_mask = Vector<model::contact_site_ids_size>::Constant(1.0);
+        state.contact_mask = contact_check;
+
+        //===================================================
+        // find contact mask based on dist between wheel and ground
+        //===================================================
+        contact_check = {(site_data(5,2)<wheel_contact_check_height),
+            (site_data(6,2)<wheel_contact_check_height),
+            (site_data(7,2)<wheel_contact_check_height),
+            (site_data(8,2)<wheel_contact_check_height),
+            (site_data(9,2)<wheel_contact_check_height),
+            (site_data(10,2)<wheel_contact_check_height),
+            (site_data(11,2)<wheel_contact_check_height),
+            (site_data(12,2)<wheel_contact_check_height)};
+        // std::cout << "contact_check data: " << contact_check << std::endl;
+        // std::cout << "contact_mask data: " << state.contact_mask << std::endl;
+        
 
         controller.update_state(state);
         
@@ -249,10 +270,10 @@ int main(int argc, char** argv) {
         // Eigen::Vector<double, 6> cmd3 {0, 0, hl_linear_control(2), 0, 0, 0};        
         // Eigen::Vector<double, 6> cmd4 {0, 0, hr_linear_control(2), 0, 0, 0};        
 
-        Eigen::Vector<double, 6> cmd1 {0, 0, 0, 0, 1e25, 0};        
-        Eigen::Vector<double, 6> cmd2 {0, 0, 0, 0, 0, 0};        
-        Eigen::Vector<double, 6> cmd3 {0, 0, 0, 0, 1e25, 0};        
-        Eigen::Vector<double, 6> cmd4 {0, 0, 0, 0, 0, 0};        
+        Eigen::Vector<double, 6> cmd1 {0, 0, 0, 0, 1e3, 0};        
+        Eigen::Vector<double, 6> cmd2 {0, 0, 0, 0, 1e3, 0};        
+        Eigen::Vector<double, 6> cmd3 {0, 0, 0, 0, 1e3, 0};        
+        Eigen::Vector<double, 6> cmd4 {0, 0, 0, 0, 1e3, 0};        
 
 
         taskspace_targets.row(1) = cmd1;
