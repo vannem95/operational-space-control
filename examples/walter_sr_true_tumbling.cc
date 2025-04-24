@@ -219,16 +219,16 @@ int main(int argc, char** argv) {
         // ------------------------------------------------------------------
         // targets
         Vector<3> tl_position_target = Vector<3>(
-            initial_site_data(1,0), initial_site_data(1,1), initial_site_data(1,2)+amplitude * std::cos(2.0 * M_PI * frequency * current_time)+0.04
+            initial_site_data(1,0)+1.0, initial_site_data(1,1), initial_site_data(1,2)
         );
         Vector<3> tr_position_target = Vector<3>(
-            initial_site_data(2,0), initial_site_data(2,1), initial_site_data(2,2)+amplitude * std::cos(2.0 * M_PI * frequency * current_time)+0.04
+            initial_site_data(2,0)+1.0, initial_site_data(2,1), initial_site_data(2,2)
         );
         Vector<3> hl_position_target = Vector<3>(
-            initial_site_data(3,0), initial_site_data(3,1), initial_site_data(3,2)+amplitude * std::cos(2.0 * M_PI * frequency * current_time)+0.04
+            initial_site_data(3,0)+1.0, initial_site_data(3,1), initial_site_data(3,2)
         );
         Vector<3> hr_position_target = Vector<3>(
-            initial_site_data(4,0), initial_site_data(4,1), initial_site_data(4,2)+amplitude * std::cos(2.0 * M_PI * frequency * current_time)+0.04
+            initial_site_data(4,0)+1.0, initial_site_data(4,1), initial_site_data(4,2)
         );
 
 
@@ -256,32 +256,56 @@ int main(int argc, char** argv) {
         // Vector<3> linear_control = 150.0 * (position_error) + 25.0 * (velocity_error);
 
 
-        Vector<3> tl_linear_control = 150000.0 * (tl_position_error);
-        Vector<3> tr_linear_control = 150000.0 * (tr_position_error);
-        Vector<3> hl_linear_control = 150000.0 * (hl_position_error);
-        Vector<3> hr_linear_control = 150000.0 * (hr_position_error);
+        Vector<3> tl_linear_control = 150.0 * (tl_position_error);
+        Vector<3> tr_linear_control = 150.0 * (tr_position_error);
+        Vector<3> hl_linear_control = 150.0 * (hl_position_error);
+        Vector<3> hr_linear_control = 150.0 * (hr_position_error);
         // Vector<3> angular_control = 50.0 * (rotation_error) + 10.0 * (angular_velocity_error);
         // // Eigen::Vector<double, 6> cmd {linear_control(0), linear_control(1), linear_control(2), angular_control(0), angular_control(1), angular_control(2)};
-        // Eigen::Vector<double, 6> cmd1 {tl_linear_control(0), tl_linear_control(1), tl_linear_control(2), 0, 0, 0};        
-        // Eigen::Vector<double, 6> cmd2 {tr_linear_control(0), tr_linear_control(1), tr_linear_control(2), 0, 0, 0};        
-        // Eigen::Vector<double, 6> cmd3 {hl_linear_control(0), hl_linear_control(1), hl_linear_control(2), 0, 0, 0};        
-        // Eigen::Vector<double, 6> cmd4 {hr_linear_control(0), hr_linear_control(1), hr_linear_control(2), 0, 0, 0};        
+        // Eigen::Vector<double, 6> cmd1 {tl_linear_control(0), tl_linear_control(1), tl_linear_control(2), 0, 1000, 0};        
+        // Eigen::Vector<double, 6> cmd2 {tr_linear_control(0), tr_linear_control(1), tr_linear_control(2), 0, 1000, 0};        
+        // Eigen::Vector<double, 6> cmd3 {hl_linear_control(0), hl_linear_control(1), hl_linear_control(2), 0, 1000, 0};        
+        // Eigen::Vector<double, 6> cmd4 {hr_linear_control(0), hr_linear_control(1), hr_linear_control(2), 0, 1000, 0};        
+
+        
 
         // Eigen::Vector<double, 6> cmd1 {0, 0, tl_linear_control(2), 0, 0, 0};        
         // Eigen::Vector<double, 6> cmd2 {0, 0, tr_linear_control(2), 0, 0, 0};        
         // Eigen::Vector<double, 6> cmd3 {0, 0, hl_linear_control(2), 0, 0, 0};        
         // Eigen::Vector<double, 6> cmd4 {0, 0, hr_linear_control(2), 0, 0, 0};        
 
-        Eigen::Vector<double, 6> cmd1 {0, 0, 0, 0, 1e3, 0};        
-        Eigen::Vector<double, 6> cmd2 {0, 0, 0, 0, 1e3, 0};        
-        Eigen::Vector<double, 6> cmd3 {0, 0, 0, 0, 1e3, 0};        
-        Eigen::Vector<double, 6> cmd4 {0, 0, 0, 0, 1e3, 0};        
+        Eigen::Vector<double, 6> cmd1 {0, 0, 0, 0, 0.6*1e3, 0};        
+        Eigen::Vector<double, 6> cmd2 {0, 0, 0, 0, 0.6*1e3, 0};        
+        Eigen::Vector<double, 6> cmd3 {0, 0, 0, 0, 0.6*1e3, 0};        
+        Eigen::Vector<double, 6> cmd4 {0, 0, 0, 0, 0.6*1e3, 0};        
 
 
         taskspace_targets.row(1) = cmd1;
         taskspace_targets.row(2) = cmd2;
         taskspace_targets.row(3) = cmd3;
         taskspace_targets.row(4) = cmd4;
+
+
+        // ------------------------------------------------------------------
+        //       track head height
+        // ------------------------------------------------------------------
+        Vector<3> position_target = Vector<3>(
+            initial_position(0), initial_position(1), initial_position(2)
+        );
+        Vector<3> velocity_target = Vector<3>(
+            0.0,0.0,0.0
+        );
+
+        Eigen::Quaternion<double> body_rotation = Eigen::Quaternion<double>(state.body_rotation(0), state.body_rotation(1), state.body_rotation(2), state.body_rotation(3));
+        Vector<3> body_position = qpos(Eigen::seqN(0, 3));
+        Vector<3> position_error = position_target - body_position;
+        Vector<3> velocity_error = velocity_target - state.linear_body_velocity;
+        Vector<3> rotation_error = (Eigen::Quaternion<double>(1, 0, 0, 0) * body_rotation.conjugate()).vec();
+        Vector<3> angular_velocity_error = Vector<3>::Zero() - state.angular_body_velocity;
+        Vector<3> linear_control = 150.0 * (position_error) + 0.0 * (velocity_error);
+        Vector<3> angular_control = 50.0 * (rotation_error) + 10.0 * (angular_velocity_error);
+        Eigen::Vector<double, 6> cmd {0, 0, linear_control(2), angular_control(0), angular_control(1), angular_control(2)};
+        taskspace_targets.row(0) = cmd;
 
         controller.update_taskspace_targets(taskspace_targets);
 
