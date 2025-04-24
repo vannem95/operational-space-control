@@ -272,15 +272,15 @@ int main(int argc, char** argv) {
 
         
 
-        // Eigen::Vector<double, 6> cmd1 {0, 0, tl_linear_control(2), 0, 0, 0};        
-        // Eigen::Vector<double, 6> cmd2 {0, 0, tr_linear_control(2), 0, 0, 0};        
-        // Eigen::Vector<double, 6> cmd3 {0, 0, hl_linear_control(2), 0, 0, 0};        
-        // Eigen::Vector<double, 6> cmd4 {0, 0, hr_linear_control(2), 0, 0, 0};        
+        Eigen::Vector<double, 6> cmd1 {0, 0, tl_linear_control(2), 0, 700, 0};        
+        Eigen::Vector<double, 6> cmd2 {0, 0, tr_linear_control(2), 0, 700, 0};        
+        Eigen::Vector<double, 6> cmd3 {0, 0, hl_linear_control(2), 0, 700, 0};        
+        Eigen::Vector<double, 6> cmd4 {0, 0, hr_linear_control(2), 0, 700, 0};        
 
-        Eigen::Vector<double, 6> cmd1 {0, 0, 0, 0, 1e3, 0};        
-        Eigen::Vector<double, 6> cmd2 {0, 0, 0, 0, 1e3, 0};        
-        Eigen::Vector<double, 6> cmd3 {0, 0, 0, 0, 1e3, 0};        
-        Eigen::Vector<double, 6> cmd4 {0, 0, 0, 0, 1e3, 0};        
+        // Eigen::Vector<double, 6> cmd1 {0, 0, 0, 0, 0.7*1e3, 0};        
+        // Eigen::Vector<double, 6> cmd2 {0, 0, 0, 0, 0.7*1e3, 0};        
+        // Eigen::Vector<double, 6> cmd3 {0, 0, 0, 0, 0.7*1e3, 0};        
+        // Eigen::Vector<double, 6> cmd4 {0, 0, 0, 0, 0.7*1e3, 0};        
 
 
         taskspace_targets.row(1) = cmd1;
@@ -305,7 +305,7 @@ int main(int argc, char** argv) {
         Vector<3> velocity_error = velocity_target - state.linear_body_velocity;
         Vector<3> rotation_error = (Eigen::Quaternion<double>(1, 0, 0, 0) * body_rotation.conjugate()).vec();
         Vector<3> angular_velocity_error = Vector<3>::Zero() - state.angular_body_velocity;
-        Vector<3> linear_control = 150.0 * (position_error) + 0.0 * (velocity_error);
+        Vector<3> linear_control = 200.0 * (position_error) + 0.0 * (velocity_error);
         Vector<3> angular_control = 50.0 * (rotation_error) + 10.0 * (angular_velocity_error);
         Eigen::Vector<double, 6> cmd {0, 0, linear_control(2), angular_control(0), angular_control(1), angular_control(2)};
         taskspace_targets.row(0) = cmd;
