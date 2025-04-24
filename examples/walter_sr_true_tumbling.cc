@@ -302,11 +302,11 @@ int main(int argc, char** argv) {
         Eigen::Quaternion<double> body_rotation = Eigen::Quaternion<double>(state.body_rotation(0), state.body_rotation(1), state.body_rotation(2), state.body_rotation(3));
         Vector<3> body_position = qpos(Eigen::seqN(0, 3));
         Vector<3> position_error = position_target - body_position;
-        Vector<3> velocity_error = velocity_target - state.linear_body_velocity;
+        Vector<3> velocity_error = Vector<3>(0.0, 0.0, 0.0-state.linear_body_velocity(2));
         Vector<3> rotation_error = (Eigen::Quaternion<double>(1, 0, 0, 0) * body_rotation.conjugate()).vec();
         Vector<3> angular_velocity_error = Vector<3>::Zero() - state.angular_body_velocity;
-        Vector<3> linear_control = 200.0 * (position_error) + 0.0 * (velocity_error);
-        Vector<3> angular_control = 50.0 * (rotation_error) + 10.0 * (angular_velocity_error);
+        Vector<3> linear_control = 300.0 * (position_error) + 50.0 * (velocity_error);
+        Vector<3> angular_control = 0.0 * (rotation_error) + 0.0 * (angular_velocity_error);
         Eigen::Vector<double, 6> cmd {0, 0, linear_control(2), angular_control(0), angular_control(1), angular_control(2)};
         taskspace_targets.row(0) = cmd;
         
@@ -314,7 +314,7 @@ int main(int argc, char** argv) {
         //       camera track head x
         // ------------------------------------------------------------------
         cam.lookat[0] = body_position(0);
-        // mjv_updateScene(mj_model, mj_data, &scn, nullptr, &cam);        
+
 
         controller.update_taskspace_targets(taskspace_targets);
 
