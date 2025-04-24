@@ -21,6 +21,9 @@ using namespace operational_space_controller::constants;
 using rules_cc::cc::runfiles::Runfiles;
 
 
+
+
+
 int main(int argc, char** argv) {
     // Use runfiles to find the path to the model file
     std::string error;
@@ -274,10 +277,10 @@ int main(int argc, char** argv) {
         // Eigen::Vector<double, 6> cmd3 {0, 0, hl_linear_control(2), 0, 0, 0};        
         // Eigen::Vector<double, 6> cmd4 {0, 0, hr_linear_control(2), 0, 0, 0};        
 
-        Eigen::Vector<double, 6> cmd1 {0, 0, 0, 0, 0.6*1e3, 0};        
-        Eigen::Vector<double, 6> cmd2 {0, 0, 0, 0, 0.6*1e3, 0};        
-        Eigen::Vector<double, 6> cmd3 {0, 0, 0, 0, 0.6*1e3, 0};        
-        Eigen::Vector<double, 6> cmd4 {0, 0, 0, 0, 0.6*1e3, 0};        
+        Eigen::Vector<double, 6> cmd1 {0, 0, 0, 0, 1e3, 0};        
+        Eigen::Vector<double, 6> cmd2 {0, 0, 0, 0, 1e3, 0};        
+        Eigen::Vector<double, 6> cmd3 {0, 0, 0, 0, 1e3, 0};        
+        Eigen::Vector<double, 6> cmd4 {0, 0, 0, 0, 1e3, 0};        
 
 
         taskspace_targets.row(1) = cmd1;
@@ -306,6 +309,12 @@ int main(int argc, char** argv) {
         Vector<3> angular_control = 50.0 * (rotation_error) + 10.0 * (angular_velocity_error);
         Eigen::Vector<double, 6> cmd {0, 0, linear_control(2), angular_control(0), angular_control(1), angular_control(2)};
         taskspace_targets.row(0) = cmd;
+        
+        // ------------------------------------------------------------------
+        //       camera track head x
+        // ------------------------------------------------------------------
+        cam.lookat[0] = body_position(0);
+        // mjv_updateScene(mj_model, mj_data, &scn, nullptr, &cam);        
 
         controller.update_taskspace_targets(taskspace_targets);
 
