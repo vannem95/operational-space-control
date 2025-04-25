@@ -21,6 +21,15 @@ using namespace operational_space_controller::constants;
 using rules_cc::cc::runfiles::Runfiles;
 
 
+double wrapToPi(double angle) {
+    if (angle < -M_PI) {
+        angle += 2 * M_PI;
+    }
+    if (angle >= M_PI) {
+        angle -= 2 * M_PI;
+    }
+    return angle;
+}
 
 
 
@@ -111,6 +120,7 @@ int main(int argc, char** argv) {
     double wheel_contact_check_height = 0.0615;
 
     Eigen::Matrix<double, model::site_ids_size, 9> site_rotational_data;
+    Eigen::Matrix<double, model::site_ids_size, 9> initial_site_rotational_data;
 
 
     State initial_state;
@@ -157,6 +167,20 @@ int main(int argc, char** argv) {
         site_ids.push_back(id);
     }
     initial_site_data = Eigen::Map<Matrix<model::site_ids_size, 3>>(mj_data->site_xpos)(site_ids, Eigen::placeholders::all);
+    initial_site_rotational_data = Eigen::Map<Matrix<model::site_ids_size, 9>>(mj_data->site_xmat)(site_ids, Eigen::placeholders::all);
+
+    double last_tl_angular_position = acos(initial_site_rotational_data(1,0));
+    double last_tr_angular_position = acos(initial_site_rotational_data(2,0));
+    double last_hl_angular_position = acos(initial_site_rotational_data(3,0));
+    double last_hr_angular_position = acos(initial_site_rotational_data(4,0));
+
+    double initial_tl_angular_position = acos(initial_site_rotational_data(1,0));
+    double initial_tr_angular_position = acos(initial_site_rotational_data(2,0));
+    double initial_hl_angular_position = acos(initial_site_rotational_data(3,0));
+    double initial_hr_angular_position = acos(initial_site_rotational_data(4,0));
+    
+    double last_time = current_time;
+
 
     while(current_time < simulation_time) {
         current_time = mj_data->time;
@@ -218,11 +242,11 @@ int main(int argc, char** argv) {
         double frequency = 0.1;
 
         // ------------------------------------------------------------------
-        //       z-axis
+        //       shin z-axis height tracking
         // ------------------------------------------------------------------
         // targets
         Vector<3> tl_position_target = Vector<3>(
-            initial_site_data(1,0)+1.0, initial_site_data(1,1), initial_site_data(1,2)
+            initial_site_rotational_data(1,0)+1.0, initial_site_rotational_data(1,1), initial_site_data(1,2)
         );
         Vector<3> tr_position_target = Vector<3>(
             initial_site_data(2,0)+1.0, initial_site_data(2,1), initial_site_data(2,2)
@@ -270,17 +294,76 @@ int main(int argc, char** argv) {
         // Eigen::Vector<double, 6> cmd3 {hl_linear_control(0), hl_linear_control(1), hl_linear_control(2), 0, 1000, 0};        
         // Eigen::Vector<double, 6> cmd4 {hr_linear_control(0), hr_linear_control(1), hr_linear_control(2), 0, 1000, 0};        
 
+        // ------------------------------------------------------------------
+        //       shin angular position
+        // ------------------------------------------------------------------
+        // shin angular position
+        // Sinusoidal Position and Velocity Tracking:
+        double shin_rot_vel = 0.04;
+        double shin_rot_frequency = 0.1;
+
+        double tl_angular_position = acos(site_rotational_data(1,0));
+        double tr_angular_position = acos(site_rotational_data(2,0));
+        double hl_angular_position = acos(site_rotational_data(3,0));
+        double hr_angular_position = acos(site_rotational_data(4,0));
+
+        double tl_angular_velocity = (tl_angular_position - last_tl_angular_position)/(current_time - last_time);
+        double tr_angular_velocity = (tr_angular_position - last_tr_angular_position)/(current_time - last_time);
+        double hl_angular_velocity = (hl_angular_position - last_hl_angular_position)/(current_time - last_time);
+        double hr_angular_velocity = (hr_angular_position - last_hr_angular_position)/(current_time - last_time);
+
+        // targets
+        double tl_angular_position_target = wrapToPi(initial_tl_angular_position + shin_rot_vel * current_time);
+        double tr_angular_position_target = wrapToPi(initial_tr_angular_position + shin_rot_vel * current_time);
+        double hl_angular_position_target = wrapToPi(initial_hl_angular_position + shin_rot_vel * current_time);
+        double hr_angular_position_target = wrapToPi(initial_hr_angular_position + shin_rot_vel * current_time);
+
+        double tl_angular_velocity_target = 8.0;
+        double tr_angular_velocity_target = 8.0;
+        double hl_angular_velocity_target = 8.0;
+        double hr_angular_velocity_target = 8.0;
+
+        double tl_angular_position_error = (tl_angular_position_target - tl_angular_position);
+        double tr_angular_position_error = (tr_angular_position_target - tr_angular_position);
+        double hl_angular_position_error = (hl_angular_position_target - hl_angular_position);
+        double hr_angular_position_error = (hr_angular_position_target - hr_angular_position);
         
+        double tl_angular_velocity_error = (tl_angular_velocity_target - tl_angular_velocity);
+        double tr_angular_velocity_error = (tr_angular_velocity_target - tr_angular_velocity);
+        double hl_angular_velocity_error = (hl_angular_velocity_target - hl_angular_velocity);
+        double hr_angular_velocity_error = (hr_angular_velocity_target - hr_angular_velocity);
 
-        Eigen::Vector<double, 6> cmd1 {0, 0, tl_linear_control(2), 0, 700, 0};        
-        Eigen::Vector<double, 6> cmd2 {0, 0, tr_linear_control(2), 0, 700, 0};        
-        Eigen::Vector<double, 6> cmd3 {0, 0, hl_linear_control(2), 0, 700, 0};        
-        Eigen::Vector<double, 6> cmd4 {0, 0, hr_linear_control(2), 0, 700, 0};        
+        double tl_angular_control = 100.0 * (tl_angular_position_error) + 200.0 * (tl_angular_velocity_error);
+        double tr_angular_control = 100.0 * (tr_angular_position_error) + 200.0 * (tr_angular_velocity_error);
+        double hl_angular_control = 100.0 * (hl_angular_position_error) + 200.0 * (hl_angular_velocity_error);
+        double hr_angular_control = 100.0 * (hr_angular_position_error) + 200.0 * (hr_angular_velocity_error);
+        
+        double last_tl_angular_position = tl_angular_position;
+        double last_tr_angular_position = tr_angular_position;
+        double last_hl_angular_position = hl_angular_position;
+        double last_hr_angular_position = hr_angular_position;
 
-        // Eigen::Vector<double, 6> cmd1 {0, 0, 0, 0, 0.7*1e3, 0};        
-        // Eigen::Vector<double, 6> cmd2 {0, 0, 0, 0, 0.7*1e3, 0};        
-        // Eigen::Vector<double, 6> cmd3 {0, 0, 0, 0, 0.7*1e3, 0};        
-        // Eigen::Vector<double, 6> cmd4 {0, 0, 0, 0, 0.7*1e3, 0};        
+        double last_time = current_time;
+        // ================================= 
+
+
+        // ------------------------------------------------------------------
+        //       feedback angular velocity tracking
+        // ------------------------------------------------------------------        
+
+        Eigen::Vector<double, 6> cmd1 {0, 0, 0, 0, tl_angular_control, 0};        
+        Eigen::Vector<double, 6> cmd2 {0, 0, 0, 0, tr_angular_control, 0};        
+        Eigen::Vector<double, 6> cmd3 {0, 0, 0, 0, hl_angular_control, 0};        
+        Eigen::Vector<double, 6> cmd4 {0, 0, 0, 0, hr_angular_control, 0};        
+
+        // ------------------------------------------------------------------
+        //       old feedforward angular acceleration
+        // ------------------------------------------------------------------
+
+        // Eigen::Vector<double, 6> cmd1 {0, 0, 0, 0, 0.8*1e3, 0};        
+        // Eigen::Vector<double, 6> cmd2 {0, 0, 0, 0, 0.8*1e3, 0};        
+        // Eigen::Vector<double, 6> cmd3 {0, 0, 0, 0, 0.8*1e3, 0};        
+        // Eigen::Vector<double, 6> cmd4 {0, 0, 0, 0, 0.8*1e3, 0};        
 
 
         taskspace_targets.row(1) = cmd1;
@@ -305,8 +388,8 @@ int main(int argc, char** argv) {
         Vector<3> velocity_error = Vector<3>(0.0, 0.0, 0.0-state.linear_body_velocity(2));
         Vector<3> rotation_error = (Eigen::Quaternion<double>(1, 0, 0, 0) * body_rotation.conjugate()).vec();
         Vector<3> angular_velocity_error = Vector<3>::Zero() - state.angular_body_velocity;
-        Vector<3> linear_control = 300.0 * (position_error) + 50.0 * (velocity_error);
-        Vector<3> angular_control = 0.0 * (rotation_error) + 0.0 * (angular_velocity_error);
+        Vector<3> linear_control = 100.0 * (position_error) + 0.0 * (velocity_error);
+        Vector<3> angular_control = 10.0 * (rotation_error) + 10.0 * (angular_velocity_error);
         Eigen::Vector<double, 6> cmd {0, 0, linear_control(2), angular_control(0), angular_control(1), angular_control(2)};
         taskspace_targets.row(0) = cmd;
         
