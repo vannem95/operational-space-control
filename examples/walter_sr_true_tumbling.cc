@@ -169,6 +169,7 @@ int main(int argc, char** argv) {
     initial_site_data = Eigen::Map<Matrix<model::site_ids_size, 3>>(mj_data->site_xpos)(site_ids, Eigen::placeholders::all);
     initial_site_rotational_data = Eigen::Map<Matrix<model::site_ids_size, 9>>(mj_data->site_xmat)(site_ids, Eigen::placeholders::all);
 
+    //  last (for velo) and initial angular position of the shin 
     double last_tl_angular_position = acos(initial_site_rotational_data(1,0));
     double last_tr_angular_position = acos(initial_site_rotational_data(2,0));
     double last_hl_angular_position = acos(initial_site_rotational_data(3,0));
@@ -178,7 +179,18 @@ int main(int argc, char** argv) {
     double initial_tr_angular_position = acos(initial_site_rotational_data(2,0));
     double initial_hl_angular_position = acos(initial_site_rotational_data(3,0));
     double initial_hr_angular_position = acos(initial_site_rotational_data(4,0));
-    
+
+    //  last (for velocity) and initial angular position of the thigh sites 
+    double last_tlh_angular_position = acos(initial_site_rotational_data(5,0));
+    double last_trh_angular_position = acos(initial_site_rotational_data(6,0));
+    double last_hlh_angular_position = acos(initial_site_rotational_data(7,0));
+    double last_hrh_angular_position = acos(initial_site_rotational_data(8,0));
+
+    double initial_tlh_angular_position = acos(initial_site_rotational_data(5,0));
+    double initial_trh_angular_position = acos(initial_site_rotational_data(6,0));
+    double initial_hlh_angular_position = acos(initial_site_rotational_data(7,0));
+    double initial_hrh_angular_position = acos(initial_site_rotational_data(8,0));
+
     double last_time = current_time;
 
 
@@ -204,16 +216,16 @@ int main(int argc, char** argv) {
 
 
         //===================================================
-        // find contact mask based on dist between wheel and ground
+        // find contact mask based on dist between wheel and ground --> 0 - body , 1-4 -> shin, 5-8 -> thigh
         //===================================================
-        contact_check = {(site_data(5,2)<wheel_contact_check_height),
-            (site_data(6,2)<wheel_contact_check_height),
-            (site_data(7,2)<wheel_contact_check_height),
-            (site_data(8,2)<wheel_contact_check_height),
-            (site_data(9,2)<wheel_contact_check_height),
+        contact_check = {(site_data(9,2)<wheel_contact_check_height),
             (site_data(10,2)<wheel_contact_check_height),
             (site_data(11,2)<wheel_contact_check_height),
-            (site_data(12,2)<wheel_contact_check_height)};
+            (site_data(12,2)<wheel_contact_check_height),
+            (site_data(13,2)<wheel_contact_check_height),
+            (site_data(14,2)<wheel_contact_check_height),
+            (site_data(15,2)<wheel_contact_check_height),
+            (site_data(16,2)<wheel_contact_check_height)};
         // std::cout << "contact_check data: " << contact_check << std::endl;
         // std::cout << "contact_mask data: " << state.contact_mask << std::endl;
         
@@ -246,22 +258,19 @@ int main(int argc, char** argv) {
         // ------------------------------------------------------------------
         // targets
         Vector<3> tl_position_target = Vector<3>(
-            initial_site_rotational_data(1,0)+1.0, initial_site_rotational_data(1,1), initial_site_data(1,2)
+            initial_site_data(1,0), initial_site_data(1,1), initial_site_data(1,2)
         );
         Vector<3> tr_position_target = Vector<3>(
-            initial_site_data(2,0)+1.0, initial_site_data(2,1), initial_site_data(2,2)
+            initial_site_data(2,0), initial_site_data(2,1), initial_site_data(2,2)
         );
         Vector<3> hl_position_target = Vector<3>(
-            initial_site_data(3,0)+1.0, initial_site_data(3,1), initial_site_data(3,2)
+            initial_site_data(3,0), initial_site_data(3,1), initial_site_data(3,2)
         );
         Vector<3> hr_position_target = Vector<3>(
-            initial_site_data(4,0)+1.0, initial_site_data(4,1), initial_site_data(4,2)
+            initial_site_data(4,0), initial_site_data(4,1), initial_site_data(4,2)
         );
 
 
-        // record target and actual (torso - left) shin site data
-        target_tl_shin_data.push_back(tl_position_target(2));
-        tl_shin_data.push_back(site_data(1,2));
         
         // Vector<3> velocity_target = Vector<3>(
         //     // sine wave in x-axis --> front/back
@@ -283,10 +292,11 @@ int main(int argc, char** argv) {
         // Vector<3> linear_control = 150.0 * (position_error) + 25.0 * (velocity_error);
 
 
-        Vector<3> tl_linear_control = 150.0 * (tl_position_error);
-        Vector<3> tr_linear_control = 150.0 * (tr_position_error);
-        Vector<3> hl_linear_control = 150.0 * (hl_position_error);
-        Vector<3> hr_linear_control = 150.0 * (hr_position_error);
+        // Vector<3> tl_linear_control = 150.0 * (tl_position_error);
+        // Vector<3> tr_linear_control = 150.0 * (tr_position_error);
+        // Vector<3> hl_linear_control = 150.0 * (hl_position_error);
+        // Vector<3> hr_linear_control = 150.0 * (hr_position_error);
+        
         // Vector<3> angular_control = 50.0 * (rotation_error) + 10.0 * (angular_velocity_error);
         // // Eigen::Vector<double, 6> cmd {linear_control(0), linear_control(1), linear_control(2), angular_control(0), angular_control(1), angular_control(2)};
         // Eigen::Vector<double, 6> cmd1 {tl_linear_control(0), tl_linear_control(1), tl_linear_control(2), 0, 1000, 0};        
@@ -299,7 +309,7 @@ int main(int argc, char** argv) {
         // ------------------------------------------------------------------
         // shin angular position
         // Sinusoidal Position and Velocity Tracking:
-        double shin_rot_vel = 0.04;
+        double shin_rot_vel = 1.0;
         double shin_rot_frequency = 0.1;
 
         double tl_angular_position = acos(site_rotational_data(1,0));
@@ -318,10 +328,10 @@ int main(int argc, char** argv) {
         double hl_angular_position_target = wrapToPi(initial_hl_angular_position + shin_rot_vel * current_time);
         double hr_angular_position_target = wrapToPi(initial_hr_angular_position + shin_rot_vel * current_time);
 
-        double tl_angular_velocity_target = 8.0;
-        double tr_angular_velocity_target = 8.0;
-        double hl_angular_velocity_target = 8.0;
-        double hr_angular_velocity_target = 8.0;
+        double tl_angular_velocity_target = shin_rot_vel;
+        double tr_angular_velocity_target = shin_rot_vel;
+        double hl_angular_velocity_target = shin_rot_vel;
+        double hr_angular_velocity_target = shin_rot_vel;
 
         double tl_angular_position_error = (tl_angular_position_target - tl_angular_position);
         double tr_angular_position_error = (tr_angular_position_target - tr_angular_position);
@@ -333,19 +343,20 @@ int main(int argc, char** argv) {
         double hl_angular_velocity_error = (hl_angular_velocity_target - hl_angular_velocity);
         double hr_angular_velocity_error = (hr_angular_velocity_target - hr_angular_velocity);
 
-        double tl_angular_control = 100.0 * (tl_angular_position_error) + 200.0 * (tl_angular_velocity_error);
-        double tr_angular_control = 100.0 * (tr_angular_position_error) + 200.0 * (tr_angular_velocity_error);
-        double hl_angular_control = 100.0 * (hl_angular_position_error) + 200.0 * (hl_angular_velocity_error);
-        double hr_angular_control = 100.0 * (hr_angular_position_error) + 200.0 * (hr_angular_velocity_error);
+        double shin_kp = 100;
+        double shin_kv = 200;
+
+        double tl_angular_control = shin_kp * (tl_angular_position_error) + shin_kv * (tl_angular_velocity_error);
+        double tr_angular_control = shin_kp * (tr_angular_position_error) + shin_kv * (tr_angular_velocity_error);
+        double hl_angular_control = shin_kp * (hl_angular_position_error) + shin_kv * (hl_angular_velocity_error);
+        double hr_angular_control = shin_kp * (hr_angular_position_error) + shin_kv * (hr_angular_velocity_error);
         
         double last_tl_angular_position = tl_angular_position;
         double last_tr_angular_position = tr_angular_position;
         double last_hl_angular_position = hl_angular_position;
         double last_hr_angular_position = hr_angular_position;
 
-        double last_time = current_time;
-        // ================================= 
-
+        // =================================         
 
         // ------------------------------------------------------------------
         //       feedback angular velocity tracking
@@ -373,6 +384,92 @@ int main(int argc, char** argv) {
 
 
         // ------------------------------------------------------------------
+        //       thigh angular position
+        // ------------------------------------------------------------------
+        // thigh angular position
+        // constant position and zero velocity Tracking:
+        double thigh_rot_vel = 0.0;
+        double thigh_kp = 1000;
+        double thigh_kv = 0;
+
+        double tlh_angular_position = acos(site_rotational_data(5,0));
+        double trh_angular_position = acos(site_rotational_data(6,0));
+        double hlh_angular_position = acos(site_rotational_data(7,0));
+        double hrh_angular_position = acos(site_rotational_data(8,0));
+
+        double tlh_angular_velocity = (tlh_angular_position - last_tlh_angular_position)/(current_time - last_time);
+        double trh_angular_velocity = (trh_angular_position - last_trh_angular_position)/(current_time - last_time);
+        double hlh_angular_velocity = (hlh_angular_position - last_hlh_angular_position)/(current_time - last_time);
+        double hrh_angular_velocity = (hrh_angular_position - last_hrh_angular_position)/(current_time - last_time);
+
+        // targets
+        double tlh_angular_position_target = wrapToPi(initial_tlh_angular_position + thigh_rot_vel * current_time);
+        double trh_angular_position_target = wrapToPi(initial_trh_angular_position + thigh_rot_vel * current_time);
+        double hlh_angular_position_target = wrapToPi(initial_hlh_angular_position + thigh_rot_vel * current_time);
+        double hrh_angular_position_target = wrapToPi(initial_hrh_angular_position + thigh_rot_vel * current_time);
+
+        double tlh_angular_velocity_target = thigh_rot_vel;
+        double trh_angular_velocity_target = thigh_rot_vel;
+        double hlh_angular_velocity_target = thigh_rot_vel;
+        double hrh_angular_velocity_target = thigh_rot_vel;
+
+        double tlh_angular_position_error = (tlh_angular_position_target - tlh_angular_position);
+        double trh_angular_position_error = (trh_angular_position_target - trh_angular_position);
+        double hlh_angular_position_error = (hlh_angular_position_target - hlh_angular_position);
+        double hrh_angular_position_error = (hrh_angular_position_target - hrh_angular_position);
+        
+        double tlh_angular_velocity_error = (tlh_angular_velocity_target - tlh_angular_velocity);
+        double trh_angular_velocity_error = (trh_angular_velocity_target - trh_angular_velocity);
+        double hlh_angular_velocity_error = (hlh_angular_velocity_target - hlh_angular_velocity);
+        double hrh_angular_velocity_error = (hrh_angular_velocity_target - hrh_angular_velocity);
+
+        double tlh_angular_control = thigh_kp * (tlh_angular_position_error) + thigh_kv * (tlh_angular_velocity_error);
+        double trh_angular_control = thigh_kp * (trh_angular_position_error) + thigh_kv * (trh_angular_velocity_error);
+        double hlh_angular_control = thigh_kp * (hlh_angular_position_error) + thigh_kv * (hlh_angular_velocity_error);
+        double hrh_angular_control = thigh_kp * (hrh_angular_position_error) + thigh_kv * (hrh_angular_velocity_error);
+        
+        double last_tlh_angular_position = tlh_angular_position;
+        double last_trh_angular_position = trh_angular_position;
+        double last_hlh_angular_position = hlh_angular_position;
+        double last_hrh_angular_position = hrh_angular_position;
+
+        double last_time = current_time;
+        // =================================         
+
+        // ------------------------------------------------------------------
+        //       feedback angular velocity tracking
+        // ------------------------------------------------------------------        
+
+        Eigen::Vector<double, 6> cmd5 {0, 0, 0, 0, tlh_angular_control, 0};        
+        Eigen::Vector<double, 6> cmd6 {0, 0, 0, 0, trh_angular_control, 0};        
+        Eigen::Vector<double, 6> cmd7 {0, 0, 0, 0, hlh_angular_control, 0};        
+        Eigen::Vector<double, 6> cmd8 {0, 0, 0, 0, hrh_angular_control, 0};        
+
+        // Eigen::Vector<double, 6> cmd5 {0, 0, 0, 0, 0.1, 0};        
+        // Eigen::Vector<double, 6> cmd6 {0, 0, 0, 0, 0.1, 0};        
+        // Eigen::Vector<double, 6> cmd7 {0, 0, 0, 0, 0.1, 0};        
+        // Eigen::Vector<double, 6> cmd8 {0, 0, 0, 0, 0.1, 0};        
+
+        std::cout << "tlh_angular_position_target: " << tlh_angular_position_target << std::endl;
+        std::cout << "tlh_angular_control: " << tlh_angular_control << std::endl;
+
+        // ------------------------------------------------------------------
+        //       old feedforward angular acceleration
+        // ------------------------------------------------------------------
+
+        // Eigen::Vector<double, 6> cmd1 {0, 0, 0, 0, 0.8*1e3, 0};        
+        // Eigen::Vector<double, 6> cmd2 {0, 0, 0, 0, 0.8*1e3, 0};        
+        // Eigen::Vector<double, 6> cmd3 {0, 0, 0, 0, 0.8*1e3, 0};        
+        // Eigen::Vector<double, 6> cmd4 {0, 0, 0, 0, 0.8*1e3, 0};        
+
+
+        taskspace_targets.row(5) = cmd5;
+        taskspace_targets.row(6) = cmd6;
+        taskspace_targets.row(7) = cmd7;
+        taskspace_targets.row(8) = cmd8;        
+
+
+        // ------------------------------------------------------------------
         //       track head height
         // ------------------------------------------------------------------
         Vector<3> position_target = Vector<3>(
@@ -388,8 +485,8 @@ int main(int argc, char** argv) {
         Vector<3> velocity_error = Vector<3>(0.0, 0.0, 0.0-state.linear_body_velocity(2));
         Vector<3> rotation_error = (Eigen::Quaternion<double>(1, 0, 0, 0) * body_rotation.conjugate()).vec();
         Vector<3> angular_velocity_error = Vector<3>::Zero() - state.angular_body_velocity;
-        Vector<3> linear_control = 100.0 * (position_error) + 0.0 * (velocity_error);
-        Vector<3> angular_control = 10.0 * (rotation_error) + 10.0 * (angular_velocity_error);
+        Vector<3> linear_control = 1000.0 * (position_error) + 0.0 * (velocity_error);
+        Vector<3> angular_control = 100.0 * (rotation_error) + 100.0 * (angular_velocity_error);
         Eigen::Vector<double, 6> cmd {0, 0, linear_control(2), angular_control(0), angular_control(1), angular_control(2)};
         taskspace_targets.row(0) = cmd;
         
@@ -397,6 +494,13 @@ int main(int argc, char** argv) {
         //       camera track head x
         // ------------------------------------------------------------------
         cam.lookat[0] = body_position(0);
+
+
+        // ------------------------------------------------------------------
+        //       record tlh angular position
+        // ------------------------------------------------------------------
+        target_tl_shin_data.push_back(tlh_angular_position);
+        tl_shin_data.push_back(site_data(1,2));
 
 
         controller.update_taskspace_targets(taskspace_targets);

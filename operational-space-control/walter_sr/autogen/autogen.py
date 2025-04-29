@@ -164,8 +164,8 @@ class AutoGen():
         #-------------------------------------------------------------------------------------------------------------------------
         # edits
         #-------------------------------------------------------------------------------------------------------------------------
-        ddx_torso_p, ddx_tls_p, ddx_trs_p,  ddx_hls_p,  ddx_hrs_p, ddx_tlf_p, ddx_tlr_p, ddx_trf_p, ddx_trr_p, ddx_hlf_p, ddx_hlr_p, ddx_hrf_p, ddx_hrr_p = casadi.vertsplit_n(ddx_task_p, self.num_site_ids)
-        ddx_torso_r, ddx_tls_r, ddx_trs_r,  ddx_hls_r,  ddx_hrs_r, ddx_tlf_r, ddx_tlr_r, ddx_trf_r, ddx_trr_r, ddx_hlf_r, ddx_hlr_r, ddx_hrf_r, ddx_hrr_r = casadi.vertsplit_n(ddx_task_r, self.num_site_ids)
+        ddx_torso_p, ddx_tls_p, ddx_trs_p,  ddx_hls_p,  ddx_hrs_p, ddx_tlh_p, ddx_trh_p,  ddx_hlh_p,  ddx_hrh_p, ddx_tlf_p, ddx_tlr_p, ddx_trf_p, ddx_trr_p, ddx_hlf_p, ddx_hlr_p, ddx_hrf_p, ddx_hrr_p = casadi.vertsplit_n(ddx_task_p, self.num_site_ids)
+        ddx_torso_r, ddx_tls_r, ddx_trs_r,  ddx_hls_r,  ddx_hrs_r, ddx_tlh_r, ddx_trh_r,  ddx_hlh_r,  ddx_hrh_r, ddx_tlf_r, ddx_tlr_r, ddx_trf_r, ddx_trr_r, ddx_hlf_r, ddx_hlr_r, ddx_hrf_r, ddx_hrr_r = casadi.vertsplit_n(ddx_task_r, self.num_site_ids)
         # ddx_torso_p, ddx_tlf_p, ddx_tlr_p, ddx_trf_p, ddx_trr_p, ddx_hlf_p, ddx_hlr_p, ddx_hrf_p, ddx_hrr_p = casadi.vertsplit_n(ddx_task_p, self.num_site_ids)
         # ddx_torso_r, ddx_tlf_r, ddx_tlr_r, ddx_trf_r, ddx_trr_r, ddx_hlf_r, ddx_hlr_r, ddx_hrf_r, ddx_hrr_r = casadi.vertsplit_n(ddx_task_r, self.num_site_ids)
 
@@ -173,8 +173,8 @@ class AutoGen():
         desired_task_p, desired_task_r = casadi.horzsplit_n(desired_task_ddx, 2)
         desired_task_p = casadi.vertsplit_n(desired_task_p, self.num_site_ids)
         desired_task_r = casadi.vertsplit_n(desired_task_r, self.num_site_ids)
-        desired_torso_p, desired_tls_p, desired_trs_p, desired_hls_p, desired_hrs_p, desired_tlf_p, desired_tlr_p, desired_trf_p, desired_trr_p, desired_hlf_p, desired_hlr_p, desired_hrf_p, desired_hrr_p = map(lambda x: x.T, desired_task_p)
-        desired_torso_r, desired_tls_r, desired_trs_r, desired_hls_r, desired_hrs_r, desired_tlf_r, desired_tlr_r, desired_trf_r, desired_trr_r, desired_hlf_r, desired_hlr_r, desired_hrf_r, desired_hrr_r = map(lambda x: x.T, desired_task_r)
+        desired_torso_p, desired_tls_p, desired_trs_p, desired_hls_p, desired_hrs_p, desired_tlh_p, desired_trh_p, desired_hlh_p, desired_hrh_p, desired_tlf_p, desired_tlr_p, desired_trf_p, desired_trr_p, desired_hlf_p, desired_hlr_p, desired_hrf_p, desired_hrr_p = map(lambda x: x.T, desired_task_p)
+        desired_torso_r, desired_tls_r, desired_trs_r, desired_hls_r, desired_hrs_r, desired_tlh_r, desired_trh_r, desired_hlh_r, desired_hrh_r, desired_tlf_r, desired_tlr_r, desired_trf_r, desired_trr_r, desired_hlf_r, desired_hlr_r, desired_hrf_r, desired_hrr_r = map(lambda x: x.T, desired_task_r)
         # desired_torso_p, desired_tlf_p, desired_tlr_p, desired_trf_p, desired_trr_p, desired_hlf_p, desired_hlr_p, desired_hrf_p, desired_hrr_p = map(lambda x: x.T, desired_task_p)
         # desired_torso_r, desired_tlf_r, desired_tlr_r, desired_trf_r, desired_trr_r, desired_hlf_r, desired_hlr_r, desired_hrf_r, desired_hrr_r = map(lambda x: x.T, desired_task_r)
 
@@ -225,6 +225,38 @@ class AutoGen():
                 ddx_hrs_r,
                 desired_hrs_r,
             ),
+            'tlh_translational_tracking': self._objective_tracking(
+                ddx_tlh_p,
+                desired_tlh_p,
+            ),
+            'tlh_rotational_tracking': self._objective_tracking(
+                ddx_tlh_r,
+                desired_tlh_r,
+            ),
+            'trh_translational_tracking': self._objective_tracking(
+                ddx_trh_p,
+                desired_trh_p,
+            ),
+            'trh_rotational_tracking': self._objective_tracking(
+                ddx_trh_r,
+                desired_trh_r,
+            ),
+            'hlh_translational_tracking': self._objective_tracking(
+                ddx_hlh_p,
+                desired_hlh_p,
+            ),
+            'hlh_rotational_tracking': self._objective_tracking(
+                ddx_hlh_r,
+                desired_hlh_r,
+            ),
+            'hrh_translational_tracking': self._objective_tracking(
+                ddx_hrh_p,
+                desired_hrh_p,
+            ),
+            'hrh_rotational_tracking': self._objective_tracking(
+                ddx_hrh_r,
+                desired_hrh_r,
+            ),            
             'tlf_translational_tracking': self._objective_tracking(
                 ddx_tlf_p,
                 desired_tlf_p,
