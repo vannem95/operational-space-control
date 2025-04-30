@@ -253,9 +253,9 @@ int main(int argc, char** argv) {
         double amplitude = 0.04;
         double frequency = 0.1;
 
-        // ------------------------------------------------------------------
+        // ------------------------------------------------------------------------------------------------------------------------------------
         //       shin z-axis height tracking
-        // ------------------------------------------------------------------
+        // ------------------------------------------------------------------------------------------------------------------------------------
         // targets
         Vector<3> tl_position_target = Vector<3>(
             initial_site_data(1,0), initial_site_data(1,1), initial_site_data(1,2)
@@ -304,9 +304,9 @@ int main(int argc, char** argv) {
         // Eigen::Vector<double, 6> cmd3 {hl_linear_control(0), hl_linear_control(1), hl_linear_control(2), 0, 1000, 0};        
         // Eigen::Vector<double, 6> cmd4 {hr_linear_control(0), hr_linear_control(1), hr_linear_control(2), 0, 1000, 0};        
 
-        // ------------------------------------------------------------------
+        // ------------------------------------------------------------------------------------------------------------------------------------
         //       shin angular position
-        // ------------------------------------------------------------------
+        // ------------------------------------------------------------------------------------------------------------------------------------
         // shin angular position
         // Sinusoidal Position and Velocity Tracking:
         double shin_rot_vel = 1.0;
@@ -383,14 +383,14 @@ int main(int argc, char** argv) {
         taskspace_targets.row(4) = cmd4;
 
 
-        // ------------------------------------------------------------------
+        // ------------------------------------------------------------------------------------------------------------------------------------
         //       thigh angular position
-        // ------------------------------------------------------------------
+        // ------------------------------------------------------------------------------------------------------------------------------------
         // thigh angular position
         // constant position and zero velocity Tracking:
         double thigh_rot_vel = 0.0;
-        double thigh_kp = 1000;
-        double thigh_kv = 0;
+        double thigh_kp = 500;
+        double thigh_kv = 50;
 
         double tlh_angular_position = acos(site_rotational_data(5,0));
         double trh_angular_position = acos(site_rotational_data(6,0));
@@ -469,9 +469,9 @@ int main(int argc, char** argv) {
         taskspace_targets.row(8) = cmd8;        
 
 
-        // ------------------------------------------------------------------
+        // ------------------------------------------------------------------------------------------------------------------------------------
         //       track head height
-        // ------------------------------------------------------------------
+        // ------------------------------------------------------------------------------------------------------------------------------------
         Vector<3> position_target = Vector<3>(
             initial_position(0), initial_position(1), initial_position(2)
         );
@@ -485,14 +485,21 @@ int main(int argc, char** argv) {
         Vector<3> velocity_error = Vector<3>(0.0, 0.0, 0.0-state.linear_body_velocity(2));
         Vector<3> rotation_error = (Eigen::Quaternion<double>(1, 0, 0, 0) * body_rotation.conjugate()).vec();
         Vector<3> angular_velocity_error = Vector<3>::Zero() - state.angular_body_velocity;
-        Vector<3> linear_control = 1000.0 * (position_error) + 0.0 * (velocity_error);
-        Vector<3> angular_control = 100.0 * (rotation_error) + 100.0 * (angular_velocity_error);
+
+        double torso_lin_kp = 100.0;
+        double torso_lin_kv = 100.0;
+
+        double torso_ang_kp = 100.0;
+        double torso_ang_kv = 100.0;
+
+        Vector<3> linear_control = torso_lin_kp * (position_error) + torso_lin_kv * (velocity_error);
+        Vector<3> angular_control = torso_ang_kp * (rotation_error) + torso_ang_kv * (angular_velocity_error);
         Eigen::Vector<double, 6> cmd {0, 0, linear_control(2), angular_control(0), angular_control(1), angular_control(2)};
         taskspace_targets.row(0) = cmd;
         
-        // ------------------------------------------------------------------
+        // ------------------------------------------------------------------------------------------------------------------------------------
         //       camera track head x
-        // ------------------------------------------------------------------
+        // ------------------------------------------------------------------------------------------------------------------------------------
         cam.lookat[0] = body_position(0);
 
 
