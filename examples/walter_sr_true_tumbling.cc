@@ -259,7 +259,7 @@ int main(int argc, char** argv) {
         double frequency = 0.1;
 
         // ------------------------------------------------------------------------------------------------------------------------------------
-        //       shin z-axis height tracking
+        //       shin z-axis height tracking - off
         // ------------------------------------------------------------------------------------------------------------------------------------
         // targets
         Vector<3> tl_position_target = Vector<3>(
@@ -310,7 +310,7 @@ int main(int argc, char** argv) {
         // Eigen::Vector<double, 6> cmd4 {hr_linear_control(0), hr_linear_control(1), hr_linear_control(2), 0, 1000, 0};        
 
         // ------------------------------------------------------------------------------------------------------------------------------------
-        //       shin angular position
+        //       shin angular position - on
         // ------------------------------------------------------------------------------------------------------------------------------------
         // shin angular position
         // Sinusoidal Position and Velocity Tracking:
@@ -348,8 +348,10 @@ int main(int argc, char** argv) {
         double hl_angular_velocity_error = (hl_angular_velocity_target - hl_angular_velocity);
         double hr_angular_velocity_error = (hr_angular_velocity_target - hr_angular_velocity);
 
-        double shin_kp = 100;
-        double shin_kv = 200;
+        // double shin_kp = 100; 
+        // double shin_kv = 200;
+        double shin_kp = 100; 
+        double shin_kv = 10;
 
         double tl_angular_control = shin_kp * (tl_angular_position_error) + shin_kv * (tl_angular_velocity_error);
         double tr_angular_control = shin_kp * (tr_angular_position_error) + shin_kv * (tr_angular_velocity_error);
@@ -389,7 +391,7 @@ int main(int argc, char** argv) {
 
 
         // ------------------------------------------------------------------------------------------------------------------------------------
-        //       thigh angular position
+        //       thigh angular position - off
         // ------------------------------------------------------------------------------------------------------------------------------------
         // thigh angular position
         // constant position and zero velocity Tracking:
@@ -526,10 +528,12 @@ int main(int argc, char** argv) {
 
 
         // ------------------------------------------------------------------------------------------------------------------------------------
-        //       track head height
+        //       track head height - off // orientation - on
         // ------------------------------------------------------------------------------------------------------------------------------------
+        // initial_position(0), initial_position(1), initial_position(2)-0.02
+
         Vector<3> position_target = Vector<3>(
-            initial_position(0), initial_position(1), initial_position(2)-0.03
+            initial_position(0), initial_position(1), initial_position(2)
         );
         Vector<3> velocity_target = Vector<3>(
             0.0,0.0,0.0
@@ -542,8 +546,10 @@ int main(int argc, char** argv) {
         Vector<3> rotation_error = (Eigen::Quaternion<double>(1, 0, 0, 0) * body_rotation.conjugate()).vec();
         Vector<3> angular_velocity_error = Vector<3>::Zero() - state.angular_body_velocity;
 
-        double torso_lin_kp = 20000.0;
-        double torso_lin_kv = 200.0;
+        // double torso_lin_kp = 20000.0;
+        // double torso_lin_kv = 200.0;
+        double torso_lin_kp = 0.0;
+        double torso_lin_kv = 0.0;
 
         double torso_ang_kp = 100.0;
         double torso_ang_kv = 100.0;
