@@ -310,7 +310,7 @@ int main(int argc, char** argv) {
         // Eigen::Vector<double, 6> cmd4 {hr_linear_control(0), hr_linear_control(1), hr_linear_control(2), 0, 1000, 0};        
 
         // ------------------------------------------------------------------------------------------------------------------------------------
-        //       shin angular position - on
+        //       shin angular position - off - feedforward 1000 test
         // ------------------------------------------------------------------------------------------------------------------------------------
         // shin angular position
         // Sinusoidal Position and Velocity Tracking:
@@ -369,19 +369,19 @@ int main(int argc, char** argv) {
         //       feedback angular velocity tracking
         // ------------------------------------------------------------------        
 
-        Eigen::Vector<double, 6> cmd1 {0, 0, 0, 0, tl_angular_control, 0};        
-        Eigen::Vector<double, 6> cmd2 {0, 0, 0, 0, tr_angular_control, 0};        
-        Eigen::Vector<double, 6> cmd3 {0, 0, 0, 0, hl_angular_control, 0};        
-        Eigen::Vector<double, 6> cmd4 {0, 0, 0, 0, hr_angular_control, 0};        
+        // Eigen::Vector<double, 6> cmd1 {0, 0, 0, 0, tl_angular_control, 0};        
+        // Eigen::Vector<double, 6> cmd2 {0, 0, 0, 0, tr_angular_control, 0};        
+        // Eigen::Vector<double, 6> cmd3 {0, 0, 0, 0, hl_angular_control, 0};        
+        // Eigen::Vector<double, 6> cmd4 {0, 0, 0, 0, hr_angular_control, 0};        
 
         // ------------------------------------------------------------------
         //       old feedforward angular acceleration
         // ------------------------------------------------------------------
 
-        // Eigen::Vector<double, 6> cmd1 {0, 0, 0, 0, 0.8*1e3, 0};        
-        // Eigen::Vector<double, 6> cmd2 {0, 0, 0, 0, 0.8*1e3, 0};        
-        // Eigen::Vector<double, 6> cmd3 {0, 0, 0, 0, 0.8*1e3, 0};        
-        // Eigen::Vector<double, 6> cmd4 {0, 0, 0, 0, 0.8*1e3, 0};        
+        Eigen::Vector<double, 6> cmd1 {0, 0, 0, 0, 0.8*1e3, 0};        
+        Eigen::Vector<double, 6> cmd2 {0, 0, 0, 0, 0.8*1e3, 0};        
+        Eigen::Vector<double, 6> cmd3 {0, 0, 0, 0, 0.8*1e3, 0};        
+        Eigen::Vector<double, 6> cmd4 {0, 0, 0, 0, 0.8*1e3, 0};        
 
 
         taskspace_targets.row(1) = cmd1;
@@ -396,8 +396,8 @@ int main(int argc, char** argv) {
         // thigh angular position
         // constant position and zero velocity Tracking:
         double thigh_rot_vel = 0.0;
-        double thigh_kp = 500;
-        double thigh_kv = 50;
+        double thigh_kp = 20;
+        double thigh_kv = 5;
 
         double tlh_angular_position = acos(site_rotational_data(5,0));
         double trh_angular_position = acos(site_rotational_data(6,0));
@@ -528,7 +528,7 @@ int main(int argc, char** argv) {
 
 
         // ------------------------------------------------------------------------------------------------------------------------------------
-        //       track head height - off // orientation - on
+        //       track head height - on // orientation - on
         // ------------------------------------------------------------------------------------------------------------------------------------
         // initial_position(0), initial_position(1), initial_position(2)-0.02
 
@@ -548,11 +548,21 @@ int main(int argc, char** argv) {
 
         // double torso_lin_kp = 20000.0;
         // double torso_lin_kv = 200.0;
-        double torso_lin_kp = 0.0;
+
+        // double torso_lin_kp = 10.0*2.0;
+        // double torso_lin_kv = 10.0*2.0;
+
+        double torso_lin_kp = 150.0;
         double torso_lin_kv = 0.0;
 
-        double torso_ang_kp = 100.0;
-        double torso_ang_kv = 100.0;
+        // double torso_ang_kp = 100.0;
+        // double torso_ang_kv = 100.0;
+
+        // double torso_ang_kp = 10.0;
+        // double torso_ang_kv = 10.0;
+
+        double torso_ang_kp = 50.0;
+        double torso_ang_kv = 10.0;
 
         Vector<3> linear_control = torso_lin_kp * (position_error) + torso_lin_kv * (velocity_error);
         Vector<3> angular_control = torso_ang_kp * (rotation_error) + torso_ang_kv * (angular_velocity_error);
