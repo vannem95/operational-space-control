@@ -45,23 +45,32 @@ weights_config:
   torso_rotational_tracking: 100.0
 
   tls_translational_tracking: 10.0
-  tls_rotational_tracking: 1000.0
+  tls_rotational_tracking: 100.0
   trs_translational_tracking: 10.0
-  trs_rotational_tracking: 1000.0
+  trs_rotational_tracking: 100.0
   hls_translational_tracking: 10.0
-  hls_rotational_tracking: 1000.0
+  hls_rotational_tracking: 100.0
   hrs_translational_tracking: 10.0
-  hrs_rotational_tracking: 1000.0
+  hrs_rotational_tracking: 100.0
   
-  tlh_translational_tracking: 1000.0
-  tlh_rotational_tracking: 10.0
-  trh_translational_tracking: 1000.0
-  trh_rotational_tracking: 10.0
-  hlh_translational_tracking: 1000.0
-  hlh_rotational_tracking: 10.0
-  hrh_translational_tracking: 1000.0
-  hrh_rotational_tracking: 10.0
-  
+  # tlh_translational_tracking: 5000.0
+  # tlh_rotational_tracking: 100.0
+  # trh_translational_tracking: 5000.0
+  # trh_rotational_tracking: 100.0
+  # hlh_translational_tracking: 5000.0
+  # hlh_rotational_tracking: 100.0
+  # hrh_translational_tracking: 5000.0
+  # hrh_rotational_tracking: 100.0
+
+  tlh_translational_tracking: 800.0
+  tlh_rotational_tracking: 0.0
+  trh_translational_tracking: 800.0
+  trh_rotational_tracking: 0.0
+  hlh_translational_tracking: 800.0
+  hlh_rotational_tracking: 0.0
+  hrh_translational_tracking: 800.0
+  hrh_rotational_tracking: 0.0
+
   tlf_translational_tracking: 10.0
   tlf_rotational_tracking: 10.0
   tlr_translational_tracking: 10.0
