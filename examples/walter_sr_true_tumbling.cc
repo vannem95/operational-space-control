@@ -356,7 +356,7 @@ int main(int argc, char** argv) {
         // Eigen::Vector<double, 6> cmd4 {hr_linear_control(0), hr_linear_control(1), hr_linear_control(2), 0, 1000, 0};        
 
         // ------------------------------------------------------------------------------------------------------------------------------------
-        //       shin angular position - off - feedforward 1000 test
+        //       shin angular position - off - pd velocity tracking - off
         // ------------------------------------------------------------------------------------------------------------------------------------
         // shin angular position
         // Sinusoidal Position and Velocity Tracking:
@@ -448,10 +448,10 @@ int main(int argc, char** argv) {
         // Eigen::Vector<double, 6> cmd4 {0, 0, 0, 0, 0.8*1e3, 0};        
 
 
-        taskspace_targets.row(1) = cmd1;
-        taskspace_targets.row(2) = cmd2;
-        taskspace_targets.row(3) = cmd3;
-        taskspace_targets.row(4) = cmd4;
+        // taskspace_targets.row(1) = cmd1;
+        // taskspace_targets.row(2) = cmd2;
+        // taskspace_targets.row(3) = cmd3;
+        // taskspace_targets.row(4) = cmd4;
 
 
         // ------------------------------------------------------------------------------------------------------------------------------------
@@ -513,56 +513,91 @@ int main(int argc, char** argv) {
         double last_hrh_angular_position = hrh_angular_position;
 
         // ------------------------------------------------------------------------------------------------------------------------------------
-        //       thigh linear position
+        //       thigh linear position 
         // ------------------------------------------------------------------------------------------------------------------------------------
-        double thigh_lin_vel = 0.0;
-        // double thigh_lin_kp = 400.0;
-        // double thigh_lin_kv = 60.0;
-
-        double thigh_lin_kp = 4000.0;
-        double thigh_lin_kv = 600.0;
-
         Vector<3> tlh_linear_position = site_data(5,Eigen::seqN(0, 3));
         Vector<3> trh_linear_position = site_data(6,Eigen::seqN(0, 3));
         Vector<3> hlh_linear_position = site_data(7,Eigen::seqN(0, 3));
         Vector<3> hrh_linear_position = site_data(8,Eigen::seqN(0, 3));
+
+        Vector<3> initial_tlh_linear_position = initial_site_data(5,Eigen::seqN(0, 3));
+        Vector<3> initial_trh_linear_position = initial_site_data(6,Eigen::seqN(0, 3));
+        Vector<3> initial_hlh_linear_position = initial_site_data(7,Eigen::seqN(0, 3));
+        Vector<3> initial_hrh_linear_position = initial_site_data(8,Eigen::seqN(0, 3));
+
     
         Vector<3> tlh_linear_velocity = (tlh_linear_position - last_tlh_linear_position)/(current_time - last_time);
         Vector<3> trh_linear_velocity = (trh_linear_position - last_trh_linear_position)/(current_time - last_time);
         Vector<3> hlh_linear_velocity = (hlh_linear_position - last_hlh_linear_position)/(current_time - last_time);
         Vector<3> hrh_linear_velocity = (hrh_linear_position - last_hrh_linear_position)/(current_time - last_time);
 
+        // ------------------------------------------------------------------------------------------------------------------------------------
+        //       z axis 
+        // ------------------------------------------------------------------------------------------------------------------------------------
         // targets
-        double tlh_linear_velocity_target = thigh_lin_vel;
-        double trh_linear_velocity_target = thigh_lin_vel;
-        double hlh_linear_velocity_target = thigh_lin_vel;
-        double hrh_linear_velocity_target = thigh_lin_vel;
+        double thigh_lin_vel_z = 0.0;
+        // double thigh_lin_kp = 400.0;
+        // double thigh_lin_kv = 60.0;
 
-        double tlh_linear_position_error = ( (initial_site_data(5,2) - 0.06) - tlh_linear_position(2));
-        double trh_linear_position_error = ( (initial_site_data(6,2) - 0.06) - trh_linear_position(2));
-        double hlh_linear_position_error = ( (initial_site_data(7,2) - 0.06) - hlh_linear_position(2));
-        double hrh_linear_position_error = ( (initial_site_data(8,2) - 0.06) - hrh_linear_position(2));
+        double thigh_lin_kp_z = 200.0;
+        double thigh_lin_kv_z = 20.0;
+    
+        double tlh_linear_velocity_target_z = thigh_lin_vel_z;
+        double trh_linear_velocity_target_z = thigh_lin_vel_z;
+        double hlh_linear_velocity_target_z = thigh_lin_vel_z;
+        double hrh_linear_velocity_target_z = thigh_lin_vel_z;
+
+        double thigh_z_delta = -0.06;        
+
+        double tlh_linear_position_error_z = ( (initial_tlh_linear_position(2) + thigh_z_delta) - tlh_linear_position(2));
+        double trh_linear_position_error_z = ( (initial_trh_linear_position(2) + thigh_z_delta) - trh_linear_position(2));
+        double hlh_linear_position_error_z = ( (initial_hlh_linear_position(2) + thigh_z_delta) - hlh_linear_position(2));
+        double hrh_linear_position_error_z = ( (initial_hrh_linear_position(2) + thigh_z_delta) - hrh_linear_position(2));
 
         
-        // double tlh_linear_position_error = ( (initial_site_data(5,2) + 0.5*qpos(0) - 1.0) - tlh_linear_position(2));
-        // double trh_linear_position_error = ( (initial_site_data(6,2) + 0.5*qpos(0) - 1.0) - trh_linear_position(2));
-        // double hlh_linear_position_error = ( (initial_site_data(7,2) + 0.5*qpos(0) - 1.0) - hlh_linear_position(2));
-        // double hrh_linear_position_error = ( (initial_site_data(8,2) + 0.5*qpos(0) - 1.0) - hrh_linear_position(2));
+        double tlh_linear_velocity_error_z = (tlh_linear_velocity_target_z - tlh_linear_velocity(2));
+        double trh_linear_velocity_error_z = (trh_linear_velocity_target_z - trh_linear_velocity(2));
+        double hlh_linear_velocity_error_z = (hlh_linear_velocity_target_z - hlh_linear_velocity(2));
+        double hrh_linear_velocity_error_z = (hrh_linear_velocity_target_z - hrh_linear_velocity(2));
 
-        // double tlh_linear_position_error = ( (initial_site_data(5,2) + 0.5*qpos(0) - 1.0) - tlh_linear_position(2));
-        // double trh_linear_position_error = ( (initial_site_data(6,2) + 0.5*qpos(0) - 1.0) - trh_linear_position(2));
-        // double hlh_linear_position_error = ( (initial_site_data(7,2) + 0.5*qpos(0) - 1.0) - hlh_linear_position(2));
-        // double hrh_linear_position_error = ( (initial_site_data(8,2) + 0.5*qpos(0) - 1.0) - hrh_linear_position(2));
+        double tlh_linear_control_z = thigh_lin_kp_z * (tlh_linear_position_error_z) + thigh_lin_kv_z * (tlh_linear_velocity_error_z);
+        double trh_linear_control_z = thigh_lin_kp_z * (trh_linear_position_error_z) + thigh_lin_kv_z * (trh_linear_velocity_error_z);
+        double hlh_linear_control_z = thigh_lin_kp_z * (hlh_linear_position_error_z) + thigh_lin_kv_z * (hlh_linear_velocity_error_z);
+        double hrh_linear_control_z = thigh_lin_kp_z * (hrh_linear_position_error_z) + thigh_lin_kv_z * (hrh_linear_velocity_error_z);
+
+        // ------------------------------------------------------------------------------------------------------------------------------------
+        //       x axis 
+        // ------------------------------------------------------------------------------------------------------------------------------------
+        // targets
+        double thigh_lin_vel_x = 0.1;
+        // double thigh_lin_kp = 400.0;
+        // double thigh_lin_kv = 60.0;
+
+        double thigh_lin_kp_x = 0.0;
+        double thigh_lin_kv_x = 0.0;
+    
+        double tlh_linear_velocity_target_x = thigh_lin_vel_x;
+        double trh_linear_velocity_target_x = thigh_lin_vel_x;
+        double hlh_linear_velocity_target_x = thigh_lin_vel_x;
+        double hrh_linear_velocity_target_x = thigh_lin_vel_x;
+
+        double thigh_x_delta = thigh_lin_vel_x*current_time;        
+
+        double tlh_linear_position_error_x = ( (initial_tlh_linear_position(0) + thigh_x_delta) - tlh_linear_position(0));
+        double trh_linear_position_error_x = ( (initial_trh_linear_position(0) + thigh_x_delta) - trh_linear_position(0));
+        double hlh_linear_position_error_x = ( (initial_hlh_linear_position(0) + thigh_x_delta) - hlh_linear_position(0));
+        double hrh_linear_position_error_x = ( (initial_hrh_linear_position(0) + thigh_x_delta) - hrh_linear_position(0));
+
         
-        double tlh_linear_velocity_error = (tlh_linear_velocity_target - tlh_linear_velocity(2));
-        double trh_linear_velocity_error = (trh_linear_velocity_target - trh_linear_velocity(2));
-        double hlh_linear_velocity_error = (hlh_linear_velocity_target - hlh_linear_velocity(2));
-        double hrh_linear_velocity_error = (hrh_linear_velocity_target - hrh_linear_velocity(2));
+        double tlh_linear_velocity_error_x = (tlh_linear_velocity_target_x - tlh_linear_velocity(0));
+        double trh_linear_velocity_error_x = (trh_linear_velocity_target_x - trh_linear_velocity(0));
+        double hlh_linear_velocity_error_x = (hlh_linear_velocity_target_x - hlh_linear_velocity(0));
+        double hrh_linear_velocity_error_x = (hrh_linear_velocity_target_x - hrh_linear_velocity(0));
 
-        double tlh_linear_control = thigh_lin_kp * (tlh_linear_position_error) + thigh_lin_kv * (tlh_linear_velocity_error);
-        double trh_linear_control = thigh_lin_kp * (trh_linear_position_error) + thigh_lin_kv * (trh_linear_velocity_error);
-        double hlh_linear_control = thigh_lin_kp * (hlh_linear_position_error) + thigh_lin_kv * (hlh_linear_velocity_error);
-        double hrh_linear_control = thigh_lin_kp * (hrh_linear_position_error) + thigh_lin_kv * (hrh_linear_velocity_error);
+        double tlh_linear_control_x = thigh_lin_kp_x * (tlh_linear_position_error_x) + thigh_lin_kv_x * (tlh_linear_velocity_error_x);
+        double trh_linear_control_x = thigh_lin_kp_x * (trh_linear_position_error_x) + thigh_lin_kv_x * (trh_linear_velocity_error_x);
+        double hlh_linear_control_x = thigh_lin_kp_x * (hlh_linear_position_error_x) + thigh_lin_kv_x * (hlh_linear_velocity_error_x);
+        double hrh_linear_control_x = thigh_lin_kp_x * (hrh_linear_position_error_x) + thigh_lin_kv_x * (hrh_linear_velocity_error_x);        
         
         Vector<3> last_tlh_linear_position = tlh_linear_position;
         Vector<3> last_trh_linear_position = trh_linear_position;
@@ -574,17 +609,12 @@ int main(int argc, char** argv) {
 
         // ------------------------------------------------------------------
         //       feedback angular velocity tracking
-        // ------------------------------------------------------------------        
+        // ------------------------------------------------------------------             
 
-        // Eigen::Vector<double, 6> cmd5 {0, 0, tlh_linear_control, 0, tlh_angular_control, 0};        
-        // Eigen::Vector<double, 6> cmd6 {0, 0, trh_linear_control, 0, trh_angular_control, 0};        
-        // Eigen::Vector<double, 6> cmd7 {0, 0, hlh_linear_control, 0, hlh_angular_control, 0};        
-        // Eigen::Vector<double, 6> cmd8 {0, 0, hrh_linear_control, 0, hrh_angular_control, 0};        
-
-        Eigen::Vector<double, 6> cmd5 {0, 0, tlh_linear_control, 0, 0, 0};        
-        Eigen::Vector<double, 6> cmd6 {0, 0, trh_linear_control, 0, 0, 0};        
-        Eigen::Vector<double, 6> cmd7 {0, 0, hlh_linear_control, 0, 0, 0};        
-        Eigen::Vector<double, 6> cmd8 {0, 0, hrh_linear_control, 0, 0, 0};        
+        Eigen::Vector<double, 6> cmd5 {tlh_linear_control_x, 0, tlh_linear_control_z, 0, 0, 0};        
+        Eigen::Vector<double, 6> cmd6 {trh_linear_control_x, 0, trh_linear_control_z, 0, 0, 0};        
+        Eigen::Vector<double, 6> cmd7 {hlh_linear_control_x, 0, hlh_linear_control_z, 0, 0, 0};        
+        Eigen::Vector<double, 6> cmd8 {hrh_linear_control_x, 0, hrh_linear_control_z, 0, 0, 0};        
 
 
         // Eigen::Vector<double, 6> cmd5 {0, 0, 0, 0, tlh_angular_control, 0};        
@@ -619,17 +649,20 @@ int main(int argc, char** argv) {
         // ------------------------------------------------------------------------------------------------------------------------------------
         // initial_position(0), initial_position(1), initial_position(2)-0.02
 
+        double body_x_vel_target = 0.8;        
+
         Vector<3> position_target = Vector<3>(
-            initial_position(0), initial_position(1), initial_position(2)
+            initial_position(0) + body_x_vel_target*current_time, initial_position(1), initial_position(2)
         );
         Vector<3> velocity_target = Vector<3>(
-            0.0,0.0,0.0
+            body_x_vel_target, 0.0, 0.0
         );
 
         Eigen::Quaternion<double> body_rotation = Eigen::Quaternion<double>(state.body_rotation(0), state.body_rotation(1), state.body_rotation(2), state.body_rotation(3));
         Vector<3> body_position = qpos(Eigen::seqN(0, 3));
         Vector<3> position_error = position_target - body_position;
-        Vector<3> velocity_error = Vector<3>(0.0, 0.0, 0.0-state.linear_body_velocity(2));
+        // Vector<3> velocity_error = Vector<3>(0.0, 0.0, 0.0-state.linear_body_velocity(2));
+        Vector<3> velocity_error = velocity_target - state.linear_body_velocity;
         Vector<3> rotation_error = (Eigen::Quaternion<double>(1, 0, 0, 0) * body_rotation.conjugate()).vec();
         Vector<3> angular_velocity_error = Vector<3>::Zero() - state.angular_body_velocity;
 
@@ -649,8 +682,10 @@ int main(int argc, char** argv) {
 
         Vector<3> linear_control = torso_lin_kp * (position_error) + torso_lin_kv * (velocity_error);
         Vector<3> angular_control = torso_ang_kp * (rotation_error) + torso_ang_kv * (angular_velocity_error);
-        Eigen::Vector<double, 6> cmd {0, 0, linear_control(2), angular_control(0), angular_control(1), angular_control(2)};
+        Eigen::Vector<double, 6> cmd {linear_control(0), 0, 0, angular_control(0), angular_control(1), angular_control(2)};
         taskspace_targets.row(0) = cmd;
+
+        std::cout << "torso body vel: " << state.linear_body_velocity(0) << std::endl;
         
 
         // ------------------------------------------------------------------------------------------------------------------------------------
