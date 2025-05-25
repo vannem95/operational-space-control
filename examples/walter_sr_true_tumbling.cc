@@ -56,7 +56,7 @@ int main(int argc, char** argv) {
     mjData* mj_data = mj_makeData(mj_model);
 
     // Reset Data to match Keyframe 2
-    mj_resetDataKeyframe(mj_model, mj_data, 0);
+    mj_resetDataKeyframe(mj_model, mj_data, 3);
 
 
     // Initialize mj_data:
@@ -361,7 +361,7 @@ int main(int argc, char** argv) {
         // shin angular position
         // Sinusoidal Position and Velocity Tracking:
         double shin_rot_pos = 0.1*5.0;
-        double shin_rot_vel = 0.1*8.0;
+        double shin_rot_vel = 0.1*5.0;
         // double shin_rot_frequency = 0.1;
 
         // double tl_angular_position = acos(site_rotational_data(1,0));

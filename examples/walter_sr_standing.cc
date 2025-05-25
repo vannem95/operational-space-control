@@ -41,10 +41,13 @@ int main(int argc, char** argv) {
     }
     mjData* mj_data = mj_makeData(mj_model);
 
+    // Reset Data to match Keyframe 2
+    mj_resetDataKeyframe(mj_model, mj_data, 0);
+
     // Initialize mj_data:
-    mj_data->qpos = mj_model->key_qpos;
-    mj_data->qvel = mj_model->key_qvel;
-    mj_data->ctrl = mj_model->key_ctrl;
+    // mj_data->qpos = mj_model->key_qpos;
+    // mj_data->qvel = mj_model->key_qvel;
+    // mj_data->ctrl = mj_model->key_ctrl;
     mj_forward(mj_model, mj_data);
 
     // Visualization:
