@@ -173,7 +173,7 @@ int main(int argc, char** argv) {
         runfiles->Rlocation("mujoco-models/models/walter_sr/WaLTER_Senior.xml");
     
     std::filesystem::path simulation_model_path = 
-        runfiles->Rlocation("mujoco-models/models/walter_sr/scene_walter_sr.xml");
+        runfiles->Rlocation("mujoco-models/models/walter_sr/stairs_scene_walter_sr.xml");
 
     // Load Simulation Model
     char mj_error[1000];
@@ -372,7 +372,8 @@ int main(int argc, char** argv) {
     double last_time = current_time;
 
     // std::vector<int> wheel_sites_mujoco = {3, 4, 7, 8, 11, 12, 15, 16};
-    std::vector<int> wheel_sites_mujoco = {3, 4, 7, 8, 11, 12, 15, 16};
+    std::vector<int> wheel_sites_geom = {4, 5, 8, 9, 13, 14, 17, 18};
+    std::vector<int> wheel_sites_ids = {3, 4, 7, 8, 11, 12, 15, 16};
 
     while(current_time < simulation_time) {
         current_time = mj_data->time;
@@ -448,7 +449,11 @@ int main(int argc, char** argv) {
         for (int i = 0; i < mj_model->ngeom; ++i) {
             printGeomName(mj_model, i);
         }
-        
+
+         // Should print "floor"
+        for (int i = 0; i < model::site_ids_size; ++i) {
+            findGeomsOnSameBodyAsSite(mj_model, i);
+        }
 
         // printGeomName(mj_model, 8); // Should print "box"
         // printGeomName(mj_model, 14); // Should indicate invalid ID or no name        
@@ -460,27 +465,38 @@ int main(int argc, char** argv) {
 
         std::vector<int> contact_site_ids_test;
         for (int i = 0; i < mj_data->ncon; ++i) {
-            
-            if (contains(wheel_sites_mujoco,mj_data->contact[i].geom[1])){
             std::cout << "mj_data->contact[i].geom[1]: " << mj_data->contact[i].geom[1] << std::endl;
+            std::cout << "mj_data->contact[i].geom[0]: " << mj_data->contact[i].geom[0] << std::endl;
+            
+            if (contains(wheel_sites_geom,mj_data->contact[i].geom[1])){
+            // std::cout << "mj_data->contact[i].geom[1]: " << mj_data->contact[i].geom[1] << std::endl;
+            // std::cout << "mj_data->contact[i].geom[0]: " << mj_data->contact[i].geom[0] << std::endl;
 
             std::vector<int> site_of_geom = getSiteIdsOnSameBodyAsGeom(mj_model, mj_data->contact[i].geom[1]);
             contact_site_ids_test.push_back(site_of_geom[0]);
             }
             else{}
-        }
-
-        for (int i = 0; i < mj_data->ncon; ++i) {
-            std::cout << "i: " << i << std::endl;
-            std::cout << "mj_data->contact[i].geom[0]: " << mj_data->contact[i].geom[0] << std::endl;
-            if (contains(wheel_sites_mujoco,mj_data->contact[i].geom[0])){
-            std::cout << "mj_data->contact[i].geom[0]: " << mj_data->contact[i].geom[0] << std::endl;
+            if (contains(wheel_sites_geom,mj_data->contact[i].geom[0])){
+            // std::cout << "mj_data->contact[i].geom[1]: " << mj_data->contact[i].geom[1] << std::endl;
+            // std::cout << "mj_data->contact[i].geom[0]: " << mj_data->contact[i].geom[0] << std::endl;
 
             std::vector<int> site_of_geom = getSiteIdsOnSameBodyAsGeom(mj_model, mj_data->contact[i].geom[0]);
             contact_site_ids_test.push_back(site_of_geom[0]);
             }
-            else{}
-        }        
+            else{}            
+        }
+
+        // for (int i = 0; i < mj_data->ncon; ++i) {
+        //     std::cout << "i: " << i << std::endl;
+        //     std::cout << "mj_data->contact[i].geom[0]: " << mj_data->contact[i].geom[0] << std::endl;
+        //     if (contains(wheel_sites_mujoco,mj_data->contact[i].geom[0])){
+        //     std::cout << "mj_data->contact[i].geom[0]: " << mj_data->contact[i].geom[0] << std::endl;
+
+        //     std::vector<int> site_of_geom = getSiteIdsOnSameBodyAsGeom(mj_model, mj_data->contact[i].geom[0]);
+        //     contact_site_ids_test.push_back(site_of_geom[0]);
+        //     }
+        //     else{}
+        // }        
 
         std::cout << "contact_site_ids_test: ";
         for (int element : contact_site_ids_test) {
@@ -489,7 +505,7 @@ int main(int argc, char** argv) {
         std::cout << std::endl;
 
         
-        std::vector<int> contact_check2_temp = getBinaryRepresentation_std_find(contact_site_ids_test,wheel_sites_mujoco);
+        std::vector<int> contact_check2_temp = getBinaryRepresentation_std_find(contact_site_ids_test,wheel_sites_ids);
 
 
         // Create a temporary Eigen::Map of the int data, then cast to double and assign
@@ -528,7 +544,6 @@ int main(int argc, char** argv) {
         // std::cout << "mj_data->contact37: " << mj_data->contact[37].geom[1] << std::endl;
         // std::cout << "mj_data->contact38: " << mj_data->contact[38].geom[1] << std::endl;
         // std::cout << "mj_data->contact39: " << mj_data->contact[39].geom[1] << std::endl;
-
 
 
         std::cout << "contact_check: " << contact_check << std::endl;
@@ -797,8 +812,8 @@ int main(int argc, char** argv) {
         Vector<3> body_position = qpos(Eigen::seqN(0, 3));
 
         // double thigh_height_increase_stairs = (body_position(0)>1)*(body_position(0)-1 - 0.2)*(0.05/0.2);
-        // double thigh_height_increase_stairs = (body_position(0)>0.5)*(body_position(0)-0.5)*(0.05/0.2);
-        double thigh_height_increase_stairs = -0.05;
+        double thigh_height_increase_stairs = (body_position(0)>0.5)*(body_position(0)-0.5)*(0.05/0.2);
+        // double thigh_height_increase_stairs = -0.05;
 
         double tlh_linear_position_error = ( (initial_site_data(5,2) - 0.0 + thigh_height_increase_stairs) - tlh_linear_position(2));
         double trh_linear_position_error = ( (initial_site_data(6,2) - 0.0 + thigh_height_increase_stairs) - trh_linear_position(2));
