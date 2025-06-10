@@ -173,6 +173,7 @@ int main(int argc, char** argv) {
         runfiles->Rlocation("mujoco-models/models/walter_sr/WaLTER_Senior.xml");
     
     std::filesystem::path simulation_model_path = 
+        // runfiles->Rlocation("mujoco-models/models/walter_sr/scene_walter_sr.xml");
         runfiles->Rlocation("mujoco-models/models/walter_sr/stairs_scene_walter_sr.xml");
 
     // Load Simulation Model
@@ -285,7 +286,7 @@ int main(int argc, char** argv) {
     double visualization_interval = 0.01;
 
     // TEST TIME
-    double simulation_time = 30.0;
+    double simulation_time = 100.0;
     auto current_time = mj_data->time;
 
     // to get points / site position --> we need to build site-ids using sites
@@ -418,42 +419,42 @@ int main(int argc, char** argv) {
         const mjContact& contact6 = mj_data->contact[6];
         const mjContact& contact7 = mj_data->contact[7];
 
-        std::cout << "mj_data->contact0: " << mj_data->contact[0].geom[1] << std::endl;
-        std::cout << "mj_data->contact1: " << mj_data->contact[1].geom[1] << std::endl;
-        std::cout << "mj_data->contact2: " << mj_data->contact[2].geom[1] << std::endl;
-        std::cout << "mj_data->contact3: " << mj_data->contact[3].geom[1] << std::endl;
-        std::cout << "mj_data->contact4: " << mj_data->contact[4].geom[1] << std::endl;
-        std::cout << "mj_data->contact5: " << mj_data->contact[5].geom[1] << std::endl;
-        std::cout << "mj_data->contact6: " << mj_data->contact[6].geom[1] << std::endl;
-        std::cout << "mj_data->contact7: " << mj_data->contact[7].geom[1] << std::endl;
-        std::cout << "mj_data->contact7: " << mj_data->contact[8].geom[1] << std::endl;
-        std::cout << "mj_data->contact7: " << mj_data->contact[9].geom[1] << std::endl;
-        std::cout << "mj_data->contact1: " << mj_data->contact[10].geom[1] << std::endl;
-        std::cout << "mj_data->contact1: " << mj_data->contact[11].geom[1] << std::endl;
+        // std::cout << "mj_data->contact0: " << mj_data->contact[0].geom[1] << std::endl;
+        // std::cout << "mj_data->contact1: " << mj_data->contact[1].geom[1] << std::endl;
+        // std::cout << "mj_data->contact2: " << mj_data->contact[2].geom[1] << std::endl;
+        // std::cout << "mj_data->contact3: " << mj_data->contact[3].geom[1] << std::endl;
+        // std::cout << "mj_data->contact4: " << mj_data->contact[4].geom[1] << std::endl;
+        // std::cout << "mj_data->contact5: " << mj_data->contact[5].geom[1] << std::endl;
+        // std::cout << "mj_data->contact6: " << mj_data->contact[6].geom[1] << std::endl;
+        // std::cout << "mj_data->contact7: " << mj_data->contact[7].geom[1] << std::endl;
+        // std::cout << "mj_data->contact7: " << mj_data->contact[8].geom[1] << std::endl;
+        // std::cout << "mj_data->contact7: " << mj_data->contact[9].geom[1] << std::endl;
+        // std::cout << "mj_data->contact1: " << mj_data->contact[10].geom[1] << std::endl;
+        // std::cout << "mj_data->contact1: " << mj_data->contact[11].geom[1] << std::endl;
 
-        std::cout << "mj_data->contact0: " << mj_data->contact[0].geom[0] << std::endl;
-        std::cout << "mj_data->contact1: " << mj_data->contact[1].geom[0] << std::endl;
-        std::cout << "mj_data->contact2: " << mj_data->contact[2].geom[0] << std::endl;
-        std::cout << "mj_data->contact3: " << mj_data->contact[3].geom[0] << std::endl;
-        std::cout << "mj_data->contact4: " << mj_data->contact[4].geom[0] << std::endl;
-        std::cout << "mj_data->contact5: " << mj_data->contact[5].geom[0] << std::endl;
-        std::cout << "mj_data->contact6: " << mj_data->contact[6].geom[0] << std::endl;
-        std::cout << "mj_data->contact7: " << mj_data->contact[7].geom[0] << std::endl;
-        std::cout << "mj_data->contact7: " << mj_data->contact[8].geom[0] << std::endl;
-        std::cout << "mj_data->contact7: " << mj_data->contact[9].geom[0] << std::endl;
-        std::cout << "mj_data->contact1: " << mj_data->contact[10].geom[0] << std::endl;
-        std::cout << "mj_data->contact1: " << mj_data->contact[11].geom[0] << std::endl;
+        // std::cout << "mj_data->contact0: " << mj_data->contact[0].geom[0] << std::endl;
+        // std::cout << "mj_data->contact1: " << mj_data->contact[1].geom[0] << std::endl;
+        // std::cout << "mj_data->contact2: " << mj_data->contact[2].geom[0] << std::endl;
+        // std::cout << "mj_data->contact3: " << mj_data->contact[3].geom[0] << std::endl;
+        // std::cout << "mj_data->contact4: " << mj_data->contact[4].geom[0] << std::endl;
+        // std::cout << "mj_data->contact5: " << mj_data->contact[5].geom[0] << std::endl;
+        // std::cout << "mj_data->contact6: " << mj_data->contact[6].geom[0] << std::endl;
+        // std::cout << "mj_data->contact7: " << mj_data->contact[7].geom[0] << std::endl;
+        // std::cout << "mj_data->contact7: " << mj_data->contact[8].geom[0] << std::endl;
+        // std::cout << "mj_data->contact7: " << mj_data->contact[9].geom[0] << std::endl;
+        // std::cout << "mj_data->contact1: " << mj_data->contact[10].geom[0] << std::endl;
+        // std::cout << "mj_data->contact1: " << mj_data->contact[11].geom[0] << std::endl;
 
-
-         // Should print "floor"
-        for (int i = 0; i < mj_model->ngeom; ++i) {
-            printGeomName(mj_model, i);
-        }
 
          // Should print "floor"
-        for (int i = 0; i < model::site_ids_size; ++i) {
-            findGeomsOnSameBodyAsSite(mj_model, i);
-        }
+        // for (int i = 0; i < mj_model->ngeom; ++i) {
+        //     printGeomName(mj_model, i);
+        // }
+
+        //  // Should print "floor"
+        // for (int i = 0; i < model::site_ids_size; ++i) {
+        //     findGeomsOnSameBodyAsSite(mj_model, i);
+        // }
 
         // printGeomName(mj_model, 8); // Should print "box"
         // printGeomName(mj_model, 14); // Should indicate invalid ID or no name        
@@ -498,11 +499,11 @@ int main(int argc, char** argv) {
         //     else{}
         // }        
 
-        std::cout << "contact_site_ids_test: ";
-        for (int element : contact_site_ids_test) {
-            std::cout << element << " ";
-        }
-        std::cout << std::endl;
+        // std::cout << "contact_site_ids_test: ";
+        // for (int element : contact_site_ids_test) {
+        //     std::cout << element << " ";
+        // }
+        // std::cout << std::endl;
 
         
         std::vector<int> contact_check2_temp = getBinaryRepresentation_std_find(contact_site_ids_test,wheel_sites_ids);
@@ -633,7 +634,7 @@ int main(int argc, char** argv) {
         // shin angular position
         // Sinusoidal Position and Velocity Tracking:
         double shin_rot_pos = 0.1*5.0;
-        double shin_rot_vel = 0.1*8.0;
+        double shin_rot_vel = 0.1*6.0;
         // double shin_rot_frequency = 0.1;
 
         // double tl_angular_position = acos(site_rotational_data(1,0));
@@ -812,13 +813,16 @@ int main(int argc, char** argv) {
         Vector<3> body_position = qpos(Eigen::seqN(0, 3));
 
         // double thigh_height_increase_stairs = (body_position(0)>1)*(body_position(0)-1 - 0.2)*(0.05/0.2);
-        double thigh_height_increase_stairs = (body_position(0)>0.5)*(body_position(0)-0.5)*(0.05/0.2);
+        double thigh_height_increase_stairs_torso = (body_position(0)>0.4)*((body_position(0)-0.4)*(0.05/0.2) - 0.0125 );
+        double thigh_height_increase_stairs_head = (body_position(0)>0.4)*((body_position(0)-0.4)*(0.05/0.2)  + 0.0125);
+        // double thigh_height_increase_stairs_torso = 0.0;
+        // double thigh_height_increase_stairs_head = 0.0;
         // double thigh_height_increase_stairs = -0.05;
 
-        double tlh_linear_position_error = ( (initial_site_data(5,2) - 0.0 + thigh_height_increase_stairs) - tlh_linear_position(2));
-        double trh_linear_position_error = ( (initial_site_data(6,2) - 0.0 + thigh_height_increase_stairs) - trh_linear_position(2));
-        double hlh_linear_position_error = ( (initial_site_data(7,2) - 0.0 + thigh_height_increase_stairs) - hlh_linear_position(2));
-        double hrh_linear_position_error = ( (initial_site_data(8,2) - 0.0 + thigh_height_increase_stairs) - hrh_linear_position(2));
+        double tlh_linear_position_error = ( (initial_site_data(5,2) - 0.0 + thigh_height_increase_stairs_torso) - tlh_linear_position(2));
+        double trh_linear_position_error = ( (initial_site_data(6,2) - 0.0 + thigh_height_increase_stairs_torso) - trh_linear_position(2));
+        double hlh_linear_position_error = ( (initial_site_data(7,2) - 0.0 + thigh_height_increase_stairs_head) - hlh_linear_position(2));
+        double hrh_linear_position_error = ( (initial_site_data(8,2) - 0.0 + thigh_height_increase_stairs_head) - hrh_linear_position(2));
 
         
         // double tlh_linear_position_error = ( (initial_site_data(5,2) + 0.5*qpos(0) - 1.0) - tlh_linear_position(2));
@@ -900,7 +904,7 @@ int main(int argc, char** argv) {
             initial_position(0), initial_position(1), initial_position(2)
         );
         Vector<3> velocity_target = Vector<3>(
-            0.0,0.0,0.0
+            1.0,0.0,0.0
         );
 
         Eigen::Quaternion<double> body_rotation = Eigen::Quaternion<double>(state.body_rotation(0), state.body_rotation(1), state.body_rotation(2), state.body_rotation(3));
@@ -910,6 +914,7 @@ int main(int argc, char** argv) {
         Vector<3> rotation_error = (Eigen::Quaternion<double>(1, 0, 0, 0) * body_rotation.conjugate()).vec();
         Vector<3> angular_velocity_error = Vector<3>::Zero() - state.angular_body_velocity;
 
+        std::cout << "rotation_error: " << rotation_error << std::endl;
 
 
         double torso_lin_kp = 0.0;
@@ -926,7 +931,7 @@ int main(int argc, char** argv) {
 
         Vector<3> linear_control = torso_lin_kp * (position_error) + torso_lin_kv * (velocity_error);
         Vector<3> angular_control = torso_ang_kp * (rotation_error) + torso_ang_kv * (angular_velocity_error);
-        Eigen::Vector<double, 6> cmd {0, 0, linear_control(2), angular_control(0), angular_control(1), angular_control(2)};
+        Eigen::Vector<double, 6> cmd {linear_control(1), 0, 0, angular_control(0), angular_control(1), angular_control(2)};
         taskspace_targets.row(0) = cmd;
         
 

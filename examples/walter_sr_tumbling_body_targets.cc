@@ -21,7 +21,7 @@ using namespace operational_space_controller::constants;
 using rules_cc::cc::runfiles::Runfiles;
 
 
-
+//____________________________________________________________________________________________________________________________
 //  to wrap angles higher than 2pi - angular positions of hip and shins
 double wrapToPi(double angle) {
     const double twoPi = 2.0 * M_PI;
@@ -161,6 +161,7 @@ std::vector<int> getBinaryRepresentation_std_find(const std::vector<int>& A, con
 }
 
 
+//____________________________________________________________________________________________________________________________
 
 int main(int argc, char** argv) {
     // Use runfiles to find the path to the model file
@@ -173,6 +174,7 @@ int main(int argc, char** argv) {
         runfiles->Rlocation("mujoco-models/models/walter_sr/WaLTER_Senior.xml");
     
     std::filesystem::path simulation_model_path = 
+        // runfiles->Rlocation("mujoco-models/models/walter_sr/stairs_scene_walter_sr.xml");
         runfiles->Rlocation("mujoco-models/models/walter_sr/scene_walter_sr.xml");
 
     // Load Simulation Model
@@ -184,7 +186,9 @@ int main(int argc, char** argv) {
     }
     mjData* mj_data = mj_makeData(mj_model);
 
-    // Reset Data to match Keyframe 2
+    // keyframe - 3 - shin based tumbling 
+    // keyframe - 0 - default - T pose
+    // keyframe - 1 - flat on ground 
     mj_resetDataKeyframe(mj_model, mj_data, 3);
 
 
@@ -320,20 +324,10 @@ int main(int argc, char** argv) {
     //===================================================
     //  last (for velo) and initial angular position of the shin 
     //===================================================
-    // double last_tl_angular_position = acos(initial_site_rotational_data(1,0));
-    // double last_tr_angular_position = acos(initial_site_rotational_data(2,0));
-    // double last_hl_angular_position = acos(initial_site_rotational_data(3,0));
-    // double last_hr_angular_position = acos(initial_site_rotational_data(4,0));
-
     double last_tl_angular_position = atan2(initial_site_rotational_data(1,2),initial_site_rotational_data(1,0));
     double last_tr_angular_position = atan2(initial_site_rotational_data(2,2),initial_site_rotational_data(2,0));
     double last_hl_angular_position = atan2(initial_site_rotational_data(3,2),initial_site_rotational_data(3,0));
     double last_hr_angular_position = atan2(initial_site_rotational_data(4,2),initial_site_rotational_data(4,0));
-
-    // double initial_tl_angular_position = acos(initial_site_rotational_data(1,0));
-    // double initial_tr_angular_position = acos(initial_site_rotational_data(2,0));
-    // double initial_hl_angular_position = acos(initial_site_rotational_data(3,0));
-    // double initial_hr_angular_position = acos(initial_site_rotational_data(4,0));
 
     double initial_tl_angular_position = atan2(initial_site_rotational_data(1,2),initial_site_rotational_data(1,0));
     double initial_tr_angular_position = atan2(initial_site_rotational_data(2,2),initial_site_rotational_data(2,0));
@@ -343,20 +337,11 @@ int main(int argc, char** argv) {
     //===================================================
     //  last (for velocity) and initial angular position of the thigh sites 
     //===================================================
-    // double last_tlh_angular_position = acos(initial_site_rotational_data(5,0));
-    // double last_trh_angular_position = acos(initial_site_rotational_data(6,0));
-    // double last_hlh_angular_position = acos(initial_site_rotational_data(7,0));
-    // double last_hrh_angular_position = acos(initial_site_rotational_data(8,0));
 
     double last_tlh_angular_position = atan2(initial_site_rotational_data(5,2),initial_site_rotational_data(5,0));
     double last_trh_angular_position = atan2(initial_site_rotational_data(6,2),initial_site_rotational_data(6,0));
     double last_hlh_angular_position = atan2(initial_site_rotational_data(7,2),initial_site_rotational_data(7,0));
     double last_hrh_angular_position = atan2(initial_site_rotational_data(8,2),initial_site_rotational_data(8,0));
-
-    // double initial_tlh_angular_position = acos(initial_site_rotational_data(5,0));
-    // double initial_trh_angular_position = acos(initial_site_rotational_data(6,0));
-    // double initial_hlh_angular_position = acos(initial_site_rotational_data(7,0));
-    // double initial_hrh_angular_position = acos(initial_site_rotational_data(8,0));
 
     double initial_tlh_angular_position = atan2(initial_site_rotational_data(5,2),initial_site_rotational_data(5,0));
     double initial_trh_angular_position = atan2(initial_site_rotational_data(6,2),initial_site_rotational_data(6,0));
@@ -386,83 +371,13 @@ int main(int argc, char** argv) {
         // Eigen::Matrix<double, model::site_ids_size, 3> site_data;
         site_data = Eigen::Map<Matrix<model::site_ids_size, 3>>(mj_data->site_xpos)(site_ids, Eigen::placeholders::all);
         site_rotational_data = Eigen::Map<Matrix<model::site_ids_size, 9>>(mj_data->site_xmat)(site_ids, Eigen::placeholders::all);
-
-
-        //===================================================
-        // find contact mask based on dist between wheel and ground --> 0 - body , 1-4 -> shin, 5-8 -> thigh , 9-16 -> wheels
-        //===================================================        
-        contact_check = {(site_data(9,2)<wheel_contact_check_height),
-            (site_data(10,2)<wheel_contact_check_height),
-            (site_data(11,2)<wheel_contact_check_height),
-            (site_data(12,2)<wheel_contact_check_height),
-            (site_data(13,2)<wheel_contact_check_height),
-            (site_data(14,2)<wheel_contact_check_height),
-            (site_data(15,2)<wheel_contact_check_height),
-            (site_data(16,2)<wheel_contact_check_height)};
-
-        // contact_data = Eigen::Map<Matrix<model::site_ids_size, 3>>(mj_data->contact)(site_ids, Eigen::placeholders::all);
-
-        // std::cout << "Vector elements (range-based for loop): ";
-        // for (int element : site_ids) {
-        //     std::cout << element << " ";
-        // }
-        // std::cout << std::endl;
                 
-        const mjContact& contact0 = mj_data->contact[0];
-        const mjContact& contact1 = mj_data->contact[1];
-        const mjContact& contact2 = mj_data->contact[2];
-        const mjContact& contact3 = mj_data->contact[3];
-        const mjContact& contact4 = mj_data->contact[4];
-        const mjContact& contact5 = mj_data->contact[5];
-        const mjContact& contact6 = mj_data->contact[6];
-        const mjContact& contact7 = mj_data->contact[7];
 
-        // std::cout << "mj_data->contact0: " << mj_data->contact[0].geom[1] << std::endl;
-        // std::cout << "mj_data->contact1: " << mj_data->contact[1].geom[1] << std::endl;
-        // std::cout << "mj_data->contact2: " << mj_data->contact[2].geom[1] << std::endl;
-        // std::cout << "mj_data->contact3: " << mj_data->contact[3].geom[1] << std::endl;
-        // std::cout << "mj_data->contact4: " << mj_data->contact[4].geom[1] << std::endl;
-        // std::cout << "mj_data->contact5: " << mj_data->contact[5].geom[1] << std::endl;
-        // std::cout << "mj_data->contact6: " << mj_data->contact[6].geom[1] << std::endl;
-        // std::cout << "mj_data->contact7: " << mj_data->contact[7].geom[1] << std::endl;
-        // std::cout << "mj_data->contact7: " << mj_data->contact[8].geom[1] << std::endl;
-        // std::cout << "mj_data->contact7: " << mj_data->contact[9].geom[1] << std::endl;
-        // std::cout << "mj_data->contact1: " << mj_data->contact[10].geom[1] << std::endl;
-        // std::cout << "mj_data->contact1: " << mj_data->contact[11].geom[1] << std::endl;
-
-        // std::cout << "mj_data->contact0: " << mj_data->contact[0].geom[0] << std::endl;
-        // std::cout << "mj_data->contact1: " << mj_data->contact[1].geom[0] << std::endl;
-        // std::cout << "mj_data->contact2: " << mj_data->contact[2].geom[0] << std::endl;
-        // std::cout << "mj_data->contact3: " << mj_data->contact[3].geom[0] << std::endl;
-        // std::cout << "mj_data->contact4: " << mj_data->contact[4].geom[0] << std::endl;
-        // std::cout << "mj_data->contact5: " << mj_data->contact[5].geom[0] << std::endl;
-        // std::cout << "mj_data->contact6: " << mj_data->contact[6].geom[0] << std::endl;
-        // std::cout << "mj_data->contact7: " << mj_data->contact[7].geom[0] << std::endl;
-        // std::cout << "mj_data->contact7: " << mj_data->contact[8].geom[0] << std::endl;
-        // std::cout << "mj_data->contact7: " << mj_data->contact[9].geom[0] << std::endl;
-        // std::cout << "mj_data->contact1: " << mj_data->contact[10].geom[0] << std::endl;
-        // std::cout << "mj_data->contact1: " << mj_data->contact[11].geom[0] << std::endl;
-
-
-         // Should print "floor"
-        // for (int i = 0; i < mj_model->ngeom; ++i) {
-        //     printGeomName(mj_model, i);
-        // }
         
-
-        // printGeomName(mj_model, 8); // Should print "box"
-        // printGeomName(mj_model, 14); // Should indicate invalid ID or no name        
-        // printGeomName(mj_model, 18); // Should indicate invalid ID or no name        
-
-        // std::cout << "mj_data->ncon: " << mj_data->ncon << std::endl;
-        // std::cout << "current_time: " << current_time << std::endl;
-
-
         std::vector<int> contact_site_ids_test;
         for (int i = 0; i < mj_data->ncon; ++i) {
             
             if (contains(wheel_sites_mujoco,mj_data->contact[i].geom[1])){
-            // std::cout << "mj_data->contact[i].geom[1]: " << mj_data->contact[i].geom[1] << std::endl;
 
             std::vector<int> site_of_geom = getSiteIdsOnSameBodyAsGeom(mj_model, mj_data->contact[i].geom[1]);
             contact_site_ids_test.push_back(site_of_geom[0]);
@@ -472,21 +387,13 @@ int main(int argc, char** argv) {
 
         for (int i = 0; i < mj_data->ncon; ++i) {
             std::cout << "i: " << i << std::endl;
-            // std::cout << "mj_data->contact[i].geom[0]: " << mj_data->contact[i].geom[0] << std::endl;
             if (contains(wheel_sites_mujoco,mj_data->contact[i].geom[0])){
-            // std::cout << "mj_data->contact[i].geom[0]: " << mj_data->contact[i].geom[0] << std::endl;
 
             std::vector<int> site_of_geom = getSiteIdsOnSameBodyAsGeom(mj_model, mj_data->contact[i].geom[0]);
             contact_site_ids_test.push_back(site_of_geom[0]);
             }
             else{}
         }        
-
-        // std::cout << "contact_site_ids_test: ";
-        // for (int element : contact_site_ids_test) {
-        //     std::cout << element << " ";
-        // }
-        // std::cout << std::endl;
 
         
         std::vector<int> contact_check2_temp = getBinaryRepresentation_std_find(contact_site_ids_test,wheel_sites_mujoco);
@@ -495,51 +402,7 @@ int main(int argc, char** argv) {
         // Create a temporary Eigen::Map of the int data, then cast to double and assign
         contact_check2 = Eigen::Map<Eigen::VectorXi>(contact_check2_temp.data(), contact_check2_temp.size()).cast<double>();
         
-
-        // std::cout << "mj_data->contact8: " << mj_data->contact[8].geom[1] << std::endl;
-        // std::cout << "mj_data->contact9: " << mj_data->contact[9].geom[1] << std::endl;
-        // std::cout << "mj_data->contact10: " << mj_data->contact[10].geom[1] << std::endl;
-        // std::cout << "mj_data->contact11: " << mj_data->contact[11].geom[1] << std::endl;
-        // std::cout << "mj_data->contact12: " << mj_data->contact[12].geom[1] << std::endl;
-        // std::cout << "mj_data->contact13: " << mj_data->contact[13].geom[1] << std::endl;
-        // std::cout << "mj_data->contact14: " << mj_data->contact[14].geom[1] << std::endl;
-        // std::cout << "mj_data->contact15: " << mj_data->contact[15].geom[1] << std::endl;
-        // std::cout << "mj_data->contact16: " << mj_data->contact[16].geom[1] << std::endl;
-        // std::cout << "mj_data->contact17: " << mj_data->contact[17].geom[1] << std::endl;
-        // std::cout << "mj_data->contact18: " << mj_data->contact[18].geom[1] << std::endl;
-        // std::cout << "mj_data->contact19: " << mj_data->contact[19].geom[1] << std::endl;
-        // std::cout << "mj_data->contact20: " << mj_data->contact[20].geom[1] << std::endl;
-        // std::cout << "mj_data->contact21: " << mj_data->contact[21].geom[1] << std::endl;
-        // std::cout << "mj_data->contact22: " << mj_data->contact[22].geom[1] << std::endl;
-        // std::cout << "mj_data->contact23: " << mj_data->contact[23].geom[1] << std::endl;
-        // std::cout << "mj_data->contact24: " << mj_data->contact[24].geom[1] << std::endl;
-        // std::cout << "mj_data->contact25: " << mj_data->contact[25].geom[1] << std::endl;
-        // std::cout << "mj_data->contact26: " << mj_data->contact[26].geom[1] << std::endl;
-        // std::cout << "mj_data->contact27: " << mj_data->contact[27].geom[1] << std::endl;
-        // std::cout << "mj_data->contact28: " << mj_data->contact[28].geom[1] << std::endl;
-        // std::cout << "mj_data->contact29: " << mj_data->contact[29].geom[1] << std::endl;
-        // std::cout << "mj_data->contact30: " << mj_data->contact[30].geom[1] << std::endl;
-        // std::cout << "mj_data->contact31: " << mj_data->contact[31].geom[1] << std::endl;
-        // std::cout << "mj_data->contact32: " << mj_data->contact[32].geom[1] << std::endl;
-        // std::cout << "mj_data->contact33: " << mj_data->contact[33].geom[1] << std::endl;
-        // std::cout << "mj_data->contact34: " << mj_data->contact[34].geom[1] << std::endl;
-        // std::cout << "mj_data->contact35: " << mj_data->contact[35].geom[1] << std::endl;
-        // std::cout << "mj_data->contact36: " << mj_data->contact[36].geom[1] << std::endl;
-        // std::cout << "mj_data->contact37: " << mj_data->contact[37].geom[1] << std::endl;
-        // std::cout << "mj_data->contact38: " << mj_data->contact[38].geom[1] << std::endl;
-        // std::cout << "mj_data->contact39: " << mj_data->contact[39].geom[1] << std::endl;
-
-
-
-        // std::cout << "contact_check: " << contact_check << std::endl;
-        // std::cout << "contact_check2: " << contact_check2 << std::endl;
-
-        // std::cout << "contact_check2: ";
-        // for (int element : contact_check2) {
-        //     std::cout << element << " ";
-        // }
-        // std::cout << std::endl;
-
+        
 
         State state;
         state.motor_position = qpos(Eigen::seqN(7, model::nu_size));
@@ -561,9 +424,9 @@ int main(int argc, char** argv) {
         double amplitude = 0.04;
         double frequency = 0.1;
 
-        // ------------------------------------------------------------------------------------------------------------------------------------
+        //____________________________________________________________________________________________________________________________
         //       shin z-axis height tracking - off
-        // ------------------------------------------------------------------------------------------------------------------------------------
+        //____________________________________________________________________________________________________________________________
         // targets
         Vector<3> tl_position_target = Vector<3>(
             initial_site_data(1,0), initial_site_data(1,1), initial_site_data(1,2)
@@ -578,14 +441,7 @@ int main(int argc, char** argv) {
             initial_site_data(4,0), initial_site_data(4,1), initial_site_data(4,2)
         );
 
-
         
-        // Vector<3> velocity_target = Vector<3>(
-        //     // sine wave in x-axis --> front/back
-        //     // 2.0 * M_PI * amplitude * frequency * std::cos(2.0 * M_PI * frequency * current_time),0.0, 0.0
-        //     0.0,0.0,0.0
-        // );
-        // Eigen::Quaternion<double> body_rotation = Eigen::Quaternion<double>(state.body_rotation(0), state.body_rotation(1), state.body_rotation(2), state.body_rotation(3));
         Vector<3> tl_body_position = site_data(1,Eigen::seqN(0, 3));
         Vector<3> tr_body_position = site_data(2,Eigen::seqN(0, 3));
         Vector<3> hl_body_position = site_data(3,Eigen::seqN(0, 3));
@@ -594,37 +450,17 @@ int main(int argc, char** argv) {
         Vector<3> tr_position_error = (tr_position_target - tr_body_position); 
         Vector<3> hl_position_error = (hl_position_target - hl_body_position);
         Vector<3> hr_position_error = (hr_position_target - hr_body_position);
-        // Vector<3> velocity_error = velocity_target - state.linear_body_velocity;
-        // Vector<3> rotation_error = (Eigen::Quaternion<double>(1, 0, 0, 0) * body_rotation.conjugate()).vec();
-        // Vector<3> angular_velocity_error = Vector<3>::Zero() - state.angular_body_velocity;
-        // Vector<3> linear_control = 150.0 * (position_error) + 25.0 * (velocity_error);
-
-
-        // Vector<3> tl_linear_control = 150.0 * (tl_position_error);
-        // Vector<3> tr_linear_control = 150.0 * (tr_position_error);
-        // Vector<3> hl_linear_control = 150.0 * (hl_position_error);
-        // Vector<3> hr_linear_control = 150.0 * (hr_position_error);
         
-        // Vector<3> angular_control = 50.0 * (rotation_error) + 10.0 * (angular_velocity_error);
-        // // Eigen::Vector<double, 6> cmd {linear_control(0), linear_control(1), linear_control(2), angular_control(0), angular_control(1), angular_control(2)};
-        // Eigen::Vector<double, 6> cmd1 {tl_linear_control(0), tl_linear_control(1), tl_linear_control(2), 0, 1000, 0};        
-        // Eigen::Vector<double, 6> cmd2 {tr_linear_control(0), tr_linear_control(1), tr_linear_control(2), 0, 1000, 0};        
-        // Eigen::Vector<double, 6> cmd3 {hl_linear_control(0), hl_linear_control(1), hl_linear_control(2), 0, 1000, 0};        
-        // Eigen::Vector<double, 6> cmd4 {hr_linear_control(0), hr_linear_control(1), hr_linear_control(2), 0, 1000, 0};        
-
-        // ------------------------------------------------------------------------------------------------------------------------------------
+        
+        //____________________________________________________________________________________________________________________________
         //       shin angular position - off - feedforward 1000 test
-        // ------------------------------------------------------------------------------------------------------------------------------------
+        //____________________________________________________________________________________________________________________________
         // shin angular position
         // Sinusoidal Position and Velocity Tracking:
         double shin_rot_pos = 0.1*5.0;
         double shin_rot_vel = 0.1*8.0;
         // double shin_rot_frequency = 0.1;
 
-        // double tl_angular_position = acos(site_rotational_data(1,0));
-        // double tr_angular_position = acos(site_rotational_data(2,0));
-        // double hl_angular_position = acos(site_rotational_data(3,0));
-        // double hr_angular_position = acos(site_rotational_data(4,0));
 
         double tl_angular_position = atan2(site_rotational_data(1,2),site_rotational_data(1,0));
         double tr_angular_position = atan2(site_rotational_data(2,2),site_rotational_data(2,0));
@@ -642,16 +478,6 @@ int main(int argc, char** argv) {
         double hl_angular_position_target = wrapToPi(initial_hl_angular_position + shin_rot_vel * current_time);
         double hr_angular_position_target = wrapToPi(initial_hr_angular_position + shin_rot_vel * current_time);
 
-        // double tl_angular_position_target = wrapToPi(tl_angular_position + shin_rot_pos);
-        // double tr_angular_position_target = wrapToPi(tr_angular_position + shin_rot_pos);
-        // double hl_angular_position_target = wrapToPi(hl_angular_position + shin_rot_pos);
-        // double hr_angular_position_target = wrapToPi(hr_angular_position + shin_rot_pos);
-
-        
-        // double tl_angular_position_target = (initial_tl_angular_position + shin_rot_vel * current_time);
-        // double tr_angular_position_target = (initial_tr_angular_position + shin_rot_vel * current_time);
-        // double hl_angular_position_target = (initial_hl_angular_position + shin_rot_vel * current_time);
-        // double hr_angular_position_target = (initial_hr_angular_position + shin_rot_vel * current_time);
         
 
         double tl_angular_velocity_target = shin_rot_vel;
@@ -684,46 +510,29 @@ int main(int argc, char** argv) {
         double last_hl_angular_position = hl_angular_position;
         double last_hr_angular_position = hr_angular_position;
 
-        // =================================         
-
-        // ------------------------------------------------------------------
-        //       feedback angular velocity tracking
-        // ------------------------------------------------------------------        
-
         Eigen::Vector<double, 6> cmd1 {0, 0, 0, 0, tl_angular_control, 0};        
         Eigen::Vector<double, 6> cmd2 {0, 0, 0, 0, tr_angular_control, 0};        
         Eigen::Vector<double, 6> cmd3 {0, 0, 0, 0, hl_angular_control, 0};        
         Eigen::Vector<double, 6> cmd4 {0, 0, 0, 0, hr_angular_control, 0};        
 
-        // ------------------------------------------------------------------
-        //       old feedforward angular acceleration
-        // ------------------------------------------------------------------
 
-        // Eigen::Vector<double, 6> cmd1 {0, 0, 0, 0, 0.8*1e3, 0};        
-        // Eigen::Vector<double, 6> cmd2 {0, 0, 0, 0, 0.8*1e3, 0};        
-        // Eigen::Vector<double, 6> cmd3 {0, 0, 0, 0, 0.8*1e3, 0};        
-        // Eigen::Vector<double, 6> cmd4 {0, 0, 0, 0, 0.8*1e3, 0};        
+        // taskspace_targets.row(1) = cmd1;
+        // taskspace_targets.row(2) = cmd2;
+        // taskspace_targets.row(3) = cmd3;
+        // taskspace_targets.row(4) = cmd4;
 
 
-        taskspace_targets.row(1) = cmd1;
-        taskspace_targets.row(2) = cmd2;
-        taskspace_targets.row(3) = cmd3;
-        taskspace_targets.row(4) = cmd4;
-
-
-        // ------------------------------------------------------------------------------------------------------------------------------------
+        //____________________________________________________________________________________________________________________________
+        
         //       thigh angular position - on // thigh linear position - on
-        // ------------------------------------------------------------------------------------------------------------------------------------
+        //____________________________________________________________________________________________________________________________
+
         // thigh angular position
         // constant position and zero velocity Tracking:
         double thigh_rot_vel = 0.0;
         double thigh_kp = 1000.0;
         double thigh_kv = 100.0;
 
-        // double tlh_angular_position = acos(site_rotational_data(5,0));
-        // double trh_angular_position = acos(site_rotational_data(6,0));
-        // double hlh_angular_position = acos(site_rotational_data(7,0));
-        // double hrh_angular_position = acos(site_rotational_data(8,0));
 
         double tlh_angular_position = atan2(site_rotational_data(5,2),site_rotational_data(5,0));
         double trh_angular_position = atan2(site_rotational_data(6,2),site_rotational_data(6,0));
@@ -769,15 +578,15 @@ int main(int argc, char** argv) {
         double last_hlh_angular_position = hlh_angular_position;
         double last_hrh_angular_position = hrh_angular_position;
 
-        // ------------------------------------------------------------------------------------------------------------------------------------
-        //       thigh linear position
-        // ------------------------------------------------------------------------------------------------------------------------------------
+        //____________________________________________________________________________________________________________________________
+        //       thigh linear position -z- position target
+        //____________________________________________________________________________________________________________________________
         double thigh_lin_vel = 0.0;
         // double thigh_lin_kp = 400.0;
         // double thigh_lin_kv = 60.0;
 
-        double thigh_lin_kp = 4000.0 * 2.0;
-        double thigh_lin_kv = 600.0 * 2.0;
+        double thigh_lin_kp = 500.0;
+        double thigh_lin_kv = 10.0;
 
         Vector<3> tlh_linear_position = site_data(5,Eigen::seqN(0, 3));
         Vector<3> trh_linear_position = site_data(6,Eigen::seqN(0, 3));
@@ -796,25 +605,19 @@ int main(int argc, char** argv) {
         double hrh_linear_velocity_target = thigh_lin_vel;
         Vector<3> body_position = qpos(Eigen::seqN(0, 3));
 
-        // double thigh_height_increase_stairs = (body_position(0)>1)*(body_position(0)-1 - 0.2)*(0.05/0.2);
         // double thigh_height_increase_stairs = (body_position(0)>0.5)*(body_position(0)-0.5)*(0.05/0.2);
-        double thigh_height_increase_stairs = -0.05;
+        // double thigh_height_increase_stairs = 0.02;
+        double thigh_height_increase_stairs = initial_site_data(5,2);
 
-        double tlh_linear_position_error = ( (initial_site_data(5,2) - 0.0 + thigh_height_increase_stairs) - tlh_linear_position(2));
-        double trh_linear_position_error = ( (initial_site_data(6,2) - 0.0 + thigh_height_increase_stairs) - trh_linear_position(2));
-        double hlh_linear_position_error = ( (initial_site_data(7,2) - 0.0 + thigh_height_increase_stairs) - hlh_linear_position(2));
-        double hrh_linear_position_error = ( (initial_site_data(8,2) - 0.0 + thigh_height_increase_stairs) - hrh_linear_position(2));
+        // double tlh_linear_position_error = ( (initial_site_data(5,2) - 0.0 + thigh_height_increase_stairs) - tlh_linear_position(2));
+        // double trh_linear_position_error = ( (initial_site_data(6,2) - 0.0 + thigh_height_increase_stairs) - trh_linear_position(2));
+        // double hlh_linear_position_error = ( (initial_site_data(7,2) - 0.0 + thigh_height_increase_stairs) - hlh_linear_position(2));
+        // double hrh_linear_position_error = ( (initial_site_data(8,2) - 0.0 + thigh_height_increase_stairs) - hrh_linear_position(2));
+        double tlh_linear_position_error = ( ( - 0.0 + thigh_height_increase_stairs) - tlh_linear_position(2));
+        double trh_linear_position_error = ( ( - 0.0 + thigh_height_increase_stairs) - trh_linear_position(2));
+        double hlh_linear_position_error = ( ( - 0.0 + thigh_height_increase_stairs) - hlh_linear_position(2));
+        double hrh_linear_position_error = ( ( - 0.0 + thigh_height_increase_stairs) - hrh_linear_position(2));
 
-        
-        // double tlh_linear_position_error = ( (initial_site_data(5,2) + 0.5*qpos(0) - 1.0) - tlh_linear_position(2));
-        // double trh_linear_position_error = ( (initial_site_data(6,2) + 0.5*qpos(0) - 1.0) - trh_linear_position(2));
-        // double hlh_linear_position_error = ( (initial_site_data(7,2) + 0.5*qpos(0) - 1.0) - hlh_linear_position(2));
-        // double hrh_linear_position_error = ( (initial_site_data(8,2) + 0.5*qpos(0) - 1.0) - hrh_linear_position(2));
-
-        // double tlh_linear_position_error = ( (initial_site_data(5,2) + 0.5*qpos(0) - 1.0) - tlh_linear_position(2));
-        // double trh_linear_position_error = ( (initial_site_data(6,2) + 0.5*qpos(0) - 1.0) - trh_linear_position(2));
-        // double hlh_linear_position_error = ( (initial_site_data(7,2) + 0.5*qpos(0) - 1.0) - hlh_linear_position(2));
-        // double hrh_linear_position_error = ( (initial_site_data(8,2) + 0.5*qpos(0) - 1.0) - hrh_linear_position(2));
         
         double tlh_linear_velocity_error = (tlh_linear_velocity_target - tlh_linear_velocity(2));
         double trh_linear_velocity_error = (trh_linear_velocity_target - trh_linear_velocity(2));
@@ -825,49 +628,64 @@ int main(int argc, char** argv) {
         double trh_linear_control = thigh_lin_kp * (trh_linear_position_error) + thigh_lin_kv * (trh_linear_velocity_error);
         double hlh_linear_control = thigh_lin_kp * (hlh_linear_position_error) + thigh_lin_kv * (hlh_linear_velocity_error);
         double hrh_linear_control = thigh_lin_kp * (hrh_linear_position_error) + thigh_lin_kv * (hrh_linear_velocity_error);
+
+        //____________________________________________________________________________________________________________________________        
+        //  thigh forward -x- velocity target
+        //____________________________________________________________________________________________________________________________
+        double thigh_lin_velx = 0.2;
+
+        double thigh_lin_kpx = 500.0;
+        double thigh_lin_kvx = 10.0;
+
+        double tlh_linear_velocity_targetx = thigh_lin_velx;
+        double trh_linear_velocity_targetx = thigh_lin_velx;
+        double hlh_linear_velocity_targetx = thigh_lin_velx;
+        double hrh_linear_velocity_targetx = thigh_lin_velx;
+
+        double thigh_targetx = thigh_lin_velx * (current_time);
+
+        double tlh_linear_position_errorx = ( (initial_site_data(5,0) - 0.0 + thigh_targetx) - tlh_linear_position(0));
+        double trh_linear_position_errorx = ( (initial_site_data(6,0) - 0.0 + thigh_targetx) - trh_linear_position(0));
+        double hlh_linear_position_errorx = ( (initial_site_data(7,0) - 0.0 + thigh_targetx) - hlh_linear_position(0));
+        double hrh_linear_position_errorx = ( (initial_site_data(8,0) - 0.0 + thigh_targetx) - hrh_linear_position(0));
+
+        
+        double tlh_linear_velocity_errorx = (tlh_linear_velocity_targetx - tlh_linear_velocity(0));
+        double trh_linear_velocity_errorx = (trh_linear_velocity_targetx - trh_linear_velocity(0));
+        double hlh_linear_velocity_errorx = (hlh_linear_velocity_targetx - hlh_linear_velocity(0));
+        double hrh_linear_velocity_errorx = (hrh_linear_velocity_targetx - hrh_linear_velocity(0));
+
+        double tlh_linear_controlx = thigh_lin_kpx * (tlh_linear_position_errorx) + thigh_lin_kvx * (tlh_linear_velocity_errorx);
+        double trh_linear_controlx = thigh_lin_kpx * (trh_linear_position_errorx) + thigh_lin_kvx * (trh_linear_velocity_errorx);
+        double hlh_linear_controlx = thigh_lin_kpx * (hlh_linear_position_errorx) + thigh_lin_kvx * (hlh_linear_velocity_errorx);
+        double hrh_linear_controlx = thigh_lin_kpx * (hrh_linear_position_errorx) + thigh_lin_kvx * (hrh_linear_velocity_errorx);
+        //____________________________________________________________________________________________________________________________
         
         Vector<3> last_tlh_linear_position = tlh_linear_position;
         Vector<3> last_trh_linear_position = trh_linear_position;
         Vector<3> last_hlh_linear_position = hlh_linear_position;
         Vector<3> last_hrh_linear_position = hrh_linear_position;
+
         // =================================         
         double last_time = current_time;
         // =================================         
 
-        // ------------------------------------------------------------------
-        //       feedback angular velocity tracking
-        // ------------------------------------------------------------------        
-
-        // Eigen::Vector<double, 6> cmd5 {0, 0, tlh_linear_control, 0, tlh_angular_control, 0};        
-        // Eigen::Vector<double, 6> cmd6 {0, 0, trh_linear_control, 0, trh_angular_control, 0};        
-        // Eigen::Vector<double, 6> cmd7 {0, 0, hlh_linear_control, 0, hlh_angular_control, 0};        
-        // Eigen::Vector<double, 6> cmd8 {0, 0, hrh_linear_control, 0, hrh_angular_control, 0};        
-
-        Eigen::Vector<double, 6> cmd5 {0, 0, tlh_linear_control, 0, 0, 0};        
-        Eigen::Vector<double, 6> cmd6 {0, 0, trh_linear_control, 0, 0, 0};        
-        Eigen::Vector<double, 6> cmd7 {0, 0, hlh_linear_control, 0, 0, 0};        
-        Eigen::Vector<double, 6> cmd8 {0, 0, hrh_linear_control, 0, 0, 0};        
+        Eigen::Vector<double, 6> cmd5 {tlh_linear_controlx, 0, tlh_linear_control, 0, 0, 0};        
+        Eigen::Vector<double, 6> cmd6 {trh_linear_controlx, 0, trh_linear_control, 0, 0, 0};        
+        Eigen::Vector<double, 6> cmd7 {hlh_linear_controlx, 0, hlh_linear_control, 0, 0, 0};        
+        Eigen::Vector<double, 6> cmd8 {hrh_linear_controlx, 0, hrh_linear_control, 0, 0, 0};             
 
 
-        // Eigen::Vector<double, 6> cmd5 {0, 0, 0, 0, tlh_angular_control, 0};        
-        // Eigen::Vector<double, 6> cmd6 {0, 0, 0, 0, trh_angular_control, 0};        
-        // Eigen::Vector<double, 6> cmd7 {0, 0, 0, 0, hlh_angular_control, 0};        
-        // Eigen::Vector<double, 6> cmd8 {0, 0, 0, 0, hrh_angular_control, 0};        
+        // Eigen::Vector<double, 6> cmd5 {tlh_linear_controlx, 0, 0, 0, 0, 0};        
+        // Eigen::Vector<double, 6> cmd6 {trh_linear_controlx, 0, 0, 0, 0, 0};        
+        // Eigen::Vector<double, 6> cmd7 {hlh_linear_controlx, 0, 0, 0, 0, 0};        
+        // Eigen::Vector<double, 6> cmd8 {hrh_linear_controlx, 0, 0, 0, 0, 0};             
 
-        // Eigen::Vector<double, 6> cmd5 {0, 0, 0, 0, 0.1, 0};        
-        // Eigen::Vector<double, 6> cmd6 {0, 0, 0, 0, 0.1, 0};        
-        // Eigen::Vector<double, 6> cmd7 {0, 0, 0, 0, 0.1, 0};        
-        // Eigen::Vector<double, 6> cmd8 {0, 0, 0, 0, 0.1, 0};        
-        
 
-        // ------------------------------------------------------------------
-        //       old feedforward angular acceleration
-        // ------------------------------------------------------------------
-
-        // Eigen::Vector<double, 6> cmd1 {0, 0, 0, 0, 0.8*1e3, 0};        
-        // Eigen::Vector<double, 6> cmd2 {0, 0, 0, 0, 0.8*1e3, 0};        
-        // Eigen::Vector<double, 6> cmd3 {0, 0, 0, 0, 0.8*1e3, 0};        
-        // Eigen::Vector<double, 6> cmd4 {0, 0, 0, 0, 0.8*1e3, 0};        
+        // Eigen::Vector<double, 6> cmd5 {0, 0, tlh_linear_control, 0, 0, 0};        
+        // Eigen::Vector<double, 6> cmd6 {0, 0, trh_linear_control, 0, 0, 0};        
+        // Eigen::Vector<double, 6> cmd7 {0, 0, hlh_linear_control, 0, 0, 0};        
+        // Eigen::Vector<double, 6> cmd8 {0, 0, hrh_linear_control, 0, 0, 0};             
 
 
         taskspace_targets.row(5) = cmd5;
@@ -876,9 +694,9 @@ int main(int argc, char** argv) {
         taskspace_targets.row(8) = cmd8;        
 
 
-        // ------------------------------------------------------------------------------------------------------------------------------------
-        //       track head height - off // orientation - on
-        // ------------------------------------------------------------------------------------------------------------------------------------
+        //____________________________________________________________________________________________________________________________
+        //       track torso height - off // orientation - on
+        //____________________________________________________________________________________________________________________________
         // initial_position(0), initial_position(1), initial_position(2)-0.02
 
         Vector<3> position_target = Vector<3>(
@@ -906,8 +724,8 @@ int main(int argc, char** argv) {
         // double torso_ang_kp = 10.0;
         // double torso_ang_kv = 10.0;
 
-        double torso_ang_kp = 5.0;
-        double torso_ang_kv = 1.0;        
+        double torso_ang_kp = 1.0;
+        double torso_ang_kv = 0.1;        
 
         Vector<3> linear_control = torso_lin_kp * (position_error) + torso_lin_kv * (velocity_error);
         Vector<3> angular_control = torso_ang_kp * (rotation_error) + torso_ang_kv * (angular_velocity_error);
@@ -915,32 +733,21 @@ int main(int argc, char** argv) {
         taskspace_targets.row(0) = cmd;
         
 
-        // ------------------------------------------------------------------------------------------------------------------------------------
+        //____________________________________________________________________________________________________________________________
         //       camera track head x
-        // ------------------------------------------------------------------------------------------------------------------------------------
+        //____________________________________________________________________________________________________________________________
         cam.lookat[0] = body_position(0);
-        // cam.lookat[4] = cam.lookat[4] + 0.01;
 
-
-        // ------------------------------------------------------------------
-        //       record tlh angular position
-        // ------------------------------------------------------------------
-        // std::cout << "tlh_angular_position_target: " << initial_position(2)-0.1 << std::endl;
-        // std::cout << "contact9.dist: " << contact9.dist << std::endl;
-        
-        // target_tl_shin_data.push_back(position_target(2)); // body height data
-        // tl_shin_data.push_back(body_position(2));
-        // time_data.push_back(current_time);
-        
-        data1.push_back(contact0.dist); 
-        data2.push_back(contact1.dist); 
-        data3.push_back(contact2.dist); 
-        data4.push_back(contact3.dist); 
-        data5.push_back(contact4.dist); 
-        data6.push_back(contact5.dist); 
-        data7.push_back(contact6.dist); 
-        data8.push_back(contact7.dist); 
-        data9.push_back(mj_data->ncon); 
+                
+        data1.push_back(tlh_linear_velocity(0)); 
+        data2.push_back(tlh_linear_position(2)); 
+        data3.push_back(trh_linear_position(2)); 
+        data4.push_back(hlh_linear_position(2)); 
+        data5.push_back(hrh_linear_position(2)); 
+        data6.push_back(current_time); 
+        data7.push_back(current_time); 
+        data8.push_back(current_time); 
+        data9.push_back(current_time); 
         data10.push_back(current_time); 
 
 
@@ -951,6 +758,11 @@ int main(int argc, char** argv) {
 
         // Update Mujoco Data and Step:
         mj_data->ctrl = torque_command.data();
+
+
+        std::cout << "controller torque command " << controller.get_torque_command() << std::endl;
+
+
         mj_step(mj_model, mj_data);
 
         if(visualization_timer > visualization_interval) {
