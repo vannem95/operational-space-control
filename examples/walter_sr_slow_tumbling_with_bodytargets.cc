@@ -290,7 +290,7 @@ int main(int argc, char** argv) {
     double visualization_interval = 0.01;
 
     // TEST TIME
-    double simulation_time = 30.0;
+    double simulation_time = 60.0;
     auto current_time = mj_data->time;
 
     // to get points / site position --> we need to build site-ids using sites
@@ -750,8 +750,8 @@ int main(int argc, char** argv) {
         // thigh angular position
         // constant position and zero velocity Tracking:
         double thigh_rot_vel = 0.0;
-        double thigh_kp = 1000.0;
-        double thigh_kv = 100.0;
+        double thigh_kp = 100.0;
+        double thigh_kv = 10.0;
 
         // double tlh_angular_position = acos(site_rotational_data(5,0));
         // double trh_angular_position = acos(site_rotational_data(6,0));
@@ -772,8 +772,8 @@ int main(int argc, char** argv) {
         double hrh_angular_velocity = (hrh_angular_position - last_hrh_angular_position)/(current_time - last_time);
 
         // targets
-        double tlh_angular_position_target = wrapToPi(initial_tlh_angular_position + M_PI/5.0 + thigh_rot_vel * current_time);
-        double trh_angular_position_target = wrapToPi(initial_trh_angular_position + M_PI/5.0 + thigh_rot_vel * current_time);
+        double tlh_angular_position_target = wrapToPi(initial_tlh_angular_position + M_PI/3.0 + thigh_rot_vel * current_time);
+        double trh_angular_position_target = wrapToPi(initial_trh_angular_position + M_PI/3.0 + thigh_rot_vel * current_time);
         double hlh_angular_position_target = wrapToPi(initial_hlh_angular_position - M_PI/3.0 + thigh_rot_vel * current_time);
         double hrh_angular_position_target = wrapToPi(initial_hrh_angular_position - M_PI/3.0 + thigh_rot_vel * current_time);
 
@@ -836,8 +836,11 @@ int main(int argc, char** argv) {
         // double thigh_height_increase_stairs = (body_position(0)>0.5)*(body_position(0)-0.5)*(0.05/0.2);
         double thigh_height_increase_stairs = -0.05;
 
-        double thigh_height_increase_stairs_torso = (body_position(0)>0.4)*((body_position(0)-0.4)*(0.05/0.2) - 0.0125);
-        double thigh_height_increase_stairs_head = (body_position(0)>0.4)*((body_position(0)-0.4)*(0.05/0.2)  + 0.0125);
+        // double thigh_height_increase_stairs_torso = (body_position(0)>0.4)*((body_position(0)-0.4)*(0.05/0.2) - 0.0125);
+        // double thigh_height_increase_stairs_head = (body_position(0)>0.4)*((body_position(0)-0.4)*(0.05/0.2)  + 0.0125);
+
+        double thigh_height_increase_stairs_torso = (body_position(0)>0.4)*((body_position(0)-0.4)*(0.05/0.2) - 0.02);
+        double thigh_height_increase_stairs_head = (body_position(0)>0.4)*((body_position(0)-0.4)*(0.05/0.2)  + 0.02);
         
 
         // double tlh_linear_position_error = ( (initial_site_data(5,2) - 0.0 + thigh_height_increase_stairs) - tlh_linear_position(2));
