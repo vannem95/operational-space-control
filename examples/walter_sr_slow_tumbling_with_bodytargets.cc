@@ -170,7 +170,7 @@ int main(int argc, char** argv) {
     );
 
     std::filesystem::path osc_model_path = 
-        runfiles->Rlocation("mujoco-models/models/walter_sr/WaLTER_Senior.xml");
+        runfiles->Rlocation("mujoco-models/models/walter_sr/WaLTER_Senior_wheels.xml");
     
     std::filesystem::path simulation_model_path = 
         // runfiles->Rlocation("mujoco-models/models/walter_sr/scene_walter_sr.xml");
