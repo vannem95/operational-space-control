@@ -61,24 +61,37 @@ class AutoGen():
             DM.eye(self.u_size),
         )
 
-        wheel_joints = [
-                    'torso_left_shin_front_wheel_joint',
-                    'torso_left_shin_rear_wheel_joint',
-                    'torso_right_shin_front_wheel_joint',
-                    'torso_right_shin_rear_wheel_joint',
-                    'head_left_shin_front_wheel_joint',
-                    'head_left_shin_rear_wheel_joint',
-                    'head_right_shin_front_wheel_joint',
-                    'head_right_shin_rear_wheel_joint'
-                ]
-        wheel_joint_id = [
-            mujoco.mj_name2id(self.mj_model, mujoco.mjtJoint.mjJNT_HINGE.value, f)
-            for f in wheel_joints
-        ]
-        assert not any(id_ == -1 for id_ in wheel_joint_id), 'Site not found.'
-        self.wheel_joint_id = np.array(wheel_joint_id)
+#__________________________________________________________________________________________________________________
+#__________________________________________________________________________________________________________________
+        # self.wheel_radius = 0.065
+        # self.num_wheels = 8
 
+        # wheel_joints_list = [
+        #             'torso_left_shin_front_wheel_joint',
+        #             'torso_left_shin_rear_wheel_joint',
+        #             'torso_right_shin_front_wheel_joint',
+        #             'torso_right_shin_rear_wheel_joint',
+        #             'head_left_shin_front_wheel_joint',
+        #             'head_left_shin_rear_wheel_joint',
+        #             'head_right_shin_front_wheel_joint',
+        #             'head_right_shin_rear_wheel_joint'
+        #         ]
+        # wheel_joint_id = [
+        #     mujoco.mj_name2id(self.mj_model, mujoco.mjtJoint.mjJNT_HINGE.value, f)
+        #     for f in wheel_joints_list
+        # ]
+        # assert not any(id_ == -1 for id_ in wheel_joint_id), 'joint not found.'
+        # self.wheel_joint_id = np.array(wheel_joint_id)
 
+        # self.wheel_joint_ids_in_nv = [] # Store the DOF index for each wheel joint
+        # for joint_name in wheel_joints_list:
+        #     joint_id = mujoco.mj_name2id(self.mj_model, mujoco.mjtObj.mjOBJ_JOINT, joint_name)
+        #     assert joint_id != -1, f"Joint {joint_name} not found in model."
+        #     # The joint's DOF is typically its ID if it's a 1-DOF joint,
+        #     # but it's safer to get the first DOF index of that joint.
+        #     self.wheel_joint_ids_in_nv.append(self.mj_model.jnt_dofadr[joint_id])        
+#__________________________________________________________________________________________________________________
+#__________________________________________________________________________________________________________________
     def equality_constraints(
         self,
         q: MX,
@@ -109,8 +122,122 @@ class AutoGen():
 
         # Dynamics:
         equality_constraints = M @ dv + C - self.B @ u - J_contact @ z
+        # print(equality_constraints)
 
         return equality_constraints
+#__________________________________________________________________________________________________________________
+#__________________________________________________________________________________________________________________
+    # def equality_constraints(
+    #         self,
+    #         q: MX,             # Design vector (contains ddq)
+    #         M: MX,             # Mass matrix
+    #         C: MX,             # Coriolis/bias forces
+    #         J_contact: MX,     # Contact Jacobian (generalized forces due to contact)
+    #         J_wheel_p: MX,     # New: Jacobian (linear vel) for wheel contact points (rows=3*num_wheels, cols=nv_size)
+    #         J_wheel_r: MX,     # New: Jacobian (angular vel) for wheel contact points (rows=3*num_wheels, cols=nv_size)
+    #         J_dot_wheel_p: MX, # New: Jacobian dot (linear) for wheel contact points (rows=3*num_wheels, cols=nv_size)
+    #         J_dot_wheel_r: MX, # New: Jacobian dot (angular) for wheel contact points (rows=3*num_wheels, cols=nv_size)
+    #         wheel_radii: MX,   # New: Vector of wheel radii (num_wheels x 1)
+    #         # You might also need d_roll_vectors and d_lat_vectors if wheels are steerable
+    #         # and their directions are dynamic (passed as parameters from C++).
+    #         # For now, let's assume fixed rolling directions or they are part of J_wheel_p's frame.
+    #     ) -> MX:
+    #         """Equality constraints for the dynamics of a system and no-slip for wheels."""
+
+    #         # Unpack Design Variables:
+    #         dv = q[:self.dv_size] # dv is ddq
+    #         u = q[self.dv_size:self.u_size + self.dv_size]
+    #         z = q[self.u_size + self.dv_size:self.z_size + self.u_size + self.dv_size]
+
+    #         # 1. Dynamics Constraint (as before)
+    #         # M @ ddq + C - B @ u - J_contact.T @ z = 0
+    #         # NOTE: Your current code is `J_contact @ z`. If J_contact is generalized contact Jacobian,
+    #         # it should usually be transposed. Check its definition from CasADi.
+    #         # Assuming J_contact is (nv_size x z_size) and z is (z_size x 1)
+    #         equality_constraints_dynamics = M @ dv + C - self.B @ u - J_contact @ z
+
+
+    #         # 2. No-Slip Constraints for Wheels
+    #         wheel_constraints = []
+    #         for i in range(self.num_wheels):
+    #             # Extract relevant Jacobian rows for the i-th wheel
+    #             # J_p_i: (3 x nv_size) matrix for linear velocity of i-th contact point
+    #             J_p_i = J_wheel_p[3*i : 3*(i+1), :]
+    #             # J_r_i: (3 x nv_size) matrix for angular velocity of i-th contact point (not directly used for no-slip, but for completeness)
+
+    #             # J_dot_p_i: (3 x nv_size) matrix for linear acceleration bias of i-th contact point
+    #             J_dot_p_i = J_dot_wheel_p[3*i : 3*(i+1), :]
+
+    #             # Get the acceleration of the specific wheel joint (ddq_k)
+    #             # Find the DOF index of the i-th wheel joint from self.wheel_joint_ids_in_nv
+    #             wheel_jnt_dof_idx = self.wheel_joint_ids_in_nv[i]
+    #             ddq_k = dv[wheel_jnt_dof_idx] # This is ddq_k
+
+    #             # Get wheel radius for this wheel
+    #             r_wheel = wheel_radii[i]
+
+    #             # Current actual linear acceleration of the contact point: J_p_i @ dv + J_dot_p_i @ current_dq (current_dq is not a symbolic input here)
+    #             # The J_dot_p_i @ dq_current term should be part of the constant bias.
+    #             # Let's assume J_dot_wheel_p has already incorporated the dq_current bias or we're passing it separately.
+
+    #             # We need the d_roll and d_lat vectors. These must be inputs to the CasADi function.
+    #             # Let's assume you'll add them as a new input `wheel_directions` (num_wheels * 6 x 1)
+    #             # where each 6-vector is [d_roll_x, d_roll_y, d_roll_z, d_lat_x, d_lat_y, d_lat_z]
+    #             # It's more robust to compute these in C++ side and pass them symbolically.
+
+    #             # For now, let's simplify and assume the wheel is oriented along x-axis for rolling and y-axis for lateral in its local frame,
+    #             # and the Jacobian directly gives you x,y,z components that align.
+    #             # For a typical wheel, if contact_point_velocity = [vx, vy, vz], then vx is rolling, vy is lateral.
+    #             # This is simpler than d_roll. J_p_i @ dv gets [vx, vy, vz] from symbolic ddq.
+
+    #             # No Longitudinal Slip: (vx_contact = r * omega_wheel)
+    #             # J_p_i[0,:] @ dv  - r_wheel * ddq_k = -(J_dot_p_i[0,:] @ current_dq) # current_dq part goes to RHS (beq)
+    #             # Assuming J_dot_p_i already contains J_dot * dq_current as part of its 'bias' contribution
+    #             # Or (more correctly for symbolic CasADi), CasADi will calculate J_dot * dq_sym.
+    #             # Let's use the explicit form for clarity for now, passing `current_dq` as a symbolic input.
+
+    #             # We need to pass current_dq from C++ to the CasADi function for `J_dot_p_i @ current_dq`
+    #             # Let's update inputs accordingly.
+
+    #             # --- REVISED INPUTS FOR EQUALITY CONSTRAINTS ---
+    #             # To properly handle J_dot * dq for the no-slip constraint, you need to pass:
+    #             # - Joint Velocities (dq_current): As a symbolic input
+    #             # - Wheel direction vectors (d_roll, d_lat): As symbolic inputs (or handle in C++ and pass components)
+    #             # OR, more simply, if J_dot_wheel_p and J_dot_wheel_r are passed as Jacobians,
+    #             # you will compute (J_dot * dq) on the C++ side and pass it as a bias *vector* to CasADi.
+
+    #             # Let's assume `joint_velocities_current` is a new symbolic input (MX) to `equality_constraints`
+    #             # and `wheel_directions` (MX, containing d_roll and d_lat for each wheel) is also a new input.
+
+    #             # Placeholder for calculating the contact point linear acceleration
+    #             contact_lin_accel_i = J_p_i @ dv + J_dot_p_i @ joint_velocities_current # Use the full J_dot for the bias
+
+    #             # Assuming d_roll and d_lat are extracted for wheel `i` from `wheel_directions`
+    #             # Let's say `wheel_directions` is a matrix where row `i` contains [d_roll_x, d_roll_y, d_roll_z, d_lat_x, d_lat_y, d_lat_z]
+    #             # This implies num_wheels rows and 6 columns.
+    #             d_roll_i = wheel_directions[i, 0:3].T
+    #             d_lat_i = wheel_directions[i, 3:6].T
+
+
+    #             # Longitudinal Slip Constraint (target: 0 slip)
+    #             longitudinal_slip = casadi.dot(contact_lin_accel_i, d_roll_i) - r_wheel * ddq_k
+    #             wheel_constraints.append(longitudinal_slip)
+
+    #             # Lateral Slip Constraint (target: 0 slip)
+    #             lateral_slip = casadi.dot(contact_lin_accel_i, d_lat_i)
+    #             wheel_constraints.append(lateral_slip)
+
+    #         # Combine all equality constraints:
+    #         equality_constraints_wheels = casadi.vertcat(*wheel_constraints)
+    #         equality_constraints_all = casadi.vertcat(
+    #             equality_constraints_dynamics,
+    #             equality_constraints_wheels
+    #         )
+
+    #         return equality_constraints_all
+#__________________________________________________________________________________________________________________
+#__________________________________________________________________________________________________________________
+
 
     def inequality_constraints(
         self,
@@ -378,6 +505,38 @@ class AutoGen():
         desired_task_ddx = casadi.MX.sym("desired_task_ddx", self.num_site_ids, 6)
         J_task = casadi.MX.sym("J_task", self.num_site_ids * 6, self.dv_size)
         task_bias = casadi.MX.sym("task_bias", self.num_site_ids * 6)
+
+        # _______________________________________________________________________________________________
+        # _______________________________________________________________________________________________
+        # # --- NEW SYMBOLIC INPUTS FOR WHEEL CONSTRAINTS ---
+        # # 1. joint_velocities_current (symbolic dq)
+        # # This is the current velocity vector (dq_current) from the robot state.
+        # # It's needed to compute the J_dot * dq bias term symbolically.
+        # joint_velocities_current = casadi.MX.sym("joint_velocities_current", self.dv_size)
+
+        # # 2. Wheel Jacobians (linear and angular parts of contact points)
+        # # These are computed in C++ and passed in.
+        # # Assuming you'll pass a single matrix containing Jacobians for all wheel contact points.
+        # # Each wheel has 3 linear vel and 3 angular vel Jacobians, stacked.
+        # # Total rows for linear part = self.num_wheels * 3
+        # # Total rows for angular part = self.num_wheels * 3 (though not used in basic no-slip)
+        # J_wheel_p = casadi.MX.sym("J_wheel_p", self.num_wheels * 3, self.dv_size)
+        # J_wheel_r = casadi.MX.sym("J_wheel_r", self.num_wheels * 3, self.dv_size)
+
+        # # 3. Wheel Jacobian Dots (linear and angular parts of contact points)
+        # # These are computed in C++ and passed in.
+        # J_dot_wheel_p = casadi.MX.sym("J_dot_wheel_p", self.num_wheels * 3, self.dv_size)
+        # J_dot_wheel_r = casadi.MX.sym("J_dot_wheel_r", self.num_wheels * 3, self.dv_size)
+
+        # # 4. Wheel Radii (a vector, in case radii differ)
+        # wheel_radii = casadi.MX.sym("wheel_radii", self.num_wheels)
+        
+        # # 5. Wheel Directions (d_roll and d_lat for each wheel)
+        # # Assuming a matrix: num_wheels rows, 6 columns (3 for d_roll, 3 for d_lat)
+        # wheel_directions = casadi.MX.sym("wheel_directions", self.num_wheels, 6)        
+        # _______________________________________________________________________________________________
+        # _______________________________________________________________________________________________
+
 
         equality_constraint_input = [
             design_vector,

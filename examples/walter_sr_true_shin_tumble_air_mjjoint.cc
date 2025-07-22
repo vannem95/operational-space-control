@@ -186,7 +186,7 @@ int main(int argc, char** argv) {
     mjData* mj_data = mj_makeData(mj_model);
 
     // Reset Data to match Keyframe 2
-    mj_resetDataKeyframe(mj_model, mj_data, 3);
+    mj_resetDataKeyframe(mj_model, mj_data, 2);
 
 
     // Initialize mj_data:
@@ -286,7 +286,7 @@ int main(int argc, char** argv) {
     double visualization_interval = 0.01;
 
     // TEST TIME
-    double simulation_time = 15.0;
+    double simulation_time = 30.0;
     auto current_time = mj_data->time;
 
     // to get points / site position --> we need to build site-ids using sites
@@ -340,10 +340,35 @@ int main(int argc, char** argv) {
     std::vector<double> data6_1;
     std::vector<double> data6_2;
     std::vector<double> data6_3;
+
     std::vector<double> data6t_1;
     std::vector<double> data6t_2;
     std::vector<double> data6t_3;
+    std::vector<double> data6t_4;
+    std::vector<double> data6t_5;
+    std::vector<double> data6t_6;
+    std::vector<double> data6t_7;
+    std::vector<double> data6t_8;
+    std::vector<double> data6t_9;
 
+    std::vector<double> data7_1;
+    std::vector<double> data7_2;
+    std::vector<double> data7_3;
+    std::vector<double> data7_4;
+    std::vector<double> data7_5;
+    std::vector<double> data7_6;
+    std::vector<double> data7_7;
+    std::vector<double> data7_8;
+
+    std::vector<double> data7t_1;
+    std::vector<double> data7t_2;
+    std::vector<double> data7t_3;
+    std::vector<double> data7t_4;
+    std::vector<double> data7t_5;
+    std::vector<double> data7t_6;
+    std::vector<double> data7t_7;
+    std::vector<double> data7t_8;    
+    
     std::vector<double> data_time;
     
 
@@ -368,43 +393,56 @@ int main(int argc, char** argv) {
     // double last_hl_angular_position = acos(initial_site_rotational_data(3,0));
     // double last_hr_angular_position = acos(initial_site_rotational_data(4,0));
 
-    double last_tl_angular_position = atan2(initial_site_rotational_data(1,2),initial_site_rotational_data(1,0));
-    double last_tr_angular_position = atan2(initial_site_rotational_data(2,2),initial_site_rotational_data(2,0));
-    double last_hl_angular_position = atan2(initial_site_rotational_data(3,2),initial_site_rotational_data(3,0));
-    double last_hr_angular_position = atan2(initial_site_rotational_data(4,2),initial_site_rotational_data(4,0));
+    // double last_tl_angular_position = atan2(initial_site_rotational_data(1,2),initial_site_rotational_data(1,0));
+    // double last_tr_angular_position = atan2(initial_site_rotational_data(2,2),initial_site_rotational_data(2,0));
+    // double last_hl_angular_position = atan2(initial_site_rotational_data(3,2),initial_site_rotational_data(3,0));
+    // double last_hr_angular_position = atan2(initial_site_rotational_data(4,2),initial_site_rotational_data(4,0));
 
-    // double initial_tl_angular_position = acos(initial_site_rotational_data(1,0));
-    // double initial_tr_angular_position = acos(initial_site_rotational_data(2,0));
-    // double initial_hl_angular_position = acos(initial_site_rotational_data(3,0));
-    // double initial_hr_angular_position = acos(initial_site_rotational_data(4,0));
+    double last_tl_shin_angle = mj_data->qpos[mj_model->jnt_qposadr[2]];        
+    double last_tr_shin_angle = mj_data->qpos[mj_model->jnt_qposadr[4]];        
+    double last_hl_shin_angle = mj_data->qpos[mj_model->jnt_qposadr[6]];        
+    double last_hr_shin_angle = mj_data->qpos[mj_model->jnt_qposadr[8]];        
+    
+    double last_tl_angular_position = last_tl_shin_angle;
+    double last_tr_angular_position = last_tr_shin_angle;
+    double last_hl_angular_position = last_hl_shin_angle;
+    double last_hr_angular_position = last_hr_shin_angle;
 
-    double initial_tl_angular_position = atan2(initial_site_rotational_data(1,2),initial_site_rotational_data(1,0));
-    double initial_tr_angular_position = atan2(initial_site_rotational_data(2,2),initial_site_rotational_data(2,0));
-    double initial_hl_angular_position = atan2(initial_site_rotational_data(3,2),initial_site_rotational_data(3,0));
-    double initial_hr_angular_position = atan2(initial_site_rotational_data(4,2),initial_site_rotational_data(4,0));
+    // double initial_tl_angular_position = atan2(initial_site_rotational_data(1,2),initial_site_rotational_data(1,0));
+    // double initial_tr_angular_position = atan2(initial_site_rotational_data(2,2),initial_site_rotational_data(2,0));
+    // double initial_hl_angular_position = atan2(initial_site_rotational_data(3,2),initial_site_rotational_data(3,0));
+    // double initial_hr_angular_position = atan2(initial_site_rotational_data(4,2),initial_site_rotational_data(4,0));
+
+    double initial_tl_angular_position = last_tl_shin_angle;
+    double initial_tr_angular_position = last_tr_shin_angle;
+    double initial_hl_angular_position = last_hl_shin_angle;
+    double initial_hr_angular_position = last_hr_shin_angle;
     
     //===================================================
     //  last (for velocity) and initial angular position of the thigh sites 
     //===================================================
-    // double last_tlh_angular_position = acos(initial_site_rotational_data(5,0));
-    // double last_trh_angular_position = acos(initial_site_rotational_data(6,0));
-    // double last_hlh_angular_position = acos(initial_site_rotational_data(7,0));
-    // double last_hrh_angular_position = acos(initial_site_rotational_data(8,0));
 
-    double last_tlh_angular_position = atan2(initial_site_rotational_data(5,2),initial_site_rotational_data(5,0));
-    double last_trh_angular_position = atan2(initial_site_rotational_data(6,2),initial_site_rotational_data(6,0));
-    double last_hlh_angular_position = atan2(initial_site_rotational_data(7,2),initial_site_rotational_data(7,0));
-    double last_hrh_angular_position = atan2(initial_site_rotational_data(8,2),initial_site_rotational_data(8,0));
+    double last_tlh_angular_position = mj_data->qpos[mj_model->jnt_qposadr[1]];        
+    double last_trh_angular_position = mj_data->qpos[mj_model->jnt_qposadr[3]];        
+    double last_hlh_angular_position = mj_data->qpos[mj_model->jnt_qposadr[5]];        
+    double last_hrh_angular_position = mj_data->qpos[mj_model->jnt_qposadr[7]];        
+    
+    double initial_tlh_angular_position = last_tlh_angular_position;
+    double initial_trh_angular_position = last_trh_angular_position;
+    double initial_hlh_angular_position = last_hlh_angular_position;
+    double initial_hrh_angular_position = last_hrh_angular_position;
 
-    // double initial_tlh_angular_position = acos(initial_site_rotational_data(5,0));
-    // double initial_trh_angular_position = acos(initial_site_rotational_data(6,0));
-    // double initial_hlh_angular_position = acos(initial_site_rotational_data(7,0));
-    // double initial_hrh_angular_position = acos(initial_site_rotational_data(8,0));
 
-    double initial_tlh_angular_position = atan2(initial_site_rotational_data(5,2),initial_site_rotational_data(5,0));
-    double initial_trh_angular_position = atan2(initial_site_rotational_data(6,2),initial_site_rotational_data(6,0));
-    double initial_hlh_angular_position = atan2(initial_site_rotational_data(7,2),initial_site_rotational_data(7,0));
-    double initial_hrh_angular_position = atan2(initial_site_rotational_data(8,2),initial_site_rotational_data(8,0));
+    // double last_tlh_angular_position = atan2(initial_site_rotational_data(5,2),initial_site_rotational_data(5,0));
+    // double last_trh_angular_position = atan2(initial_site_rotational_data(6,2),initial_site_rotational_data(6,0));
+    // double last_hlh_angular_position = atan2(initial_site_rotational_data(7,2),initial_site_rotational_data(7,0));
+    // double last_hrh_angular_position = atan2(initial_site_rotational_data(8,2),initial_site_rotational_data(8,0));
+
+
+    // double initial_tlh_angular_position = atan2(initial_site_rotational_data(5,2),initial_site_rotational_data(5,0));
+    // double initial_trh_angular_position = atan2(initial_site_rotational_data(6,2),initial_site_rotational_data(6,0));
+    // double initial_hlh_angular_position = atan2(initial_site_rotational_data(7,2),initial_site_rotational_data(7,0));
+    // double initial_hrh_angular_position = atan2(initial_site_rotational_data(8,2),initial_site_rotational_data(8,0));
 
     //  last (for velocity) linear position of the thigh sites 
     Vector<3> last_tlh_linear_position = initial_site_data(5,Eigen::seqN(0, 3));
@@ -678,18 +716,25 @@ int main(int argc, char** argv) {
         // shin angular position
         // Sinusoidal Position and Velocity Tracking:
         double shin_rot_pos = 0.1*5.0;
-        double shin_rot_vel = 0.1*8.0;
+        // double shin_rot_vel = 0.1*8.0*5.0;
+        double shin_rot_vel = 0.1*8.0*1.0;
+        // double shin_rot_vel = 0.1;
         // double shin_rot_frequency = 0.1;
 
-        // double tl_angular_position = acos(site_rotational_data(1,0));
-        // double tr_angular_position = acos(site_rotational_data(2,0));
-        // double hl_angular_position = acos(site_rotational_data(3,0));
-        // double hr_angular_position = acos(site_rotational_data(4,0));
+        double tl_shin_angle = mj_data->qpos[mj_model->jnt_qposadr[2]];        
+        double tr_shin_angle = mj_data->qpos[mj_model->jnt_qposadr[4]];        
+        double hl_shin_angle = mj_data->qpos[mj_model->jnt_qposadr[6]];        
+        double hr_shin_angle = mj_data->qpos[mj_model->jnt_qposadr[8]];        
+        
+        // double tl_angular_position = atan2(site_rotational_data(1,2),site_rotational_data(1,0));
+        // double tr_angular_position = atan2(site_rotational_data(2,2),site_rotational_data(2,0));
+        // double hl_angular_position = atan2(site_rotational_data(3,2),site_rotational_data(3,0));
+        // double hr_angular_position = atan2(site_rotational_data(4,2),site_rotational_data(4,0));
 
-        double tl_angular_position = atan2(site_rotational_data(1,2),site_rotational_data(1,0));
-        double tr_angular_position = atan2(site_rotational_data(2,2),site_rotational_data(2,0));
-        double hl_angular_position = atan2(site_rotational_data(3,2),site_rotational_data(3,0));
-        double hr_angular_position = atan2(site_rotational_data(4,2),site_rotational_data(4,0));
+        double tl_angular_position = tl_shin_angle;
+        double tr_angular_position = tr_shin_angle;
+        double hl_angular_position = hl_shin_angle;
+        double hr_angular_position = hr_shin_angle;
 
         double tl_angular_velocity = (tl_angular_position - last_tl_angular_position)/(current_time - last_time);
         double tr_angular_velocity = (tr_angular_position - last_tr_angular_position)/(current_time - last_time);
@@ -697,10 +742,10 @@ int main(int argc, char** argv) {
         double hr_angular_velocity = (hr_angular_position - last_hr_angular_position)/(current_time - last_time);
 
         // targets
-        double tl_angular_position_target = wrapToPi(initial_tl_angular_position + shin_rot_vel * current_time);
-        double tr_angular_position_target = wrapToPi(initial_tr_angular_position + shin_rot_vel * current_time);
-        double hl_angular_position_target = wrapToPi(initial_hl_angular_position + shin_rot_vel * current_time);
-        double hr_angular_position_target = wrapToPi(initial_hr_angular_position + shin_rot_vel * current_time);
+        double tl_angular_position_target = initial_tl_angular_position + shin_rot_vel * current_time;
+        double tr_angular_position_target = initial_tr_angular_position + shin_rot_vel * current_time;
+        double hl_angular_position_target = initial_hl_angular_position + shin_rot_vel * current_time;
+        double hr_angular_position_target = initial_hr_angular_position + shin_rot_vel * current_time;
 
         // double tl_angular_position_target = wrapToPi(tl_angular_position + shin_rot_pos);
         // double tr_angular_position_target = wrapToPi(tr_angular_position + shin_rot_pos);
@@ -729,11 +774,16 @@ int main(int argc, char** argv) {
         double hl_angular_velocity_error = (hl_angular_velocity_target - hl_angular_velocity);
         double hr_angular_velocity_error = (hr_angular_velocity_target - hr_angular_velocity);
 
-        // double shin_kp = 100; 
+        // double shin_kp = 850; 
         // double shin_kv = 200;
-        double shin_kp = 0.0; 
         // double shin_kp = 10.0; 
-        double shin_kv = 700.0;
+        // double shin_kv = 800.0;
+
+        double shin_kp = 800.0 * 5.0 * 3.0; 
+        double shin_kv = 800.0 * 5.0;
+
+        // double shin_kp = 1000.0; 
+        // double shin_kv = 200.0;
 
         double tl_angular_control = shin_kp * (tl_angular_position_error) + shin_kv * (tl_angular_velocity_error);
         double tr_angular_control = shin_kp * (tr_angular_position_error) + shin_kv * (tr_angular_velocity_error);
@@ -785,17 +835,17 @@ int main(int argc, char** argv) {
         // constant position and zero velocity Tracking:
         double thigh_rot_vel = 0.0;
         double thigh_kp = 1000.0;
-        double thigh_kv = 100.0;
+        double thigh_kv = 1000.0;
 
         // double tlh_angular_position = acos(site_rotational_data(5,0));
         // double trh_angular_position = acos(site_rotational_data(6,0));
         // double hlh_angular_position = acos(site_rotational_data(7,0));
         // double hrh_angular_position = acos(site_rotational_data(8,0));
 
-        double tlh_angular_position = atan2(site_rotational_data(5,2),site_rotational_data(5,0));
-        double trh_angular_position = atan2(site_rotational_data(6,2),site_rotational_data(6,0));
-        double hlh_angular_position = atan2(site_rotational_data(7,2),site_rotational_data(7,0));
-        double hrh_angular_position = atan2(site_rotational_data(8,2),site_rotational_data(8,0));
+        double tlh_angular_position = mj_data->qpos[mj_model->jnt_qposadr[1]];
+        double trh_angular_position = mj_data->qpos[mj_model->jnt_qposadr[3]];
+        double hlh_angular_position = mj_data->qpos[mj_model->jnt_qposadr[5]];
+        double hrh_angular_position = mj_data->qpos[mj_model->jnt_qposadr[7]];
 
         // double tlh_angular_position_new = atan2(site_rotational_data(5,2),site_rotational_data(5,0));
 
@@ -806,11 +856,16 @@ int main(int argc, char** argv) {
         double hrh_angular_velocity = (hrh_angular_position - last_hrh_angular_position)/(current_time - last_time);
 
         // targets
-        double tlh_angular_position_target = wrapToPi(initial_tlh_angular_position + M_PI/5.0 + thigh_rot_vel * current_time);
-        double trh_angular_position_target = wrapToPi(initial_trh_angular_position + M_PI/5.0 + thigh_rot_vel * current_time);
-        double hlh_angular_position_target = wrapToPi(initial_hlh_angular_position - M_PI/3.0 + thigh_rot_vel * current_time);
-        double hrh_angular_position_target = wrapToPi(initial_hrh_angular_position - M_PI/3.0 + thigh_rot_vel * current_time);
+        // double tlh_angular_position_target = wrapToPi(initial_tlh_angular_position + M_PI/5.0 + thigh_rot_vel * current_time);
+        // double trh_angular_position_target = wrapToPi(initial_trh_angular_position + M_PI/5.0 + thigh_rot_vel * current_time);
+        // double hlh_angular_position_target = wrapToPi(initial_hlh_angular_position - M_PI/3.0 + thigh_rot_vel * current_time);
+        // double hrh_angular_position_target = wrapToPi(initial_hrh_angular_position - M_PI/3.0 + thigh_rot_vel * current_time);
 
+        double tlh_angular_position_target = (initial_tlh_angular_position  + thigh_rot_vel * current_time);
+        double trh_angular_position_target = (initial_trh_angular_position  + thigh_rot_vel * current_time);
+        double hlh_angular_position_target = (initial_hlh_angular_position  + thigh_rot_vel * current_time);
+        double hrh_angular_position_target = (initial_hrh_angular_position  + thigh_rot_vel * current_time);
+        
         double tlh_angular_velocity_target = thigh_rot_vel;
         double trh_angular_velocity_target = thigh_rot_vel;
         double hlh_angular_velocity_target = thigh_rot_vel;
@@ -843,8 +898,13 @@ int main(int argc, char** argv) {
         // double thigh_lin_kp = 400.0;
         // double thigh_lin_kv = 60.0;
 
-        double thigh_lin_kp = 4000.0 * 2.0;
-        double thigh_lin_kv = 600.0 * 2.0;
+        // double thigh_lin_kp = 4000.0 * 2.0;
+        // double thigh_lin_kv = 600.0 * 2.0;
+
+        double thigh_lin_kp = 4000.0 * 0.5;
+        double thigh_lin_kv = 600.0 * 0.5;
+
+
 
         Vector<3> tlh_linear_position = site_data(5,Eigen::seqN(0, 3));
         Vector<3> trh_linear_position = site_data(6,Eigen::seqN(0, 3));
@@ -911,16 +971,16 @@ int main(int argc, char** argv) {
         // Eigen::Vector<double, 6> cmd7 {0, 0, hlh_linear_control, 0, hlh_angular_control, 0};        
         // Eigen::Vector<double, 6> cmd8 {0, 0, hrh_linear_control, 0, hrh_angular_control, 0};        
 
-        Eigen::Vector<double, 6> cmd5 {0, 0, tlh_linear_control, 0, 0, 0};        
-        Eigen::Vector<double, 6> cmd6 {0, 0, trh_linear_control, 0, 0, 0};        
-        Eigen::Vector<double, 6> cmd7 {0, 0, hlh_linear_control, 0, 0, 0};        
-        Eigen::Vector<double, 6> cmd8 {0, 0, hrh_linear_control, 0, 0, 0};        
+        // Eigen::Vector<double, 6> cmd5 {0, 0, tlh_linear_control, 0, 0, 0};        
+        // Eigen::Vector<double, 6> cmd6 {0, 0, trh_linear_control, 0, 0, 0};        
+        // Eigen::Vector<double, 6> cmd7 {0, 0, hlh_linear_control, 0, 0, 0};        
+        // Eigen::Vector<double, 6> cmd8 {0, 0, hrh_linear_control, 0, 0, 0};        
 
 
-        // Eigen::Vector<double, 6> cmd5 {0, 0, 0, 0, tlh_angular_control, 0};        
-        // Eigen::Vector<double, 6> cmd6 {0, 0, 0, 0, trh_angular_control, 0};        
-        // Eigen::Vector<double, 6> cmd7 {0, 0, 0, 0, hlh_angular_control, 0};        
-        // Eigen::Vector<double, 6> cmd8 {0, 0, 0, 0, hrh_angular_control, 0};        
+        Eigen::Vector<double, 6> cmd5 {0, 0, 0, 0, tlh_angular_control, 0};        
+        Eigen::Vector<double, 6> cmd6 {0, 0, 0, 0, trh_angular_control, 0};        
+        Eigen::Vector<double, 6> cmd7 {0, 0, 0, 0, hlh_angular_control, 0};        
+        Eigen::Vector<double, 6> cmd8 {0, 0, 0, 0, hrh_angular_control, 0};        
 
         // Eigen::Vector<double, 6> cmd5 {0, 0, 0, 0, 0.1, 0};        
         // Eigen::Vector<double, 6> cmd6 {0, 0, 0, 0, 0.1, 0};        
@@ -978,8 +1038,11 @@ int main(int argc, char** argv) {
         // double torso_ang_kp = 10.0;
         // double torso_ang_kv = 10.0;
 
-        double torso_ang_kp = 5.0;
-        double torso_ang_kv = 1.0;        
+        // double torso_ang_kp = 5.0;
+        // double torso_ang_kv = 1.0;        
+
+        double torso_ang_kp = 0.0;
+        double torso_ang_kv = 0.0;        
 
         Vector<3> linear_control = torso_lin_kp * (position_error) + torso_lin_kv * (velocity_error);
         Vector<3> angular_control = torso_ang_kp * (rotation_error) + torso_ang_kv * (angular_velocity_error);
@@ -1050,19 +1113,18 @@ int main(int argc, char** argv) {
         data5_2.push_back(rotation_error(1));
         data5_3.push_back(rotation_error(2));
 
-        double tl_shin_angle = mj_data->qpos[mj_model->jnt_qposadr[2]];        
         
-        data5t_1.push_back(tl_shin_angle);
-        data5t_2.push_back(0);
-        data5t_3.push_back(0);
+        // data5t_1.push_back(0);
+        // data5t_2.push_back(0);
+        // data5t_3.push_back(0);
 
         // angular velocity error
         data6_1.push_back(angular_velocity_error(0));
         data6_2.push_back(angular_velocity_error(1));
         data6_3.push_back(angular_velocity_error(2));
-        data6t_1.push_back(0);
-        data6t_2.push_back(0);
-        data6t_3.push_back(0);
+        // data6t_1.push_back(0);
+        // data6t_2.push_back(0);
+        // data6t_3.push_back(0);
 
         // time
         data_time.push_back(current_time);
@@ -1093,9 +1155,132 @@ int main(int argc, char** argv) {
         // Get Torque Command:
         Vector<model::nu_size> torque_command = controller.get_torque_command();
 
+
+        data5t_1.push_back(0);
+        data5t_2.push_back(0);
+        data5t_3.push_back(0);
+
+        data6t_1.push_back(torque_command[0]);
+        data6t_2.push_back(torque_command[1]);
+        data6t_3.push_back(torque_command[2]);        
+        data6t_4.push_back(torque_command[3]);
+        data6t_5.push_back(torque_command[4]);
+        data6t_6.push_back(torque_command[5]);        
+        data6t_7.push_back(torque_command[6]);
+        data6t_8.push_back(torque_command[7]);
+        data6t_9.push_back(0);
+
+
+        // ________________________________________________________________________
+        // ________________________________________________________________________
+        // Access joint accelerations with their names
+        // std::cout << "Joint Accelerations (qacc):" << std::endl;
+
+        // // Iterate through each joint
+        // for (int i = 0; i < mj_model->njnt; ++i) {
+        //     const char* joint_name = mj_id2name(mj_model, mjOBJ_JOINT, i);
+
+        //     // Get the starting index in qacc for this joint's DOFs
+        //     // m->jnt_dofadr[i] gives the starting index in d->qvel/d->qacc
+        //     int dof_start_idx = mj_model->jnt_dofadr[i];
+
+        //     // Get the number of degrees of freedom for this joint
+        //     // m->jnt_nv[i] gives the number of DOFs for the i-th joint
+        //     int num_dofs_for_this_joint = mj_model->jnt_type[i];
+
+        //     if (joint_name) {
+        //         std::cout << "  Joint Name: " << joint_name << " (ID: " << i << ")" << std::endl;
+        //     } else {
+        //         std::cout << "  Joint ID: " << i << " (unnamed)" << std::endl;
+        //     }
+
+        //     // Print the qacc values for this specific joint's DOFs
+        //     for (int j = 0; j < num_dofs_for_this_joint; ++j) {
+        //         std::cout << "    DOF " << j << " (qacc index " << dof_start_idx + j << "): "
+        //                 << mj_data->qacc[dof_start_idx + j] << std::endl;
+        //     }
+        // }       
+        // ________________________________________________________________________
+        // Iterate through each joint
+        // for (int i = 0; i < mj_model->njnt; ++i) {
+        //     const char* joint_name = mj_id2name(mj_model, mjOBJ_JOINT, i);
+
+        //     // Get the starting index in qacc for this joint's DOFs
+        //     int dof_start_idx = mj_model->jnt_dofadr[i];
+
+        //     // --- CORRECTED PART: Determine number of DOFs based on joint type ---
+        //     int num_dofs_for_this_joint = 0;
+        //     switch (mj_model->jnt_type[i]) {
+        //         case mjJNT_FREE:
+        //             num_dofs_for_this_joint = 6;
+        //             break;
+        //         case mjJNT_BALL:
+        //             num_dofs_for_this_joint = 3;
+        //             break;
+        //         case mjJNT_HINGE:
+        //         case mjJNT_SLIDE:
+        //             num_dofs_for_this_joint = 1;
+        //             break;
+        //         default:
+        //             std::cerr << "Warning: Unknown joint type encountered for joint ID " << i << std::endl;
+        //             break;
+        //     }
+        //     // --- END CORRECTED PART ---
+
+        //     if (joint_name) {
+        //         std::cout << "  Joint Name: " << joint_name << " (ID: " << i << ")" << std::endl;
+        //     } else {
+        //         std::cout << "  Joint ID: " << i << " (unnamed)" << std::endl;
+        //     }
+
+        //     // Print the qacc values for this specific joint's DOFs
+        //     for (int j = 0; j < num_dofs_for_this_joint; ++j) {
+        //         std::cout << "    DOF " << j << " (qacc index " << dof_start_idx + j << "): "
+        //                 << mj_data->qacc[dof_start_idx + j] << std::endl;
+        //     }
+        // }        
+        // ________________________________________________________________________
+        // Joint Name: torso_left_thigh_joint (ID: 1)
+        //     DOF 0 (qacc index 6): -3.95186e-05
+        // Joint Name: torso_left_thigh_shin_joint (ID: 2)
+        //     DOF 0 (qacc index 7): -0.00071285
+        // Joint Name: torso_right_thigh_joint (ID: 3)
+        //     DOF 0 (qacc index 8): -3.95186e-05
+        // Joint Name: torso_right_thigh_shin_joint (ID: 4)
+        //     DOF 0 (qacc index 9): -0.00071285
+        // Joint Name: head_left_thigh_joint (ID: 5)
+        //     DOF 0 (qacc index 10): -4.41952e-05
+        // Joint Name: head_left_thigh_shin_joint (ID: 6)
+        //     DOF 0 (qacc index 11): -0.00070897
+        // Joint Name: head_right_thigh_joint (ID: 7)
+        //     DOF 0 (qacc index 12): -4.41952e-05
+        // Joint Name: head_right_thigh_shin_joint (ID: 8)
+        //     DOF 0 (qacc index 13): -0.00070897
+        // ________________________________________________________________________    
+
+
+
+        
         // Update Mujoco Data and Step:
         mj_data->ctrl = torque_command.data();
         mj_step(mj_model, mj_data);
+
+
+
+        // ________________________________________________________________________    
+        data7_1.push_back(mj_data->qacc[6]);
+        data7_2.push_back(mj_data->qacc[7]);
+        data7_3.push_back(mj_data->qacc[8]);        
+        data7_4.push_back(mj_data->qacc[9]);
+        data7_5.push_back(mj_data->qacc[10]);
+        data7_6.push_back(mj_data->qacc[11]);        
+        data7_7.push_back(mj_data->qacc[12]);
+        data7_8.push_back(mj_data->qacc[13]);        
+        // ________________________________________________________________________    
+
+
+
+
 
         if(visualization_timer > visualization_interval) {
             visualization_start_time = mj_data->time;
@@ -1128,7 +1313,8 @@ int main(int argc, char** argv) {
             << "data3_1 data3_2 data3_3 data3_4 data3t_1 data3t_2 data3t_3 data3t_4 "
             << "data4_1 data4_2 data4_3 data4_4 data4t_1 data4t_2 data4t_3 data4t_4 "
             << "data5_1 data5_2 data5_3 data5t_1 data5t_2 data5t_3 "
-            << "data6_1 data6_2 data6_3 data6t_1 data6t_2 data6t_3 " << std::endl;
+            << "data6_1 data6_2 data6_3 data6t_1 data6t_2 data6t_3 data6t_4 data6t_5 data6t_6 data6t_7 data6t_8 data6t_9 "
+            << "data7_1 data7_2 data7_3 data7_4 data7_5 data7_6 data7_7 data7_8 " << std::endl;
 
         for (size_t i = 0; i < data1_1.size(); ++i) {
             // Inside your loop where 'i' iterates from 0 to data1_1.size() - 1
@@ -1148,8 +1334,11 @@ int main(int argc, char** argv) {
                     << data5_1[i] << " " << data5_2[i] << " " << data5_3[i] << " "
                     << data5t_1[i] << " " << data5t_2[i] << " " << data5t_3[i] << " "
 
-                << data6_1[i] << " " << data6_2[i] << " " << data6_3[i]  << " "
-                << data6t_1[i] << " " << data6t_2[i] << " " << data6t_3[i]  << std::endl;            
+                    << data6_1[i] << " " << data6_2[i] << " " << data6_3[i]  << " "
+                    << data6t_1[i] << " " << data6t_2[i] << " " << data6t_3[i] << " " << data6t_4[i] << " " << data6t_5[i] << " " << data6t_6[i] << " " << data6t_7[i] << " " << data6t_8[i] << " " << data6t_9[i]  << " "            
+
+                    << data7_1[i] << " " << data7_2[i] << " " << data7_3[i] << " " << data7_4[i] << " " << data7_5[i] << " " << data7_6[i] << " " << data7_7[i] << " " << data7_8[i] << std::endl;            
+
         }
         outfile.close();
         std::cout << "Data saved to data.txt" << std::endl;

@@ -306,18 +306,6 @@ class OperationalSpaceController {
             //     2.64, 1.076,
             //     2.64, 1.076
             // };
-            // Vector<model::nu_size> u_lb = {
-            //     -infinity, -infinity,
-            //     -infinity, -infinity,
-            //     -infinity, -infinity,
-            //     -infinity, -infinity
-            // };
-            // Vector<model::nu_size> u_ub = {
-            //     infinity, infinity,
-            //     infinity, infinity,
-            //     infinity, infinity,
-            //     infinity, infinity
-            // };
             Vector<model::nu_size> u_lb = {
                 -1000, -1000,
                 -1000, -1000,
@@ -329,7 +317,19 @@ class OperationalSpaceController {
                 1000, 1000,
                 1000, 1000,
                 1000, 1000
-            };            
+            };
+            // Vector<model::nu_size> u_lb = {
+            //     -100, -100,
+            //     -100, -100,
+            //     -100, -100,
+            //     -100, -100
+            // };
+            // Vector<model::nu_size> u_ub = {
+            //     100, 100,
+            //     100, 100,
+            //     100, 100,
+            //     100, 100
+            // };            
             Vector<optimization::z_size> z_lb = {
                 -infinity, -infinity, 0.0,
                 -infinity, -infinity, 0.0,

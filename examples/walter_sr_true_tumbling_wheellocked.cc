@@ -11,10 +11,10 @@
 #include "Eigen/Dense"
 #include "GLFW/glfw3.h"
 
-#include "operational-space-control/walter_sr/aliases.h"
-#include "operational-space-control/walter_sr/containers.h"
-#include "operational-space-control/walter_sr/constants.h"
-#include "operational-space-control/walter_sr/operational_space_controller.h"
+#include "operational-space-control/walter_sr_wheels/aliases.h"
+#include "operational-space-control/walter_sr_wheels/containers.h"
+#include "operational-space-control/walter_sr_wheels/constants.h"
+#include "operational-space-control/walter_sr_wheels/operational_space_controller.h"
 
 using namespace operational_space_controller::aliases;
 using namespace operational_space_controller::containers;
@@ -171,10 +171,10 @@ int main(int argc, char** argv) {
     );
 
     std::filesystem::path osc_model_path = 
-        runfiles->Rlocation("mujoco-models/models/walter_sr/WaLTER_Senior.xml");
+        runfiles->Rlocation("mujoco-models/models/walter_sr/WaLTER_Senior_wheels.xml");
     
     std::filesystem::path simulation_model_path = 
-        runfiles->Rlocation("mujoco-models/models/walter_sr/scene_walter_sr.xml");
+        runfiles->Rlocation("mujoco-models/models/walter_sr/scene_walter_sr_wheels.xml");
 
     // Load Simulation Model
     char mj_error[1000];
@@ -204,7 +204,7 @@ int main(int argc, char** argv) {
 
     // Create GLFW window
     glfwInit();
-    GLFWwindow* window = glfwCreateWindow(800, 600, "Slow tumbling", NULL, NULL);
+    GLFWwindow* window = glfwCreateWindow(800, 600, "walter sr wheels - test", NULL, NULL);
     glfwMakeContextCurrent(window);
     glfwSwapInterval(1);
 
@@ -772,10 +772,10 @@ int main(int argc, char** argv) {
         // Eigen::Vector<double, 6> cmd4 {0, 0, 0, 0, 0.8*1e3, 0};        
 
 
-        taskspace_targets.row(1) = cmd1;
-        taskspace_targets.row(2) = cmd2;
-        taskspace_targets.row(3) = cmd3;
-        taskspace_targets.row(4) = cmd4;
+        // taskspace_targets.row(1) = cmd1;
+        // taskspace_targets.row(2) = cmd2;
+        // taskspace_targets.row(3) = cmd3;
+        // taskspace_targets.row(4) = cmd4;
 
 
         // ------------------------------------------------------------------------------------------------------------------------------------
@@ -938,10 +938,10 @@ int main(int argc, char** argv) {
         // Eigen::Vector<double, 6> cmd4 {0, 0, 0, 0, 0.8*1e3, 0};        
 
 
-        taskspace_targets.row(5) = cmd5;
-        taskspace_targets.row(6) = cmd6;
-        taskspace_targets.row(7) = cmd7;
-        taskspace_targets.row(8) = cmd8;        
+        // taskspace_targets.row(5) = cmd5;
+        // taskspace_targets.row(6) = cmd6;
+        // taskspace_targets.row(7) = cmd7;
+        // taskspace_targets.row(8) = cmd8;        
 
 
         // ------------------------------------------------------------------------------------------------------------------------------------
@@ -1049,10 +1049,7 @@ int main(int argc, char** argv) {
         data5_1.push_back(rotation_error(0));
         data5_2.push_back(rotation_error(1));
         data5_3.push_back(rotation_error(2));
-
-        double tl_shin_angle = mj_data->qpos[mj_model->jnt_qposadr[2]];        
-        
-        data5t_1.push_back(tl_shin_angle);
+        data5t_1.push_back(0);
         data5t_2.push_back(0);
         data5t_3.push_back(0);
 
@@ -1066,26 +1063,6 @@ int main(int argc, char** argv) {
 
         // time
         data_time.push_back(current_time);
-
-
-        // print joints and joint ids
-        // for (int i = 0; i < mj_model->njnt; ++i) {
-        //     // Get the joint ID (which is 'i' in this loop)
-        //     int joint_id = i;
-
-        //     // Get the joint name using mj_id2name
-        //     // mj_id2name returns a const char*
-        //     const char* joint_name = mj_id2name(mj_model, mjOBJ_JOINT, joint_id);
-
-        //     // Print the ID and name
-        //     if (joint_name) {
-        //         std::cout << "ID: " << joint_id << ", Name: " << joint_name << std::endl;
-        //     } else {
-        //         // This case typically indicates an unnamed joint
-        //         std::cout << "ID: " << joint_id << ", Name: (Unnamed Joint)" << std::endl;
-        //     }
-        // }
-
 
 
         controller.update_taskspace_targets(taskspace_targets);
@@ -1148,8 +1125,8 @@ int main(int argc, char** argv) {
                     << data5_1[i] << " " << data5_2[i] << " " << data5_3[i] << " "
                     << data5t_1[i] << " " << data5t_2[i] << " " << data5t_3[i] << " "
 
-                << data6_1[i] << " " << data6_2[i] << " " << data6_3[i]  << " "
-                << data6t_1[i] << " " << data6t_2[i] << " " << data6t_3[i]  << std::endl;            
+                    << data6_1[i] << " " << data6_2[i] << " " << data6_3[i]  << " "
+                    << data6t_1[i] << " " << data6t_2[i] << " " << data6t_3[i]  << std::endl;            
         }
         outfile.close();
         std::cout << "Data saved to data.txt" << std::endl;

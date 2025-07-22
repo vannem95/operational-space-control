@@ -170,3 +170,118 @@ cc_binary(
         "@bazel_tools//tools/cpp/runfiles",
     ],
 )
+
+cc_binary(
+    name = "walter_sr_true_tumbling_wheellocked",
+    srcs = ["walter_sr_true_tumbling_wheellocked.cc"],
+    data = ["@mujoco-models//:walter_sr_wheels"],
+    deps = [
+        "//operational-space-control/walter_sr_wheels:operational_space_controller",
+        "//operational-space-control/walter_sr_wheels:aliases",
+        "//operational-space-control/walter_sr_wheels:constants",
+        "//operational-space-control/walter_sr_wheels:containers",
+        "@mujoco-bazel//:mujoco",
+        "@eigen//:eigen",
+        "@glfw-bazel//:glfw",
+        "@abseil-cpp//absl/log:absl_check",
+        "@abseil-cpp//absl/status:status",
+        "@rules_cc//cc/runfiles:runfiles",
+        "@bazel_tools//tools/cpp/runfiles",
+    ],
+)
+
+cc_binary(
+    name = "walter_sr_true_tumbling_mjjoint",
+    srcs = ["walter_sr_true_tumbling_mjjoint.cc"],
+    data = ["@mujoco-models//:walter_sr"],
+    deps = [
+        "//operational-space-control/walter_sr:operational_space_controller",
+        "//operational-space-control/walter_sr:aliases",
+        "//operational-space-control/walter_sr:constants",
+        "//operational-space-control/walter_sr:containers",
+        "@mujoco-bazel//:mujoco",
+        "@eigen//:eigen",
+        "@glfw-bazel//:glfw",
+        "@abseil-cpp//absl/log:absl_check",
+        "@abseil-cpp//absl/status:status",
+        "@rules_cc//cc/runfiles:runfiles",
+        "@bazel_tools//tools/cpp/runfiles",
+    ],
+)
+
+cc_binary(
+    name = "walter_sr_true_stairclimbing_mjjoint",
+    srcs = ["walter_sr_true_stairclimbing_mjjoint.cc"],
+    data = ["@mujoco-models//:walter_sr"],
+    deps = [
+        "//operational-space-control/walter_sr:operational_space_controller",
+        "//operational-space-control/walter_sr:aliases",
+        "//operational-space-control/walter_sr:constants",
+        "//operational-space-control/walter_sr:containers",
+        "@mujoco-bazel//:mujoco",
+        "@eigen//:eigen",
+        "@glfw-bazel//:glfw",
+        "@abseil-cpp//absl/log:absl_check",
+        "@abseil-cpp//absl/status:status",
+        "@rules_cc//cc/runfiles:runfiles",
+        "@bazel_tools//tools/cpp/runfiles",
+    ],
+)
+
+cc_binary(
+    name = "walter_sr_true_tumbling_mjjoint_light",
+    srcs = ["walter_sr_true_tumbling_mjjoint_light.cc"],
+    data = ["@mujoco-models//:walter_sr"],
+    deps = [
+        "//operational-space-control/walter_sr:operational_space_controller",
+        "//operational-space-control/walter_sr:aliases",
+        "//operational-space-control/walter_sr:constants",
+        "//operational-space-control/walter_sr:containers",
+        "@mujoco-bazel//:mujoco",
+        "@eigen//:eigen",
+        "@glfw-bazel//:glfw",
+        "@abseil-cpp//absl/log:absl_check",
+        "@abseil-cpp//absl/status:status",
+        "@rules_cc//cc/runfiles:runfiles",
+        "@bazel_tools//tools/cpp/runfiles",
+    ],
+)
+
+
+cc_binary(
+    name = "walter_sr_true_shin_tumble_air_mjjoint",
+    srcs = ["walter_sr_true_shin_tumble_air_mjjoint.cc"],
+    data = ["@mujoco-models//:walter_sr"],
+    deps = [
+        "//operational-space-control/walter_sr:operational_space_controller",
+        "//operational-space-control/walter_sr:aliases",
+        "//operational-space-control/walter_sr:constants",
+        "//operational-space-control/walter_sr:containers",
+        "@mujoco-bazel//:mujoco",
+        "@eigen//:eigen",
+        "@glfw-bazel//:glfw",
+        "@abseil-cpp//absl/log:absl_check",
+        "@abseil-cpp//absl/status:status",
+        "@rules_cc//cc/runfiles:runfiles",
+        "@bazel_tools//tools/cpp/runfiles",
+    ],
+)
+
+cc_binary(
+    name = "walter_sr_true_mjjoint_light_stairclimbing",
+    srcs = ["walter_sr_true_mjjoint_light_stairclimbing.cc"],
+    data = ["@mujoco-models//:walter_sr"],
+    deps = [
+        "//operational-space-control/walter_sr:operational_space_controller",
+        "//operational-space-control/walter_sr:aliases",
+        "//operational-space-control/walter_sr:constants",
+        "//operational-space-control/walter_sr:containers",
+        "@mujoco-bazel//:mujoco",
+        "@eigen//:eigen",
+        "@glfw-bazel//:glfw",
+        "@abseil-cpp//absl/log:absl_check",
+        "@abseil-cpp//absl/status:status",
+        "@rules_cc//cc/runfiles:runfiles",
+        "@bazel_tools//tools/cpp/runfiles",
+    ],
+)

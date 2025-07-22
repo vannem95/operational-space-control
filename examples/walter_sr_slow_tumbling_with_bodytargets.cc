@@ -170,7 +170,8 @@ int main(int argc, char** argv) {
     );
 
     std::filesystem::path osc_model_path = 
-        runfiles->Rlocation("mujoco-models/models/walter_sr/WaLTER_Senior_wheels.xml");
+        runfiles->Rlocation("mujoco-models/models/walter_sr/WaLTER_Senior.xml");
+        // runfiles->Rlocation("mujoco-models/models/walter_sr/WaLTER_Senior_wheels.xml");
     
     std::filesystem::path simulation_model_path = 
         // runfiles->Rlocation("mujoco-models/models/walter_sr/scene_walter_sr.xml");
@@ -298,16 +299,67 @@ int main(int argc, char** argv) {
     std::vector<int> site_ids;
 
     // initialize data array variables to record
-    std::vector<double> data1;
-    std::vector<double> data2;
-    std::vector<double> data3;
-    std::vector<double> data4;
-    std::vector<double> data5;
-    std::vector<double> data6;
-    std::vector<double> data7;
-    std::vector<double> data8;
-    std::vector<double> data9;
-    std::vector<double> data10;
+    std::vector<double> data1_1;
+    std::vector<double> data1_2;
+    std::vector<double> data1_3;
+    std::vector<double> data1_4;
+    std::vector<double> data1t_1;
+    std::vector<double> data1t_2;
+    std::vector<double> data1t_3;
+    std::vector<double> data1t_4;
+
+    std::vector<double> data2_1;
+    std::vector<double> data2_2;
+    std::vector<double> data2_3;
+    std::vector<double> data2_4;
+    std::vector<double> data2t_1;
+    std::vector<double> data2t_2;
+    std::vector<double> data2t_3;
+    std::vector<double> data2t_4;    
+
+    std::vector<double> data3_1;
+    std::vector<double> data3_2;
+    std::vector<double> data3_3;
+    std::vector<double> data3_4;
+    std::vector<double> data3t_1;
+    std::vector<double> data3t_2;
+    std::vector<double> data3t_3;
+    std::vector<double> data3t_4;    
+
+    std::vector<double> data4_1;
+    std::vector<double> data4_2;
+    std::vector<double> data4_3;
+    std::vector<double> data4_4;
+    std::vector<double> data4t_1;
+    std::vector<double> data4t_2;
+    std::vector<double> data4t_3;
+    std::vector<double> data4t_4;    
+
+    std::vector<double> data5_1;
+    std::vector<double> data5_2;
+    std::vector<double> data5_3;
+    std::vector<double> data5_4;
+    std::vector<double> data5t_1;
+    std::vector<double> data5t_2;
+    std::vector<double> data5t_3;
+    std::vector<double> data5t_4;
+    
+    std::vector<double> data6_1;
+    std::vector<double> data6_2;
+    std::vector<double> data6_3;
+    std::vector<double> data6t_1;
+    std::vector<double> data6t_2;
+    std::vector<double> data6t_3;
+
+    std::vector<double> data7_1;
+    std::vector<double> data7_2;
+    std::vector<double> data7_3;
+    std::vector<double> data7t_1;
+    std::vector<double> data7t_2;
+    std::vector<double> data7t_3;
+
+    std::vector<double> data_time;
+
 
     // loop to get site ids
     for(const std::string_view& site : model::site_list) {
@@ -641,7 +693,7 @@ int main(int argc, char** argv) {
         // shin angular position
         // Sinusoidal Position and Velocity Tracking:
         double shin_rot_pos = 0.1*5.0;
-        double shin_rot_vel = 0.1*4.0;
+        double shin_rot_vel = 0.1*8.0;
         // double shin_rot_frequency = 0.1;
 
         // double tl_angular_position = acos(site_rotational_data(1,0));
@@ -1014,16 +1066,65 @@ int main(int argc, char** argv) {
         // tl_shin_data.push_back(body_position(2));
         // time_data.push_back(current_time);
         
-        data1.push_back(tls_linear_control(0)); 
-        data2.push_back(trh_linear_velocity(0)); 
-        data3.push_back(hlh_linear_velocity(0)); 
-        data4.push_back(hrh_linear_velocity(0));
-        data5.push_back((initial_site_data(5,0) - 0.0 + thigh_targetx)); 
-        data6.push_back(tlh_linear_position(0)); 
-        data7.push_back(hlh_linear_controlx); 
-        data8.push_back(hrh_linear_controlx); 
-        data9.push_back(mj_data->ncon); 
-        data10.push_back(current_time); 
+
+        // shin angular position 
+        data1_1.push_back(tl_angular_position);
+        data1_2.push_back(tr_angular_position);
+        data1_3.push_back(hl_angular_position);
+        data1_4.push_back(hr_angular_position);
+        data1t_1.push_back(tl_angular_position_target);
+        data1t_2.push_back(tr_angular_position_target);
+        data1t_3.push_back(hl_angular_position_target);
+        data1t_4.push_back(hr_angular_position_target);
+
+        // shin angular velocity
+        data2_1.push_back(tl_angular_velocity);
+        data2_2.push_back(tr_angular_velocity);
+        data2_3.push_back(hl_angular_velocity);
+        data2_4.push_back(hr_angular_velocity);
+        data2t_1.push_back(tl_angular_velocity_target);
+        data2t_2.push_back(tr_angular_velocity_target);
+        data2t_3.push_back(hl_angular_velocity_target);
+        data2t_4.push_back(hr_angular_velocity_target);
+
+        // thigh z position
+        data3_1.push_back(tlh_linear_position(2));
+        data3_2.push_back(trh_linear_position(2));
+        data3_3.push_back(hlh_linear_position(2));
+        data3_4.push_back(hrh_linear_position(2));
+        data3t_1.push_back(initial_site_data(5,2) - 0.0 + thigh_height_increase_stairs);
+        data3t_2.push_back(initial_site_data(6,2) - 0.0 + thigh_height_increase_stairs);
+        data3t_3.push_back(initial_site_data(7,2) - 0.0 + thigh_height_increase_stairs);
+        data3t_4.push_back(initial_site_data(8,2) - 0.0 + thigh_height_increase_stairs);
+
+        // thigh z velocity
+        data4_1.push_back(tlh_linear_velocity(2));
+        data4_2.push_back(trh_linear_velocity(2));
+        data4_3.push_back(hlh_linear_velocity(2));
+        data4_4.push_back(hrh_linear_velocity(2));
+        data4t_1.push_back(tlh_linear_velocity_target);
+        data4t_2.push_back(trh_linear_velocity_target);
+        data4t_3.push_back(hlh_linear_velocity_target);
+        data4t_4.push_back(hrh_linear_velocity_target);
+
+        // rotation error
+        data5_1.push_back(rotation_error(0));
+        data5_2.push_back(rotation_error(1));
+        data5_3.push_back(rotation_error(2));
+        data5t_1.push_back(0);
+        data5t_2.push_back(0);
+        data5t_3.push_back(0);
+
+        // angular velocity error
+        data6_1.push_back(angular_velocity_error(0));
+        data6_2.push_back(angular_velocity_error(1));
+        data6_3.push_back(angular_velocity_error(2));
+        data6t_1.push_back(0);
+        data6t_2.push_back(0);
+        data6t_3.push_back(0);
+
+        // time
+        data_time.push_back(current_time);
 
 
         controller.update_taskspace_targets(taskspace_targets);
@@ -1060,16 +1161,16 @@ int main(int argc, char** argv) {
     ABSL_CHECK(result.ok()) << result.message();
 
     // save data to file
-    std::ofstream outfile("osc_test_data10.txt");
-    if (outfile.is_open()) {
-        for (size_t i = 0; i < data1.size(); ++i) {
-            outfile << data1[i] << " " << data2[i] << " " << data3[i] << " " << data4[i] << " " << data5[i] << " " << data6[i] << " " << data7[i] << " " << data8[i] << " " << data9[i] << " " << data10[i] << std::endl;
-        }
-        outfile.close();
-        std::cout << "Data saved to data.txt" << std::endl;
-    } else {
-        std::cerr << "Unable to open file for writing." << std::endl;
-    }
+    // std::ofstream outfile("osc_test_data10.txt");
+    // if (outfile.is_open()) {
+    //     for (size_t i = 0; i < data1.size(); ++i) {
+    //         outfile << data1[i] << " " << data2[i] << " " << data3[i] << " " << data4[i] << " " << data5[i] << " " << data6[i] << " " << data7[i] << " " << data8[i] << " " << data9[i] << " " << data10[i] << std::endl;
+    //     }
+    //     outfile.close();
+    //     std::cout << "Data saved to data.txt" << std::endl;
+    // } else {
+    //     std::cerr << "Unable to open file for writing." << std::endl;
+    // }
 
     return 0;
 }
