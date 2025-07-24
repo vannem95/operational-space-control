@@ -123,7 +123,8 @@ int main(int argc, char** argv) {
     mjData* mj_data = mj_makeData(mj_model);
 
     // Reset Data to match Keyframe 2
-    mj_resetDataKeyframe(mj_model, mj_data, 3);
+    // mj_resetDataKeyframe(mj_model, mj_data, 3);
+    mj_resetDataKeyframe(mj_model, mj_data, 4);
 
 
     // Initialize mj_data:
@@ -604,15 +605,16 @@ int main(int argc, char** argv) {
         double hrh_linear_velocity_target = thigh_lin_vel;
         Vector<3> body_position = qpos(Eigen::seqN(0, 3));
 
-        double thigh_height_increase_stairs = -0.025;
+        // double thigh_height_offset = 0.025;
+        double thigh_height_offset = 0.0;
 
         double thigh_height_increase_stairs_torso = (body_position(0)>0.6)*((body_position(0)-0.6)*(0.05/0.2) - 0.01);
         double thigh_height_increase_stairs_head = (body_position(0)>0.4)*((body_position(0)-0.4)*(0.05/0.2)  + 0.01);        
 
-        double tlh_linear_position_error = ( (initial_site_data(5,2) - 0.025 + thigh_height_increase_stairs_torso) - tlh_linear_position(2));
-        double trh_linear_position_error = ( (initial_site_data(6,2) - 0.025 + thigh_height_increase_stairs_torso) - trh_linear_position(2));
-        double hlh_linear_position_error = ( (initial_site_data(7,2) - 0.025 + thigh_height_increase_stairs_head) - hlh_linear_position(2));
-        double hrh_linear_position_error = ( (initial_site_data(8,2) - 0.025 + thigh_height_increase_stairs_head) - hrh_linear_position(2));
+        double tlh_linear_position_error = ( (initial_site_data(5,2) + thigh_height_offset + thigh_height_increase_stairs_torso) - tlh_linear_position(2));
+        double trh_linear_position_error = ( (initial_site_data(6,2) + thigh_height_offset + thigh_height_increase_stairs_torso) - trh_linear_position(2));
+        double hlh_linear_position_error = ( (initial_site_data(7,2) + thigh_height_offset + thigh_height_increase_stairs_head) - hlh_linear_position(2));
+        double hrh_linear_position_error = ( (initial_site_data(8,2) + thigh_height_offset + thigh_height_increase_stairs_head) - hrh_linear_position(2));
 
         double tlh_linear_velocity_error = (tlh_linear_velocity_target - tlh_linear_velocity(2));
         double trh_linear_velocity_error = (trh_linear_velocity_target - trh_linear_velocity(2));

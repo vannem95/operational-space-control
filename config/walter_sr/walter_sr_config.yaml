@@ -27,6 +27,31 @@ noncontact_site_list:
   - tr_thigh_site
   - hl_thigh_site
   - hr_thigh_site
+  # - tlf_xaxis
+  # - tlf_xaxis
+  # - tlf_xaxis
+  # - tlr_xaxis
+  # - tlr_xaxis
+  # - tlr_xaxis
+  # - trf_xaxis
+  # - trf_xaxis
+  # - trf_xaxis
+  # - trr_xaxis
+  # - trr_xaxis
+  # - trr_xaxis
+  # - hlf_xaxis
+  # - hlf_xaxis
+  # - hlf_xaxis
+  # - hlr_xaxis
+  # - hlr_xaxis
+  # - hlr_xaxis
+  # - hrf_xaxis
+  # - hrf_xaxis
+  # - hrf_xaxis
+  # - hrr_xaxis
+  # - hrr_xaxis
+  # - hrr_xaxis
+
 
 contact_site_list:
   - tlf_wheel_site

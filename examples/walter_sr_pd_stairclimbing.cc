@@ -177,7 +177,6 @@ int main(int argc, char** argv) {
         // runfiles->Rlocation("mujoco-models/models/walter_sr/scene_walter_sr.xml");
         runfiles->Rlocation("mujoco-models/models/walter_sr/stairs_scene_walter_sr.xml");
 
-
     // Load Simulation Model
     char mj_error[1000];
     mjModel* mj_model = mj_loadXML(simulation_model_path.c_str(), nullptr, mj_error, 1000);
@@ -188,6 +187,7 @@ int main(int argc, char** argv) {
     mjData* mj_data = mj_makeData(mj_model);
 
     // Reset Data to match Keyframe 2
+    // mj_resetDataKeyframe(mj_model, mj_data, 4);
     mj_resetDataKeyframe(mj_model, mj_data, 3);
 
 
@@ -288,7 +288,7 @@ int main(int argc, char** argv) {
     double visualization_interval = 0.01;
 
     // TEST TIME
-    double simulation_time = 40.0;
+    double simulation_time = 60.0;
     auto current_time = mj_data->time;
 
     // to get points / site position --> we need to build site-ids using sites
@@ -342,10 +342,35 @@ int main(int argc, char** argv) {
     std::vector<double> data6_1;
     std::vector<double> data6_2;
     std::vector<double> data6_3;
+
     std::vector<double> data6t_1;
     std::vector<double> data6t_2;
     std::vector<double> data6t_3;
+    std::vector<double> data6t_4;
+    std::vector<double> data6t_5;
+    std::vector<double> data6t_6;
+    std::vector<double> data6t_7;
+    std::vector<double> data6t_8;
+    std::vector<double> data6t_9;
 
+    std::vector<double> data7_1;
+    std::vector<double> data7_2;
+    std::vector<double> data7_3;
+    std::vector<double> data7_4;
+    std::vector<double> data7_5;
+    std::vector<double> data7_6;
+    std::vector<double> data7_7;
+    std::vector<double> data7_8;
+
+    std::vector<double> data7t_1;
+    std::vector<double> data7t_2;
+    std::vector<double> data7t_3;
+    std::vector<double> data7t_4;
+    std::vector<double> data7t_5;
+    std::vector<double> data7t_6;
+    std::vector<double> data7t_7;
+    std::vector<double> data7t_8;    
+    
     std::vector<double> data_time;
     
 
@@ -365,16 +390,8 @@ int main(int argc, char** argv) {
     //===================================================
     //  last (for velo) and initial angular position of the shin 
     //===================================================
-    // double last_tl_angular_position = acos(initial_site_rotational_data(1,0));
-    // double last_tr_angular_position = acos(initial_site_rotational_data(2,0));
-    // double last_hl_angular_position = acos(initial_site_rotational_data(3,0));
-    // double last_hr_angular_position = acos(initial_site_rotational_data(4,0));
 
-    // double last_tl_angular_position = atan2(initial_site_rotational_data(1,2),initial_site_rotational_data(1,0));
-    // double last_tr_angular_position = atan2(initial_site_rotational_data(2,2),initial_site_rotational_data(2,0));
-    // double last_hl_angular_position = atan2(initial_site_rotational_data(3,2),initial_site_rotational_data(3,0));
-    // double last_hr_angular_position = atan2(initial_site_rotational_data(4,2),initial_site_rotational_data(4,0));
-
+    
     double last_tl_shin_angle = mj_data->qpos[mj_model->jnt_qposadr[2]];        
     double last_tr_shin_angle = mj_data->qpos[mj_model->jnt_qposadr[4]];        
     double last_hl_shin_angle = mj_data->qpos[mj_model->jnt_qposadr[6]];        
@@ -385,11 +402,6 @@ int main(int argc, char** argv) {
     double last_hl_angular_position = last_hl_shin_angle;
     double last_hr_angular_position = last_hr_shin_angle;
 
-    // double initial_tl_angular_position = atan2(initial_site_rotational_data(1,2),initial_site_rotational_data(1,0));
-    // double initial_tr_angular_position = atan2(initial_site_rotational_data(2,2),initial_site_rotational_data(2,0));
-    // double initial_hl_angular_position = atan2(initial_site_rotational_data(3,2),initial_site_rotational_data(3,0));
-    // double initial_hr_angular_position = atan2(initial_site_rotational_data(4,2),initial_site_rotational_data(4,0));
-
     double initial_tl_angular_position = last_tl_shin_angle;
     double initial_tr_angular_position = last_tr_shin_angle;
     double initial_hl_angular_position = last_hl_shin_angle;
@@ -398,25 +410,17 @@ int main(int argc, char** argv) {
     //===================================================
     //  last (for velocity) and initial angular position of the thigh sites 
     //===================================================
-    // double last_tlh_angular_position = acos(initial_site_rotational_data(5,0));
-    // double last_trh_angular_position = acos(initial_site_rotational_data(6,0));
-    // double last_hlh_angular_position = acos(initial_site_rotational_data(7,0));
-    // double last_hrh_angular_position = acos(initial_site_rotational_data(8,0));
 
-    double last_tlh_angular_position = atan2(initial_site_rotational_data(5,2),initial_site_rotational_data(5,0));
-    double last_trh_angular_position = atan2(initial_site_rotational_data(6,2),initial_site_rotational_data(6,0));
-    double last_hlh_angular_position = atan2(initial_site_rotational_data(7,2),initial_site_rotational_data(7,0));
-    double last_hrh_angular_position = atan2(initial_site_rotational_data(8,2),initial_site_rotational_data(8,0));
+    double last_tlh_angular_position = mj_data->qpos[mj_model->jnt_qposadr[1]];        
+    double last_trh_angular_position = mj_data->qpos[mj_model->jnt_qposadr[3]];        
+    double last_hlh_angular_position = mj_data->qpos[mj_model->jnt_qposadr[5]];        
+    double last_hrh_angular_position = mj_data->qpos[mj_model->jnt_qposadr[7]];        
+    
+    double initial_tlh_angular_position = last_tlh_angular_position;
+    double initial_trh_angular_position = last_trh_angular_position;
+    double initial_hlh_angular_position = last_hlh_angular_position;
+    double initial_hrh_angular_position = last_hrh_angular_position;
 
-    // double initial_tlh_angular_position = acos(initial_site_rotational_data(5,0));
-    // double initial_trh_angular_position = acos(initial_site_rotational_data(6,0));
-    // double initial_hlh_angular_position = acos(initial_site_rotational_data(7,0));
-    // double initial_hrh_angular_position = acos(initial_site_rotational_data(8,0));
-
-    double initial_tlh_angular_position = atan2(initial_site_rotational_data(5,2),initial_site_rotational_data(5,0));
-    double initial_trh_angular_position = atan2(initial_site_rotational_data(6,2),initial_site_rotational_data(6,0));
-    double initial_hlh_angular_position = atan2(initial_site_rotational_data(7,2),initial_site_rotational_data(7,0));
-    double initial_hrh_angular_position = atan2(initial_site_rotational_data(8,2),initial_site_rotational_data(8,0));
 
     //  last (for velocity) linear position of the thigh sites 
     Vector<3> last_tlh_linear_position = initial_site_data(5,Eigen::seqN(0, 3));
@@ -430,6 +434,21 @@ int main(int argc, char** argv) {
     Vector<3> last_hrs_linear_position = initial_site_data(4,Eigen::seqN(0, 3));
 
     double last_time = current_time;
+
+
+    double hr_thigh_initial = mj_data->qpos[mj_model->jnt_qposadr[7]];
+    double hl_thigh_initial = mj_data->qpos[mj_model->jnt_qposadr[5]];
+    double tr_thigh_initial = mj_data->qpos[mj_model->jnt_qposadr[3]];
+    double tl_thigh_initial = mj_data->qpos[mj_model->jnt_qposadr[1]];
+
+
+    double hr_shin_initial = mj_data->qpos[mj_model->jnt_qposadr[8]];
+    double hl_shin_initial = mj_data->qpos[mj_model->jnt_qposadr[6]];
+    double tr_shin_initial = mj_data->qpos[mj_model->jnt_qposadr[4]];
+    double tl_shin_initial = mj_data->qpos[mj_model->jnt_qposadr[2]];
+
+
+
 
     // std::vector<int> wheel_sites_mujoco = {3, 4, 7, 8, 11, 12, 15, 16};
     std::vector<int> wheel_sites_mujoco = {3, 4, 7, 8, 11, 12, 15, 16};
@@ -460,13 +479,7 @@ int main(int argc, char** argv) {
             (site_data(15,2)<wheel_contact_check_height),
             (site_data(16,2)<wheel_contact_check_height)};
 
-        // contact_data = Eigen::Map<Matrix<model::site_ids_size, 3>>(mj_data->contact)(site_ids, Eigen::placeholders::all);
-
-        // std::cout << "Vector elements (range-based for loop): ";
-        // for (int element : site_ids) {
-        //     std::cout << element << " ";
-        // }
-        // std::cout << std::endl;
+            
                 
         const mjContact& contact0 = mj_data->contact[0];
         const mjContact& contact1 = mj_data->contact[1];
@@ -477,45 +490,7 @@ int main(int argc, char** argv) {
         const mjContact& contact6 = mj_data->contact[6];
         const mjContact& contact7 = mj_data->contact[7];
 
-        // std::cout << "mj_data->contact0: " << mj_data->contact[0].geom[1] << std::endl;
-        // std::cout << "mj_data->contact1: " << mj_data->contact[1].geom[1] << std::endl;
-        // std::cout << "mj_data->contact2: " << mj_data->contact[2].geom[1] << std::endl;
-        // std::cout << "mj_data->contact3: " << mj_data->contact[3].geom[1] << std::endl;
-        // std::cout << "mj_data->contact4: " << mj_data->contact[4].geom[1] << std::endl;
-        // std::cout << "mj_data->contact5: " << mj_data->contact[5].geom[1] << std::endl;
-        // std::cout << "mj_data->contact6: " << mj_data->contact[6].geom[1] << std::endl;
-        // std::cout << "mj_data->contact7: " << mj_data->contact[7].geom[1] << std::endl;
-        // std::cout << "mj_data->contact7: " << mj_data->contact[8].geom[1] << std::endl;
-        // std::cout << "mj_data->contact7: " << mj_data->contact[9].geom[1] << std::endl;
-        // std::cout << "mj_data->contact1: " << mj_data->contact[10].geom[1] << std::endl;
-        // std::cout << "mj_data->contact1: " << mj_data->contact[11].geom[1] << std::endl;
-
-        // std::cout << "mj_data->contact0: " << mj_data->contact[0].geom[0] << std::endl;
-        // std::cout << "mj_data->contact1: " << mj_data->contact[1].geom[0] << std::endl;
-        // std::cout << "mj_data->contact2: " << mj_data->contact[2].geom[0] << std::endl;
-        // std::cout << "mj_data->contact3: " << mj_data->contact[3].geom[0] << std::endl;
-        // std::cout << "mj_data->contact4: " << mj_data->contact[4].geom[0] << std::endl;
-        // std::cout << "mj_data->contact5: " << mj_data->contact[5].geom[0] << std::endl;
-        // std::cout << "mj_data->contact6: " << mj_data->contact[6].geom[0] << std::endl;
-        // std::cout << "mj_data->contact7: " << mj_data->contact[7].geom[0] << std::endl;
-        // std::cout << "mj_data->contact7: " << mj_data->contact[8].geom[0] << std::endl;
-        // std::cout << "mj_data->contact7: " << mj_data->contact[9].geom[0] << std::endl;
-        // std::cout << "mj_data->contact1: " << mj_data->contact[10].geom[0] << std::endl;
-        // std::cout << "mj_data->contact1: " << mj_data->contact[11].geom[0] << std::endl;
-
-
-        // Should print "floor"
-        // for (int i = 0; i < mj_model->ngeom; ++i) {
-        //     printGeomName(mj_model, i);
-        // }
         
-
-        // printGeomName(mj_model, 8); // Should print "box"
-        // printGeomName(mj_model, 14); // Should indicate invalid ID or no name        
-        // printGeomName(mj_model, 18); // Should indicate invalid ID or no name        
-
-        // std::cout << "mj_data->ncon: " << mj_data->ncon << std::endl;
-        // std::cout << "current_time: " << current_time << std::endl;
 
 
         std::vector<int> contact_site_ids_test;
@@ -556,49 +531,6 @@ int main(int argc, char** argv) {
         contact_check2 = Eigen::Map<Eigen::VectorXi>(contact_check2_temp.data(), contact_check2_temp.size()).cast<double>();
         
 
-        // std::cout << "mj_data->contact8: " << mj_data->contact[8].geom[1] << std::endl;
-        // std::cout << "mj_data->contact9: " << mj_data->contact[9].geom[1] << std::endl;
-        // std::cout << "mj_data->contact10: " << mj_data->contact[10].geom[1] << std::endl;
-        // std::cout << "mj_data->contact11: " << mj_data->contact[11].geom[1] << std::endl;
-        // std::cout << "mj_data->contact12: " << mj_data->contact[12].geom[1] << std::endl;
-        // std::cout << "mj_data->contact13: " << mj_data->contact[13].geom[1] << std::endl;
-        // std::cout << "mj_data->contact14: " << mj_data->contact[14].geom[1] << std::endl;
-        // std::cout << "mj_data->contact15: " << mj_data->contact[15].geom[1] << std::endl;
-        // std::cout << "mj_data->contact16: " << mj_data->contact[16].geom[1] << std::endl;
-        // std::cout << "mj_data->contact17: " << mj_data->contact[17].geom[1] << std::endl;
-        // std::cout << "mj_data->contact18: " << mj_data->contact[18].geom[1] << std::endl;
-        // std::cout << "mj_data->contact19: " << mj_data->contact[19].geom[1] << std::endl;
-        // std::cout << "mj_data->contact20: " << mj_data->contact[20].geom[1] << std::endl;
-        // std::cout << "mj_data->contact21: " << mj_data->contact[21].geom[1] << std::endl;
-        // std::cout << "mj_data->contact22: " << mj_data->contact[22].geom[1] << std::endl;
-        // std::cout << "mj_data->contact23: " << mj_data->contact[23].geom[1] << std::endl;
-        // std::cout << "mj_data->contact24: " << mj_data->contact[24].geom[1] << std::endl;
-        // std::cout << "mj_data->contact25: " << mj_data->contact[25].geom[1] << std::endl;
-        // std::cout << "mj_data->contact26: " << mj_data->contact[26].geom[1] << std::endl;
-        // std::cout << "mj_data->contact27: " << mj_data->contact[27].geom[1] << std::endl;
-        // std::cout << "mj_data->contact28: " << mj_data->contact[28].geom[1] << std::endl;
-        // std::cout << "mj_data->contact29: " << mj_data->contact[29].geom[1] << std::endl;
-        // std::cout << "mj_data->contact30: " << mj_data->contact[30].geom[1] << std::endl;
-        // std::cout << "mj_data->contact31: " << mj_data->contact[31].geom[1] << std::endl;
-        // std::cout << "mj_data->contact32: " << mj_data->contact[32].geom[1] << std::endl;
-        // std::cout << "mj_data->contact33: " << mj_data->contact[33].geom[1] << std::endl;
-        // std::cout << "mj_data->contact34: " << mj_data->contact[34].geom[1] << std::endl;
-        // std::cout << "mj_data->contact35: " << mj_data->contact[35].geom[1] << std::endl;
-        // std::cout << "mj_data->contact36: " << mj_data->contact[36].geom[1] << std::endl;
-        // std::cout << "mj_data->contact37: " << mj_data->contact[37].geom[1] << std::endl;
-        // std::cout << "mj_data->contact38: " << mj_data->contact[38].geom[1] << std::endl;
-        // std::cout << "mj_data->contact39: " << mj_data->contact[39].geom[1] << std::endl;
-
-
-
-        // std::cout << "contact_check: " << contact_check << std::endl;
-        // std::cout << "contact_check2: " << contact_check2 << std::endl;
-
-        // std::cout << "contact_check2: ";
-        // for (int element : contact_check2) {
-        //     std::cout << element << " ";
-        // }
-        // std::cout << std::endl;
 
 
         State state;
@@ -690,7 +622,9 @@ int main(int argc, char** argv) {
         // shin angular position
         // Sinusoidal Position and Velocity Tracking:
         double shin_rot_pos = 0.1*5.0;
-        double shin_rot_vel = 0.1*8.0*2.0;
+        // double shin_rot_vel = 0.1*8.0*5.0;
+        double shin_rot_vel = 0.1*8.0*1.0;
+        // double shin_rot_vel = 0.1;
         // double shin_rot_frequency = 0.1;
 
         double tl_shin_angle = mj_data->qpos[mj_model->jnt_qposadr[2]];        
@@ -698,10 +632,6 @@ int main(int argc, char** argv) {
         double hl_shin_angle = mj_data->qpos[mj_model->jnt_qposadr[6]];        
         double hr_shin_angle = mj_data->qpos[mj_model->jnt_qposadr[8]];        
         
-        // double tl_angular_position = atan2(site_rotational_data(1,2),site_rotational_data(1,0));
-        // double tr_angular_position = atan2(site_rotational_data(2,2),site_rotational_data(2,0));
-        // double hl_angular_position = atan2(site_rotational_data(3,2),site_rotational_data(3,0));
-        // double hr_angular_position = atan2(site_rotational_data(4,2),site_rotational_data(4,0));
 
         double tl_angular_position = tl_shin_angle;
         double tr_angular_position = tr_shin_angle;
@@ -719,16 +649,6 @@ int main(int argc, char** argv) {
         double hl_angular_position_target = initial_hl_angular_position + shin_rot_vel * current_time;
         double hr_angular_position_target = initial_hr_angular_position + shin_rot_vel * current_time;
 
-        // double tl_angular_position_target = wrapToPi(tl_angular_position + shin_rot_pos);
-        // double tr_angular_position_target = wrapToPi(tr_angular_position + shin_rot_pos);
-        // double hl_angular_position_target = wrapToPi(hl_angular_position + shin_rot_pos);
-        // double hr_angular_position_target = wrapToPi(hr_angular_position + shin_rot_pos);
-
-        
-        // double tl_angular_position_target = (initial_tl_angular_position + shin_rot_vel * current_time);
-        // double tr_angular_position_target = (initial_tr_angular_position + shin_rot_vel * current_time);
-        // double hl_angular_position_target = (initial_hl_angular_position + shin_rot_vel * current_time);
-        // double hr_angular_position_target = (initial_hr_angular_position + shin_rot_vel * current_time);
         
 
         double tl_angular_velocity_target = shin_rot_vel;
@@ -746,13 +666,13 @@ int main(int argc, char** argv) {
         double hl_angular_velocity_error = (hl_angular_velocity_target - hl_angular_velocity);
         double hr_angular_velocity_error = (hr_angular_velocity_target - hr_angular_velocity);
 
-        // double shin_kp = 100; 
-        // double shin_kv = 200;
-        // double shin_kp = 50.0; 
-        double shin_kp = 50.0; 
-        // double shin_kp = 10.0; 
-        // double shin_kv = 7/800.0;
-        double shin_kv = 800.0*1.0;
+        
+
+        double shin_kp = 800.0 * 5.0 * 3.0; 
+        double shin_kv = 800.0 * 5.0;
+
+        // double shin_kp = 1000.0; 
+        // double shin_kv = 200.0;
 
         double tl_angular_control = shin_kp * (tl_angular_position_error) + shin_kv * (tl_angular_velocity_error);
         double tr_angular_control = shin_kp * (tr_angular_position_error) + shin_kv * (tr_angular_velocity_error);
@@ -775,22 +695,6 @@ int main(int argc, char** argv) {
         Eigen::Vector<double, 6> cmd3 {0, 0, 0, 0, hl_angular_control, 0};        
         Eigen::Vector<double, 6> cmd4 {0, 0, 0, 0, hr_angular_control, 0};        
 
-        // Eigen::Vector<double, 6> cmd1 {tls_linear_control(0), 0, 0, 0, 0, 0};        
-        // Eigen::Vector<double, 6> cmd2 {trs_linear_control(0), 0, 0, 0, 0, 0};        
-        // Eigen::Vector<double, 6> cmd3 {hls_linear_control(0), 0, 0, 0, 0, 0};        
-        // Eigen::Vector<double, 6> cmd4 {hrs_linear_control(0), 0, 0, 0, 0, 0};        
-
-
-        // ------------------------------------------------------------------
-        //       old feedforward angular acceleration
-        // ------------------------------------------------------------------
-
-        // Eigen::Vector<double, 6> cmd1 {0, 0, 0, 0, 0.8*1e3, 0};        
-        // Eigen::Vector<double, 6> cmd2 {0, 0, 0, 0, 0.8*1e3, 0};        
-        // Eigen::Vector<double, 6> cmd3 {0, 0, 0, 0, 0.8*1e3, 0};        
-        // Eigen::Vector<double, 6> cmd4 {0, 0, 0, 0, 0.8*1e3, 0};        
-
-
         taskspace_targets.row(1) = cmd1;
         taskspace_targets.row(2) = cmd2;
         taskspace_targets.row(3) = cmd3;
@@ -804,17 +708,13 @@ int main(int argc, char** argv) {
         // constant position and zero velocity Tracking:
         double thigh_rot_vel = 0.0;
         double thigh_kp = 1000.0;
-        double thigh_kv = 100.0;
+        double thigh_kv = 1000.0;
 
-        // double tlh_angular_position = acos(site_rotational_data(5,0));
-        // double trh_angular_position = acos(site_rotational_data(6,0));
-        // double hlh_angular_position = acos(site_rotational_data(7,0));
-        // double hrh_angular_position = acos(site_rotational_data(8,0));
 
-        double tlh_angular_position = atan2(site_rotational_data(5,2),site_rotational_data(5,0));
-        double trh_angular_position = atan2(site_rotational_data(6,2),site_rotational_data(6,0));
-        double hlh_angular_position = atan2(site_rotational_data(7,2),site_rotational_data(7,0));
-        double hrh_angular_position = atan2(site_rotational_data(8,2),site_rotational_data(8,0));
+        double tlh_angular_position = mj_data->qpos[mj_model->jnt_qposadr[1]];
+        double trh_angular_position = mj_data->qpos[mj_model->jnt_qposadr[3]];
+        double hlh_angular_position = mj_data->qpos[mj_model->jnt_qposadr[5]];
+        double hrh_angular_position = mj_data->qpos[mj_model->jnt_qposadr[7]];
 
         // double tlh_angular_position_new = atan2(site_rotational_data(5,2),site_rotational_data(5,0));
 
@@ -824,12 +724,11 @@ int main(int argc, char** argv) {
         double hlh_angular_velocity = (hlh_angular_position - last_hlh_angular_position)/(current_time - last_time);
         double hrh_angular_velocity = (hrh_angular_position - last_hrh_angular_position)/(current_time - last_time);
 
-        // targets
-        double tlh_angular_position_target = wrapToPi(initial_tlh_angular_position + M_PI/5.0 + thigh_rot_vel * current_time);
-        double trh_angular_position_target = wrapToPi(initial_trh_angular_position + M_PI/5.0 + thigh_rot_vel * current_time);
-        double hlh_angular_position_target = wrapToPi(initial_hlh_angular_position - M_PI/3.0 + thigh_rot_vel * current_time);
-        double hrh_angular_position_target = wrapToPi(initial_hrh_angular_position - M_PI/3.0 + thigh_rot_vel * current_time);
-
+        double tlh_angular_position_target = (initial_tlh_angular_position  + thigh_rot_vel * current_time);
+        double trh_angular_position_target = (initial_trh_angular_position  + thigh_rot_vel * current_time);
+        double hlh_angular_position_target = (initial_hlh_angular_position  + thigh_rot_vel * current_time);
+        double hrh_angular_position_target = (initial_hrh_angular_position  + thigh_rot_vel * current_time);
+        
         double tlh_angular_velocity_target = thigh_rot_vel;
         double trh_angular_velocity_target = thigh_rot_vel;
         double hlh_angular_velocity_target = thigh_rot_vel;
@@ -859,13 +758,13 @@ int main(int argc, char** argv) {
         //       thigh linear position
         // ------------------------------------------------------------------------------------------------------------------------------------
         double thigh_lin_vel = 0.0;
-        // double thigh_lin_kp = 400.0;
-        // double thigh_lin_kv = 60.0;
 
-        // double thigh_lin_kp = 4000.0 * 2.0;
-        double thigh_lin_kp = 4000.0 * 2.1;
-        // double thigh_lin_kv = 600.0 * 2.0;
-        double thigh_lin_kv = 600.0 * 2.0;
+        
+
+        double thigh_lin_kp = 4000.0 * 0.5;
+        double thigh_lin_kv = 600.0 * 0.5;
+
+
 
         Vector<3> tlh_linear_position = site_data(5,Eigen::seqN(0, 3));
         Vector<3> trh_linear_position = site_data(6,Eigen::seqN(0, 3));
@@ -889,25 +788,11 @@ int main(int argc, char** argv) {
         double thigh_height_increase_stairs = -0.025;
         // double thigh_height_increase_stairs = 0.0;
 
-        double thigh_height_increase_stairs_torso = (body_position(0)>0.6)*((body_position(0)-0.6)*(0.05/0.2) - 0.01);
-        double thigh_height_increase_stairs_head = (body_position(0)>0.4)*((body_position(0)-0.4)*(0.05/0.2)  + 0.01);
-        
+        double tlh_linear_position_error = ( (initial_site_data(5,2) - 0.0 + thigh_height_increase_stairs) - tlh_linear_position(2));
+        double trh_linear_position_error = ( (initial_site_data(6,2) - 0.0 + thigh_height_increase_stairs) - trh_linear_position(2));
+        double hlh_linear_position_error = ( (initial_site_data(7,2) - 0.0 + thigh_height_increase_stairs) - hlh_linear_position(2));
+        double hrh_linear_position_error = ( (initial_site_data(8,2) - 0.0 + thigh_height_increase_stairs) - hrh_linear_position(2));
 
-        double tlh_linear_position_error = ( (initial_site_data(5,2) - 0.025 + thigh_height_increase_stairs_torso) - tlh_linear_position(2));
-        double trh_linear_position_error = ( (initial_site_data(6,2) - 0.025 + thigh_height_increase_stairs_torso) - trh_linear_position(2));
-        double hlh_linear_position_error = ( (initial_site_data(7,2) - 0.025 + thigh_height_increase_stairs_head) - hlh_linear_position(2));
-        double hrh_linear_position_error = ( (initial_site_data(8,2) - 0.025 + thigh_height_increase_stairs_head) - hrh_linear_position(2));
-
-        
-        // double tlh_linear_position_error = ( (initial_site_data(5,2) + 0.5*qpos(0) - 1.0) - tlh_linear_position(2));
-        // double trh_linear_position_error = ( (initial_site_data(6,2) + 0.5*qpos(0) - 1.0) - trh_linear_position(2));
-        // double hlh_linear_position_error = ( (initial_site_data(7,2) + 0.5*qpos(0) - 1.0) - hlh_linear_position(2));
-        // double hrh_linear_position_error = ( (initial_site_data(8,2) + 0.5*qpos(0) - 1.0) - hrh_linear_position(2));
-
-        // double tlh_linear_position_error = ( (initial_site_data(5,2) + 0.5*qpos(0) - 1.0) - tlh_linear_position(2));
-        // double trh_linear_position_error = ( (initial_site_data(6,2) + 0.5*qpos(0) - 1.0) - trh_linear_position(2));
-        // double hlh_linear_position_error = ( (initial_site_data(7,2) + 0.5*qpos(0) - 1.0) - hlh_linear_position(2));
-        // double hrh_linear_position_error = ( (initial_site_data(8,2) + 0.5*qpos(0) - 1.0) - hrh_linear_position(2));
         
         double tlh_linear_velocity_error = (tlh_linear_velocity_target - tlh_linear_velocity(2));
         double trh_linear_velocity_error = (trh_linear_velocity_target - trh_linear_velocity(2));
@@ -930,38 +815,18 @@ int main(int argc, char** argv) {
         // ------------------------------------------------------------------
         //       feedback angular velocity tracking
         // ------------------------------------------------------------------        
-
-        // Eigen::Vector<double, 6> cmd5 {0, 0, tlh_linear_control, 0, tlh_angular_control, 0};        
-        // Eigen::Vector<double, 6> cmd6 {0, 0, trh_linear_control, 0, trh_angular_control, 0};        
-        // Eigen::Vector<double, 6> cmd7 {0, 0, hlh_linear_control, 0, hlh_angular_control, 0};        
-        // Eigen::Vector<double, 6> cmd8 {0, 0, hrh_linear_control, 0, hrh_angular_control, 0};        
-
-        Eigen::Vector<double, 6> cmd5 {0, 0, tlh_linear_control, 0, 0, 0};        
-        Eigen::Vector<double, 6> cmd6 {0, 0, trh_linear_control, 0, 0, 0};        
-        Eigen::Vector<double, 6> cmd7 {0, 0, hlh_linear_control, 0, 0, 0};        
-        Eigen::Vector<double, 6> cmd8 {0, 0, hrh_linear_control, 0, 0, 0};        
+   
 
 
-        // Eigen::Vector<double, 6> cmd5 {0, 0, 0, 0, tlh_angular_control, 0};        
-        // Eigen::Vector<double, 6> cmd6 {0, 0, 0, 0, trh_angular_control, 0};        
-        // Eigen::Vector<double, 6> cmd7 {0, 0, 0, 0, hlh_angular_control, 0};        
-        // Eigen::Vector<double, 6> cmd8 {0, 0, 0, 0, hrh_angular_control, 0};        
-
-        // Eigen::Vector<double, 6> cmd5 {0, 0, 0, 0, 0.1, 0};        
-        // Eigen::Vector<double, 6> cmd6 {0, 0, 0, 0, 0.1, 0};        
-        // Eigen::Vector<double, 6> cmd7 {0, 0, 0, 0, 0.1, 0};        
-        // Eigen::Vector<double, 6> cmd8 {0, 0, 0, 0, 0.1, 0};        
+        Eigen::Vector<double, 6> cmd5 {0, 0, 0, 0, tlh_angular_control, 0};        
+        Eigen::Vector<double, 6> cmd6 {0, 0, 0, 0, trh_angular_control, 0};        
+        Eigen::Vector<double, 6> cmd7 {0, 0, 0, 0, hlh_angular_control, 0};        
+        Eigen::Vector<double, 6> cmd8 {0, 0, 0, 0, hrh_angular_control, 0};        
         
 
         // ------------------------------------------------------------------
         //       old feedforward angular acceleration
         // ------------------------------------------------------------------
-
-        // Eigen::Vector<double, 6> cmd1 {0, 0, 0, 0, 0.8*1e3, 0};        
-        // Eigen::Vector<double, 6> cmd2 {0, 0, 0, 0, 0.8*1e3, 0};        
-        // Eigen::Vector<double, 6> cmd3 {0, 0, 0, 0, 0.8*1e3, 0};        
-        // Eigen::Vector<double, 6> cmd4 {0, 0, 0, 0, 0.8*1e3, 0};        
-
 
         taskspace_targets.row(5) = cmd5;
         taskspace_targets.row(6) = cmd6;
@@ -994,17 +859,13 @@ int main(int argc, char** argv) {
         // double torso_lin_kp = 1000.0;
         // double torso_lin_kv = 10.0;
 
-        double torso_lin_kp = 100.0;
-        double torso_lin_kv = 10.0;
+        double torso_lin_kp = 0.0;
+        double torso_lin_kv = 0.0;
 
-        // double torso_ang_kp = 100.0;
-        // double torso_ang_kv = 100.0;
+             
 
-        // double torso_ang_kp = 10.0;
-        // double torso_ang_kv = 10.0;
-
-        double torso_ang_kp = 5.0;
-        double torso_ang_kv = 1.0;        
+        double torso_ang_kp = 0.0;
+        double torso_ang_kv = 0.0;        
 
         Vector<3> linear_control = torso_lin_kp * (position_error) + torso_lin_kv * (velocity_error);
         Vector<3> angular_control = torso_ang_kp * (rotation_error) + torso_ang_kv * (angular_velocity_error);
@@ -1016,19 +877,172 @@ int main(int argc, char** argv) {
         //       camera track head x
         // ------------------------------------------------------------------------------------------------------------------------------------
         cam.lookat[0] = body_position(0);
-        // cam.lookat[4] = cam.lookat[4] + 0.01;
+
+        
 
 
-        // ------------------------------------------------------------------
-        //       record tlh angular position
-        // ------------------------------------------------------------------
-        // std::cout << "tlh_angular_position_target: " << initial_position(2)-0.1 << std::endl;
-        // std::cout << "contact9.dist: " << contact9.dist << std::endl;
+
+        controller.update_taskspace_targets(taskspace_targets);
+
+        // Get Torque Command:
+        Vector<model::nu_size> torque_command = controller.get_torque_command();
+
+
+        data5t_1.push_back(0);
+        data5t_2.push_back(0);
+        data5t_3.push_back(0);
+
+        data6t_1.push_back(torque_command[0]);
+        data6t_2.push_back(torque_command[1]);
+        data6t_3.push_back(torque_command[2]);        
+        data6t_4.push_back(torque_command[3]);
+        data6t_5.push_back(torque_command[4]);
+        data6t_6.push_back(torque_command[5]);        
+        data6t_7.push_back(torque_command[6]);
+        data6t_8.push_back(torque_command[7]);
+        data6t_9.push_back(0);
+
+        // _______________________hr thigh and hl thigh______________________________    
+        // ________________________________________________________________________    
+        // Get joint IDs
+        // mj_data->qpos[mj_model
+        double q_desired[2] = {0.5, -0.2}; // Example values for hr thigh and hl thigh
+        // PD gains
+        double kp[2] = {20.0, 20.0};
+        double kd[2] = {1.0, 1.0};        
+
+        // int hr_thigh = mj_name2id(mj_model, mjOBJ_JOINT, "head_right_thigh_shin_joint");
+        // int hl_thigh = mj_name2id(mj_model, mjOBJ_JOINT, "head_left_thigh_shin_joint");
+        double q1 = mj_data->qpos[mj_model->jnt_qposadr[7]];
+        double q2 = mj_data->qpos[mj_model->jnt_qposadr[5]];
+        double v1 = mj_data->qvel[mj_model->jnt_qposadr[7]];
+        double v2 = mj_data->qvel[mj_model->jnt_qposadr[5]];
+
+        // Compute the position and velocity errors
+        double pos_err1 = hr_thigh_initial - q1;
+        double pos_err2 = hl_thigh_initial - q2;
+        double vel_err1 = 0.0 - v1; // Assuming desired velocity is 0
+        double vel_err2 = 0.0 - v2;
+
+        // Compute the control torques for each joint
+        double torque1 = kp[0] * pos_err1 + kd[0] * vel_err1;
+        double torque2 = kp[1] * pos_err2 + kd[1] * vel_err2;
+
+        // Apply the torques to the actuators
+        mj_data->ctrl[6] = torque1; // Assuming actuator 0 controls joint1
+        mj_data->ctrl[4] = torque2; // Assuming actuator 1 controls joint2                
+        // ________________________________________________________________________    
+        // ________________________________________________________________________    
+
+
+
+        // _______________________tr thigh and tl thigh______________________________    
+        // ________________________________________________________________________    
+        // Get joint IDs
+        // mj_data->qpos[mj_model
+
+        // PD gains
+
+        // int hr_thigh = mj_name2id(mj_model, mjOBJ_JOINT, "head_right_thigh_shin_joint");
+        // int hl_thigh = mj_name2id(mj_model, mjOBJ_JOINT, "head_left_thigh_shin_joint");
+        double q3 = mj_data->qpos[mj_model->jnt_qposadr[3]];
+        double q4 = mj_data->qpos[mj_model->jnt_qposadr[1]];
+        double v3 = mj_data->qvel[mj_model->jnt_qposadr[3]];
+        double v4 = mj_data->qvel[mj_model->jnt_qposadr[1]];
+
+        // Compute the position and velocity errors
+        double pos_err3 = tr_thigh_initial - q3;
+        double pos_err4 = tl_thigh_initial - q4;
+        double vel_err3 = 0.0 - v3; // Assuming desired velocity is 0
+        double vel_err4 = 0.0 - v4;
+
+        // Compute the control torques for each joint
+        double torque3 = kp[0] * pos_err3 + kd[0] * vel_err3;
+        double torque4 = kp[1] * pos_err4 + kd[1] * vel_err4;
+
+        // Apply the torques to the actuators
+        mj_data->ctrl[2] = torque3; // Assuming actuator 0 controls joint1
+        mj_data->ctrl[0] = torque4; // Assuming actuator 1 controls joint2                
+        // ________________________________________________________________________    
+        // ________________________________________________________________________        
+
+
+
+        double shin_vel = 0.8;
+
+
+
         
-        // target_tl_shin_data.push_back(position_target(2)); // body height data
-        // tl_shin_data.push_back(body_position(2));
-        // time_data.push_back(current_time);
-        
+        // _______________________hr shin and hl shin______________________________    
+        // ________________________________________________________________________    
+        // Get joint IDs
+        // mj_data->qpos[mj_model
+        // PD gains
+        double kp2[2] = {20.0, 20.0};
+        double kd2[2] = {1.0, 1.0};        
+
+        // int hr_thigh = mj_name2id(mj_model, mjOBJ_JOINT, "head_right_thigh_shin_joint");
+        // int hl_thigh = mj_name2id(mj_model, mjOBJ_JOINT, "head_left_thigh_shin_joint");
+        double q5 = mj_data->qpos[mj_model->jnt_qposadr[8]];
+        double q6 = mj_data->qpos[mj_model->jnt_qposadr[6]];
+        double v5 = mj_data->qvel[mj_model->jnt_qposadr[8]];
+        double v6 = mj_data->qvel[mj_model->jnt_qposadr[6]];
+
+        // Compute the position and velocity errors
+        double pos_err5 = (hr_shin_initial + shin_vel*current_time) - q5;
+        double pos_err6 = (hl_shin_initial + shin_vel*current_time) - q6;
+        double vel_err5 = shin_vel - v5; // Assuming desired velocity is 0
+        double vel_err6 = shin_vel - v6;
+
+        // Compute the control torques for each joint
+        double torque5 = kp2[0] * pos_err5 + kd2[0] * vel_err5;
+        double torque6 = kp2[1] * pos_err6 + kd2[1] * vel_err6;
+
+        // Apply the torques to the actuators
+        mj_data->ctrl[7] = torque5; // Assuming actuator 0 controls joint1
+        mj_data->ctrl[5] = torque6; // Assuming actuator 1 controls joint2                
+        // ________________________________________________________________________    
+        // ________________________________________________________________________    
+
+
+
+        // _______________________tr shin and tl shin______________________________    
+        // ________________________________________________________________________    
+        // Get joint IDs
+        // mj_data->qpos[mj_model
+
+        // PD gains
+
+        // int hr_thigh = mj_name2id(mj_model, mjOBJ_JOINT, "head_right_thigh_shin_joint");
+        // int hl_thigh = mj_name2id(mj_model, mjOBJ_JOINT, "head_left_thigh_shin_joint");
+        double q7 = mj_data->qpos[mj_model->jnt_qposadr[4]];
+        double q8 = mj_data->qpos[mj_model->jnt_qposadr[2]];
+        double v7 = mj_data->qvel[mj_model->jnt_qposadr[4]];
+        double v8 = mj_data->qvel[mj_model->jnt_qposadr[2]];
+
+        // Compute the position and velocity errors
+        double pos_err7 = (tr_shin_initial + shin_vel*current_time) - q7;
+        double pos_err8 = (tl_shin_initial + shin_vel*current_time) - q8;
+        double vel_err7 = shin_vel - v7; // Assuming desired velocity is 0
+        double vel_err8 = shin_vel - v8;
+
+        // Compute the control torques for each joint
+        double torque7 = kp2[0] * pos_err7 + kd2[0] * vel_err7;
+        double torque8 = kp2[1] * pos_err8 + kd2[1] * vel_err8;
+
+        // Apply the torques to the actuators
+        mj_data->ctrl[3] = torque7; // Assuming actuator 0 controls joint1
+        mj_data->ctrl[1] = torque8; // Assuming actuator 1 controls joint2                
+        // ________________________________________________________________________    
+        // ________________________________________________________________________ 
+
+
+
+
+
+
+
+
 
         // shin angular position 
         data1_1.push_back(tl_angular_position);
@@ -1050,15 +1064,16 @@ int main(int argc, char** argv) {
         data2t_3.push_back(hl_angular_velocity_target);
         data2t_4.push_back(hr_angular_velocity_target);
 
-        // thigh z position
-        data3_1.push_back(tlh_linear_position(2));
-        data3_2.push_back(trh_linear_position(2));
-        data3_3.push_back(hlh_linear_position(2));
-        data3_4.push_back(hrh_linear_position(2));
-        data3t_1.push_back(initial_site_data(5,2) - 0.0 + thigh_height_increase_stairs_torso);
-        data3t_2.push_back(initial_site_data(6,2) - 0.0 + thigh_height_increase_stairs_torso);
-        data3t_3.push_back(initial_site_data(7,2) - 0.0 + thigh_height_increase_stairs_head);
-        data3t_4.push_back(initial_site_data(8,2) - 0.0 + thigh_height_increase_stairs_head);
+        // thigh 
+        data3_1.push_back(q1);
+        data3_2.push_back(q2);
+        data3_3.push_back(q3);
+        data3_4.push_back(q4);
+        data3t_1.push_back(hr_thigh_initial);
+        data3t_2.push_back(hl_thigh_initial);
+        data3t_3.push_back(tr_thigh_initial);
+        data3t_4.push_back(tl_thigh_initial);
+       
 
         // thigh z velocity
         data4_1.push_back(tlh_linear_velocity(2));
@@ -1076,20 +1091,34 @@ int main(int argc, char** argv) {
         data5_3.push_back(rotation_error(2));
 
         
-        data5t_1.push_back(tl_shin_angle);
-        data5t_2.push_back(tr_shin_angle);
-        data5t_3.push_back(hl_shin_angle);
 
         // angular velocity error
         data6_1.push_back(angular_velocity_error(0));
         data6_2.push_back(angular_velocity_error(1));
         data6_3.push_back(angular_velocity_error(2));
-        data6t_1.push_back(hr_shin_angle);
-        data6t_2.push_back(0);
-        data6t_3.push_back(0);
+
+        
 
         // time
         data_time.push_back(current_time);
+
+        
+        // Update Mujoco Data and Step:
+        // mj_data->ctrl = torque_command.data();
+        mj_step(mj_model, mj_data);
+
+
+
+        // ________________________________________________________________________    
+        data7_1.push_back(mj_data->qacc[6]);
+        data7_2.push_back(mj_data->qacc[7]);
+        data7_3.push_back(mj_data->qacc[8]);        
+        data7_4.push_back(mj_data->qacc[9]);
+        data7_5.push_back(mj_data->qacc[10]);
+        data7_6.push_back(mj_data->qacc[11]);        
+        data7_7.push_back(mj_data->qacc[12]);
+        data7_8.push_back(mj_data->qacc[13]);        
+        // ________________________________________________________________________    
 
 
         // print joints and joint ids
@@ -1110,16 +1139,10 @@ int main(int argc, char** argv) {
         //     }
         // }
 
+        
 
 
-        controller.update_taskspace_targets(taskspace_targets);
 
-        // Get Torque Command:
-        Vector<model::nu_size> torque_command = controller.get_torque_command();
-
-        // Update Mujoco Data and Step:
-        mj_data->ctrl = torque_command.data();
-        mj_step(mj_model, mj_data);
 
         if(visualization_timer > visualization_interval) {
             visualization_start_time = mj_data->time;
@@ -1152,7 +1175,8 @@ int main(int argc, char** argv) {
             << "data3_1 data3_2 data3_3 data3_4 data3t_1 data3t_2 data3t_3 data3t_4 "
             << "data4_1 data4_2 data4_3 data4_4 data4t_1 data4t_2 data4t_3 data4t_4 "
             << "data5_1 data5_2 data5_3 data5t_1 data5t_2 data5t_3 "
-            << "data6_1 data6_2 data6_3 data6t_1 data6t_2 data6t_3 " << std::endl;
+            << "data6_1 data6_2 data6_3 data6t_1 data6t_2 data6t_3 data6t_4 data6t_5 data6t_6 data6t_7 data6t_8 data6t_9 "
+            << "data7_1 data7_2 data7_3 data7_4 data7_5 data7_6 data7_7 data7_8 " << std::endl;
 
         for (size_t i = 0; i < data1_1.size(); ++i) {
             // Inside your loop where 'i' iterates from 0 to data1_1.size() - 1
@@ -1172,8 +1196,11 @@ int main(int argc, char** argv) {
                     << data5_1[i] << " " << data5_2[i] << " " << data5_3[i] << " "
                     << data5t_1[i] << " " << data5t_2[i] << " " << data5t_3[i] << " "
 
-                << data6_1[i] << " " << data6_2[i] << " " << data6_3[i]  << " "
-                << data6t_1[i] << " " << data6t_2[i] << " " << data6t_3[i]  << std::endl;            
+                    << data6_1[i] << " " << data6_2[i] << " " << data6_3[i]  << " "
+                    << data6t_1[i] << " " << data6t_2[i] << " " << data6t_3[i] << " " << data6t_4[i] << " " << data6t_5[i] << " " << data6t_6[i] << " " << data6t_7[i] << " " << data6t_8[i] << " " << data6t_9[i]  << " "            
+
+                    << data7_1[i] << " " << data7_2[i] << " " << data7_3[i] << " " << data7_4[i] << " " << data7_5[i] << " " << data7_6[i] << " " << data7_7[i] << " " << data7_8[i] << std::endl;            
+
         }
         outfile.close();
         std::cout << "Data saved to data.txt" << std::endl;

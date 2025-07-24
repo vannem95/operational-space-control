@@ -208,6 +208,9 @@ int main(int argc, char** argv) {
     glfwMakeContextCurrent(window);
     glfwSwapInterval(1);
 
+    std::cout << "--------------here--------------";
+
+
     // Initialize visualization data structures:
     mjv_defaultCamera(&cam);
     mjv_defaultPerturb(&pert);
@@ -449,18 +452,19 @@ int main(int argc, char** argv) {
         //===================================================
         // find contact mask based on dist between wheel and ground --> 0 - body , 1-4 -> shin, 5-8 -> thigh , 9-16 -> wheels
         //===================================================        
-        contact_check = {(site_data(9,2)<wheel_contact_check_height),
-            (site_data(10,2)<wheel_contact_check_height),
-            (site_data(11,2)<wheel_contact_check_height),
-            (site_data(12,2)<wheel_contact_check_height),
-            (site_data(13,2)<wheel_contact_check_height),
-            (site_data(14,2)<wheel_contact_check_height),
-            (site_data(15,2)<wheel_contact_check_height),
-            (site_data(16,2)<wheel_contact_check_height)};
+        // contact_check = {(site_data(9,2)<wheel_contact_check_height),
+        //     (site_data(10,2)<wheel_contact_check_height),
+        //     (site_data(11,2)<wheel_contact_check_height),
+        //     (site_data(12,2)<wheel_contact_check_height),
+        //     (site_data(13,2)<wheel_contact_check_height),
+        //     (site_data(14,2)<wheel_contact_check_height),
+        //     (site_data(15,2)<wheel_contact_check_height),
+        //     (site_data(16,2)<wheel_contact_check_height)};
 
         // contact_data = Eigen::Map<Matrix<model::site_ids_size, 3>>(mj_data->contact)(site_ids, Eigen::placeholders::all);
 
         // std::cout << "Vector elements (range-based for loop): ";
+        // std::cout << "--------------here--------------";
         // for (int element : site_ids) {
         //     std::cout << element << " ";
         // }
@@ -503,9 +507,9 @@ int main(int argc, char** argv) {
 
 
          // Should print "floor"
-        // for (int i = 0; i < mj_model->ngeom; ++i) {
-        //     printGeomName(mj_model, i);
-        // }
+        for (int i = 0; i < mj_model->ngeom; ++i) {
+            printGeomName(mj_model, i);
+        }
         
 
         // printGeomName(mj_model, 8); // Should print "box"
@@ -1113,7 +1117,15 @@ int main(int argc, char** argv) {
         //     }
         // }
 
-
+        // std::vector<int> wheel_sites_mujoco = {3, 4, 7, 8, 11, 12, 15, 16};
+        findGeomsOnSameBodyAsSite(mj_model,3);
+        findGeomsOnSameBodyAsSite(mj_model,4);
+        findGeomsOnSameBodyAsSite(mj_model,7);
+        findGeomsOnSameBodyAsSite(mj_model,8);
+        findGeomsOnSameBodyAsSite(mj_model,11);
+        findGeomsOnSameBodyAsSite(mj_model,12);
+        findGeomsOnSameBodyAsSite(mj_model,15);
+        findGeomsOnSameBodyAsSite(mj_model,16);
 
         controller.update_taskspace_targets(taskspace_targets);
 
